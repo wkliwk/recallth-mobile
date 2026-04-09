@@ -1,4 +1,4 @@
-# VitaAI Mobile
+# Recallth Mobile
 
 ## Tech Stack
 - **Framework:** Expo (React Native) with Expo Router
@@ -27,8 +27,8 @@ npm test           # Run tests
 ```
 
 ## Related Repos
-- Backend: wkliwk/vitaai-backend (Express/TypeScript)
-- Web: wkliwk/vitaai-web (Next.js)
+- Backend: wkliwk/recallth-backend (Express/TypeScript)
+- Web: wkliwk/recallth-web (Next.js)
 
 ## Key Screens
 - Onboarding flow (conversational health profile setup)
