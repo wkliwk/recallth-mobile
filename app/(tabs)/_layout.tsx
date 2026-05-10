@@ -66,8 +66,6 @@ export default function TabsLayout() {
         options={{
           title: 'AI Chat',
           tabBarLabel: 'Chat',
-          // Chat tab uses ai-purple brand color when active (per design)
-          tabBarActiveTintColor: colors.ai,
           tabBarIcon: ({ color }) => <ChatIcon color={color} />,
         }}
       />
