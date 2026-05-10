@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recallth Mobile — Design v1 (iPhone 15 Pro 393×852)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg:#F7F8FA; --surface:#FFFFFF; --card-solid:#F2F3F5;
+    --border:rgba(0,0,0,0.06); --border-strong:rgba(0,0,0,0.1);
+    --green:#059669; --green-light:#ECFDF5; --green-mid:#D1FAE5; --green-bright:#34D399;
+    --purple:#7C3AED; --purple-deep:#6D28D9; --purple-light:#F5F3FF; --purple-mid:#EDE9FE;
+    --amber:#D97706; --amber-light:#FFFBEB; --amber-mid:#FEF3C7;
+    --red:#DC2626; --red-light:#FEF2F2; --red-mid:#FEE2E2;
+    --blue:#2563EB; --blue-light:#EFF6FF;
+    --text:#111827; --text2:#6B7280; --text3:#9CA3AF; --text4:#D1D5DB;
+  }
+  body { background:#E8EAED; font-family:'Inter',sans-serif; padding:48px 24px; color:var(--text); }
+  h1 { text-align:center; font-family:'Space Grotesk'; font-size:32px; font-weight:700; color:var(--green); margin-bottom:6px; }
+  .subtitle { text-align:center; color:var(--text3); font-size:13px; letter-spacing:2px; text-transform:uppercase; margin-bottom:48px; }
+  h2.section-title { text-align:center; font-family:'Space Grotesk'; font-size:22px; font-weight:700; color:var(--text); margin:64px 0 8px; }
+  .section-sub { text-align:center; color:var(--text2); font-size:13px; margin-bottom:32px; }
+  .grid { display:grid; grid-template-columns:repeat(3, 393px); gap:48px; justify-content:center; }
+  .grid-2 { display:grid; grid-template-columns:repeat(2, 393px); gap:48px; justify-content:center; }
+  .screen-wrapper { display:flex; flex-direction:column; align-items:center; }
+  .screen-label { font-family:'Space Grotesk'; font-size:12px; font-weight:600; color:var(--green); margin-bottom:3px; letter-spacing:2px; text-transform:uppercase; }
+  .screen-sublabel { font-size:11px; color:var(--text3); margin-bottom:14px; }
+  .annotations { width:393px; margin-top:14px; padding:14px 16px; border-radius:14px; background:rgba(255,255,255,0.85); border:1px solid rgba(0,0,0,0.05); font-size:11px; color:var(--text2); line-height:1.5; }
+  .annotations b { color:var(--text); display:inline-block; min-width:96px; }
+  .annotations .row { margin-bottom:4px; }
+
+  /* iPhone 15 Pro frame: 393×852 */
+  .phone {
+    width:393px; height:852px; background:var(--bg); border-radius:48px; overflow:hidden; position:relative;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 25px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .phone.lofi { background:#FFFFFF; }
+  /* Dynamic Island */
+  .dynamic-island { position:absolute; top:11px; left:50%; transform:translateX(-50%); width:124px; height:36px; border-radius:18px; background:#000; z-index:10; }
+  .status-bar {
+    height:54px; display:flex; align-items:flex-end; justify-content:space-between;
+    padding:0 28px 8px; font-size:14px; font-weight:600; color:var(--text); position:relative; z-index:3;
+  }
+  .home-indicator { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:3px; background:var(--text4); z-index:6; }
+
+  /* Tab bar — 5 tabs, no FAB on mobile (tappable real estate is more limited; chat is primary action via FAB on Home) */
+  .tab-bar {
+    position:absolute; bottom:0; left:0; right:0; height:88px;
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(24px);
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-around; align-items:flex-start; padding:10px 4px 30px; z-index:5;
+  }
+  .tab-bar.lofi { background:#FAFAFA; }
+  .tab-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; font-weight:500; color:var(--text3); }
+  .tab-item.active { color:var(--green); }
+  .tab-icon svg { width:24px; height:24px; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .card-elevated { background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04); }
+
+  /* Lo-fi shared styles */
+  .lf-block { background:#F0F1F4; border:1px solid #DCDDE1; border-radius:12px; }
+  .lf-block-strong { background:#E4E5E9; border:1px solid #C9CACE; border-radius:12px; }
+  .lf-text { background:#D1D2D6; border-radius:4px; height:10px; }
+  .lf-text.short { width:40%; }
+  .lf-text.med { width:60%; }
+  .lf-text.long { width:85%; }
+  .lf-text.full { width:100%; }
+  .lf-pill { background:#D1D2D6; border-radius:100px; height:24px; }
+  .lf-circle { background:#D1D2D6; border-radius:50%; }
+  .lf-square { background:#D1D2D6; border-radius:10px; }
+  .lf-cta { background:#7C3AED; border-radius:14px; height:54px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:15px; }
+  .lf-cta.green { background:#059669; }
+  .lf-cta.outlined { background:#fff; border:1px solid #D1D2D6; color:#666; }
+  .lf-label { font-size:9px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:1px; }
+  .lf-anno { position:absolute; font-size:9px; color:#7C3AED; background:#F5F3FF; border:1px dashed #7C3AED; padding:2px 6px; border-radius:6px; font-weight:600; }
+
+  /* Tokens swatch */
+  .swatch { text-align:center; }
+  .swatch-color { width:60px; height:60px; border-radius:14px; margin:0 auto 6px; }
+  .swatch-name { font-size:11px; color:var(--text); font-weight:500; }
+  .swatch-hex { font-size:10px; color:var(--text3); font-family:monospace; }
+</style>
+</head>
+<body>
+
+<h1>Recallth Mobile — Design v1</h1>
+<div class="subtitle">iPhone 15 Pro &bull; 393&times;852 &bull; Issue #7</div>
+
+<!-- ========== ICON DEFS ========== -->
+<svg style="display:none;">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V13h6v8"/></symbol>
+  <symbol id="i-cabinet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 12h18"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></symbol>
+  <symbol id="i-profile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L3 21l0 0"/><path d="M20.59 4.41C18 2 12 2 8 5c-4 3-5.5 9-4 14"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5l-8 8a5.66 5.66 0 0 0 8 8l8-8a5.66 5.66 0 0 0-8-8z"/><line x1="6" y1="14" x2="14" y2="6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-magnet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v6a6 6 0 0 0 12 0V2"/><line x1="6" y1="6" x2="6" y2="2"/><line x1="18" y1="6" x2="18" y2="2"/><rect x="3" y="2" width="6" height="4" rx="1"/><rect x="15" y="2" width="6" height="4" rx="1"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+</svg>
+
+<!-- =================================================================== -->
+<!-- TIER 1 — WIREFRAMES (LOW-FI) — ALL 6 SCREENS                         -->
+<!-- =================================================================== -->
+
+<h2 class="section-title">Tier 1 — Wireframes (Lo-Fi) · All 6 Screens</h2>
+<div class="section-sub">Layout + interaction skeleton. Annotations describe primary action, navigation, empty + loading states.</div>
+
+<div class="grid">
+
+  <!-- ============ 01 ONBOARDING (LOFI) ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label">01 — Onboarding</div>
+    <div class="screen-sublabel">Welcome / Sign in / Sign up</div>
+    <div class="phone lofi">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span>LTE ||||</span></div>
+      <div style="padding:24px 28px; display:flex; flex-direction:column; gap:18px; height:calc(100% - 54px);">
+        <!-- Logo placeholder -->
+        <div style="margin:60px auto 8px; width:80px; height:80px; border-radius:24px;" class="lf-block-strong"></div>
+        <div style="text-align:center;">
+          <div class="lf-text" style="height:22px; width:160px; margin:0 auto 8px;"></div>
+          <div class="lf-text med" style="margin:0 auto 4px;"></div>
+          <div class="lf-text short" style="margin:0 auto;"></div>
+        </div>
+        <!-- Chat preview / value prop -->
+        <div class="lf-block" style="padding:16px; min-height:140px;">
+          <div class="lf-text full" style="margin-bottom:8px;"></div>
+          <div class="lf-text long" style="margin-bottom:14px;"></div>
+          <div class="lf-text med" style="margin-bottom:8px;"></div>
+          <div class="lf-text short"></div>
+        </div>
+        <div style="flex:1;"></div>
+        <!-- CTAs -->
+        <div class="lf-cta">Start Chatting (primary)</div>
+        <div class="lf-cta outlined">Sign in</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="annotations">
+      <div class="row"><b>Primary action:</b> Start Chatting → /chat (signup-on-first-message pattern)</div>
+      <div class="row"><b>Nav in:</b> App launch (unauthenticated state)</div>
+      <div class="row"><b>Nav out:</b> /chat (new user) · /home (returning) · /sign-in (existing)</div>
+      <div class="row"><b>Empty state:</b> N/A (this IS the empty state)</div>
+      <div class="row"><b>Loading state:</b> Logo float animation while bootstrapping auth check</div>
+    </div>
+  </div>
+
+  <!-- ============ 02 HOME / DASHBOARD (LOFI) ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label">02 — Home / Dashboard</div>
+    <div class="screen-sublabel">Chat-centric landing</div>
+    <div class="phone lofi">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span>LTE ||||</span></div>
+      <div style="padding:0 20px;">
+        <!-- Greeting row -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+          <div>
+            <div class="lf-text short" style="margin-bottom:6px;"></div>
+            <div class="lf-text" style="height:20px; width:120px;"></div>
+          </div>
+          <div class="lf-circle" style="width:42px; height:42px; border-radius:14px;"></div>
+        </div>
+        <!-- HERO CHAT INPUT -->
+        <div class="lf-block-strong" style="padding:18px; margin-bottom:14px;">
+          <div style="display:flex; gap:10px; align-items:center; margin-bottom:14px;">
+            <div class="lf-square" style="width:32px; height:32px;"></div>
+            <div style="flex:1;">
+              <div class="lf-text med" style="margin-bottom:6px;"></div>
+              <div class="lf-text short"></div>
+            </div>
+          </div>
+          <div class="lf-block" style="height:46px; margin-bottom:10px;"></div>
+          <div style="display:flex; gap:6px;">
+            <div class="lf-pill" style="width:90px;"></div>
+            <div class="lf-pill" style="width:70px;"></div>
+            <div class="lf-pill" style="width:80px;"></div>
+          </div>
+        </div>
+        <!-- 3-stat row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
+          <div class="lf-block" style="height:64px;"></div>
+          <div class="lf-block" style="height:64px;"></div>
+          <div class="lf-block" style="height:64px;"></div>
+        </div>
+        <!-- Recent conversations -->
+        <div class="lf-block" style="padding:16px;">
+          <div class="lf-label" style="margin-bottom:10px;">RECENT CONVERSATIONS</div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #DCDDE1;">
+            <div class="lf-square" style="width:32px; height:32px;"></div>
+            <div style="flex:1;"><div class="lf-text long" style="margin-bottom:4px;"></div><div class="lf-text short"></div></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0;">
+            <div class="lf-square" style="width:32px; height:32px;"></div>
+            <div style="flex:1;"><div class="lf-text med" style="margin-bottom:4px;"></div><div class="lf-text short"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar lofi">
+        <div class="tab-item active"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-chat"/></svg></div>Chat</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="annotations">
+      <div class="row"><b>Primary action:</b> Tap chat input → /chat (or pick a quick prompt)</div>
+      <div class="row"><b>Nav in:</b> Tab bar Home · App resume · Post-onboarding</div>
+      <div class="row"><b>Nav out:</b> /chat · /cabinet · /history · /profile · conversation detail</div>
+      <div class="row"><b>Empty state:</b> "No conversations yet — start one above" + 3 suggested prompts</div>
+      <div class="row"><b>Loading state:</b> Skeleton bars for stats + recent rows (200ms shimmer)</div>
+    </div>
+  </div>
+
+  <!-- ============ 03 SUPPLEMENT CABINET (LOFI) ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label">03 — Supplement Cabinet</div>
+    <div class="screen-sublabel">List + filters + add</div>
+    <div class="phone lofi">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span>LTE ||||</span></div>
+      <div style="padding:0 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div class="lf-text" style="height:24px; width:140px;"></div>
+          <div class="lf-square" style="width:32px; height:32px;"></div>
+        </div>
+        <div class="lf-block" style="height:44px; margin-bottom:12px; display:flex; align-items:center; padding:0 16px; gap:8px;">
+          <div class="lf-circle" style="width:14px; height:14px;"></div>
+          <div class="lf-text med"></div>
+        </div>
+        <div style="display:flex; gap:6px; margin-bottom:14px; overflow:hidden;">
+          <div class="lf-pill" style="width:60px; background:#7C3AED; opacity:0.2;"></div>
+          <div class="lf-pill" style="width:90px;"></div>
+          <div class="lf-pill" style="width:90px;"></div>
+          <div class="lf-pill" style="width:70px;"></div>
+        </div>
+        <!-- Cards -->
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="lf-block" style="padding:16px;">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <div class="lf-square" style="width:40px; height:40px;"></div>
+              <div style="flex:1;"><div class="lf-text med" style="margin-bottom:4px; height:14px;"></div><div class="lf-pill" style="width:70px; height:16px;"></div></div>
+              <div class="lf-circle" style="width:18px; height:18px;"></div>
+            </div>
+            <div style="display:flex; gap:18px;">
+              <div><div class="lf-label">DOSE</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+              <div><div class="lf-label">FREQ</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+              <div><div class="lf-label">TIME</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+            </div>
+          </div>
+          <div class="lf-block" style="padding:16px; background:#FFF8E0; border-color:#F0DBA0;">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <div class="lf-square" style="width:40px; height:40px;"></div>
+              <div style="flex:1;"><div class="lf-text med" style="margin-bottom:4px; height:14px;"></div><div class="lf-pill" style="width:70px; height:16px;"></div></div>
+              <div class="lf-circle" style="width:18px; height:18px;"></div>
+            </div>
+            <div style="display:flex; gap:18px; margin-bottom:8px;">
+              <div><div class="lf-label">DOSE</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+              <div><div class="lf-label">FREQ</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+              <div><div class="lf-label">TIME</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+            </div>
+            <div class="lf-pill" style="width:100%; height:24px; background:#F0DBA0;"></div>
+          </div>
+          <div class="lf-block" style="padding:16px;">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <div class="lf-square" style="width:40px; height:40px;"></div>
+              <div style="flex:1;"><div class="lf-text med" style="margin-bottom:4px; height:14px;"></div><div class="lf-pill" style="width:80px; height:16px;"></div></div>
+              <div class="lf-circle" style="width:18px; height:18px;"></div>
+            </div>
+            <div style="display:flex; gap:18px;">
+              <div><div class="lf-label">DOSE</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+              <div><div class="lf-label">FREQ</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+              <div><div class="lf-label">TIME</div><div class="lf-text" style="width:50px; height:12px; margin-top:4px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- FAB -->
+      <div style="position:absolute; bottom:108px; right:20px; width:56px; height:56px; border-radius:18px; background:#059669; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 8px 24px rgba(5,150,105,0.3);"><svg style="width:24px; height:24px;"><use href="#i-plus"/></svg></div>
+      <div class="tab-bar lofi">
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item active"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-chat"/></svg></div>Chat</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="annotations">
+      <div class="row"><b>Primary action:</b> FAB (+) → bottom-sheet add form OR tap card → detail</div>
+      <div class="row"><b>Nav in:</b> Tab bar Cabinet · From "Add to Cabinet" CTA on Chat / Stack Builder</div>
+      <div class="row"><b>Nav out:</b> /cabinet/:id (detail) · /chat (with item context) · Add Sheet</div>
+      <div class="row"><b>Empty state:</b> Empty illustration + "Tell the AI what you take" → /chat</div>
+      <div class="row"><b>Loading state:</b> 3 skeleton cards (shimmer)</div>
+    </div>
+  </div>
+
+  <!-- ============ 04 AI CHAT (LOFI) ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label">04 — AI Chat</div>
+    <div class="screen-sublabel">Conversation thread</div>
+    <div class="phone lofi">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span>LTE ||||</span></div>
+      <!-- Header -->
+      <div style="padding:6px 20px 12px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #DCDDE1;">
+        <div class="lf-circle" style="width:16px; height:16px;"></div>
+        <div class="lf-square" style="width:36px; height:36px;"></div>
+        <div style="flex:1;">
+          <div class="lf-text" style="width:90px; height:14px; margin-bottom:4px;"></div>
+          <div class="lf-text short"></div>
+        </div>
+        <div class="lf-circle" style="width:16px; height:16px;"></div>
+      </div>
+      <!-- Disclaimer -->
+      <div class="lf-pill" style="margin:10px 20px; width:calc(100% - 40px); height:24px;"></div>
+      <!-- Messages -->
+      <div style="padding:8px 20px; display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; justify-content:flex-end;">
+          <div style="max-width:260px; padding:14px 16px; border-radius:18px 18px 4px 18px; background:#059669; opacity:0.85;">
+            <div class="lf-text full" style="background:rgba(255,255,255,0.6); margin-bottom:6px;"></div>
+            <div class="lf-text long" style="background:rgba(255,255,255,0.6);"></div>
+          </div>
+        </div>
+        <!-- Extraction toast -->
+        <div class="lf-pill" style="margin:0 auto; width:230px; height:28px; background:#D1FAE5; border:1px solid #A7F3D0;"></div>
+        <div style="display:flex; gap:8px;">
+          <div class="lf-square" style="width:28px; height:28px;"></div>
+          <div style="flex:1; max-width:280px; padding:14px 16px; border-radius:4px 18px 18px 18px; background:#F0F1F4;">
+            <div class="lf-text full" style="margin-bottom:6px;"></div>
+            <div class="lf-text full" style="margin-bottom:6px;"></div>
+            <div class="lf-text med"></div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <div class="lf-square" style="width:28px; height:28px;"></div>
+          <div style="padding:12px 18px; border-radius:4px 18px 18px 18px; background:#F0F1F4;">
+            <div style="display:flex; gap:5px;">
+              <div class="lf-circle" style="width:6px; height:6px; background:#7C3AED;"></div>
+              <div class="lf-circle" style="width:6px; height:6px; background:#7C3AED;"></div>
+              <div class="lf-circle" style="width:6px; height:6px; background:#7C3AED;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Input bar -->
+      <div style="position:absolute; bottom:88px; left:0; right:0; padding:12px 20px 12px; background:#FAFAFA; border-top:1px solid #DCDDE1;">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div class="lf-circle" style="width:40px; height:40px;"></div>
+          <div class="lf-block" style="flex:1; height:46px; border-radius:14px;"></div>
+          <div class="lf-square" style="width:46px; height:46px; background:#7C3AED; border-radius:14px;"></div>
+        </div>
+      </div>
+      <div class="tab-bar lofi">
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item active"><div class="tab-icon"><svg><use href="#i-chat"/></svg></div>Chat</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="annotations">
+      <div class="row"><b>Primary action:</b> Type message → Send (enter or button)</div>
+      <div class="row"><b>Nav in:</b> Tab bar Chat · Home hero · Quick prompts · History resume</div>
+      <div class="row"><b>Nav out:</b> /history (← back swipe) · /cabinet (tap pill chip on extraction toast) · /profile (link in AI message)</div>
+      <div class="row"><b>Empty state:</b> Greeting bubble + 6 suggestion chips ("Should I take D3?", "Best time for Mg?", etc.)</div>
+      <div class="row"><b>Loading state:</b> 3-dot typing indicator under AI avatar</div>
+    </div>
+  </div>
+
+  <!-- ============ 05 HEALTH PROFILE (LOFI) ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label">05 — Health Profile</div>
+    <div class="screen-sublabel">AI-extracted, accordion sections</div>
+    <div class="phone lofi">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span>LTE ||||</span></div>
+      <div style="padding:0 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <div class="lf-text" style="height:24px; width:130px;"></div>
+          <div class="lf-text short" style="margin-top:6px;"></div>
+        </div>
+        <div class="lf-text long" style="margin-bottom:18px;"></div>
+        <!-- Profile completeness -->
+        <div class="lf-block" style="padding:14px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><div class="lf-label">PROFILE COMPLETE</div><div class="lf-text" style="width:30px; height:10px;"></div></div>
+          <div style="height:6px; background:#DCDDE1; border-radius:3px; overflow:hidden;"><div style="width:67%; height:100%; background:#059669;"></div></div>
+        </div>
+        <!-- Accordion items -->
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="lf-block" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="display:flex; gap:8px; align-items:center;"><div class="lf-circle" style="width:18px; height:18px;"></div><div class="lf-text" style="width:60px; height:14px;"></div></div>
+              <div class="lf-pill" style="width:80px; height:18px; background:#EDE9FE;"></div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+              <div class="lf-block-strong" style="height:42px; padding:6px 10px;"><div class="lf-label">HEIGHT</div></div>
+              <div class="lf-block-strong" style="height:42px; padding:6px 10px;"><div class="lf-label">WEIGHT</div></div>
+              <div class="lf-block-strong" style="height:42px; padding:6px 10px;"><div class="lf-label">AGE</div></div>
+              <div class="lf-block-strong" style="height:42px; padding:6px 10px;"><div class="lf-label">SEX</div></div>
+            </div>
+          </div>
+          <div class="lf-block" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; gap:8px; align-items:center;"><div class="lf-circle" style="width:18px; height:18px;"></div><div class="lf-text" style="width:50px; height:14px;"></div></div>
+              <div class="lf-circle" style="width:18px; height:18px;"></div>
+            </div>
+          </div>
+          <div class="lf-block" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; gap:8px; align-items:center;"><div class="lf-circle" style="width:18px; height:18px;"></div><div class="lf-text" style="width:60px; height:14px;"></div></div>
+              <div class="lf-circle" style="width:18px; height:18px;"></div>
+            </div>
+          </div>
+          <!-- Pending review item — amber -->
+          <div class="lf-block" style="padding:14px 16px; background:#FFF8E0; border-color:#F0DBA0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="display:flex; gap:8px; align-items:center;"><div class="lf-circle" style="width:18px; height:18px;"></div><div class="lf-text" style="width:50px; height:14px;"></div></div>
+              <div class="lf-pill" style="width:80px; height:18px; background:#F0DBA0;"></div>
+            </div>
+            <div class="lf-text long" style="margin-bottom:10px;"></div>
+            <div style="display:flex; gap:6px;">
+              <div class="lf-pill" style="flex:1; height:36px; background:#A7F3D0;"></div>
+              <div class="lf-pill" style="flex:1; height:36px;"></div>
+              <div class="lf-pill" style="flex:1; height:36px; background:#FCA5A5;"></div>
+            </div>
+          </div>
+          <!-- Empty section -->
+          <div style="padding:14px 16px; border-radius:14px; border:1px dashed #C9CACE; display:flex; gap:10px; align-items:center;">
+            <div class="lf-circle" style="width:18px; height:18px; opacity:0.4;"></div>
+            <div style="flex:1;"><div class="lf-text short"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar lofi">
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-chat"/></svg></div>Chat</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item active"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="annotations">
+      <div class="row"><b>Primary action:</b> Confirm/Correct AI-extracted facts (in-section action)</div>
+      <div class="row"><b>Nav in:</b> Tab bar Profile · "Build profile" CTA on Home</div>
+      <div class="row"><b>Nav out:</b> Section edit sheet · /chat (mention to auto-fill) · Account/logout</div>
+      <div class="row"><b>Empty state:</b> Each section dashed-border with "Mention in chat to auto-fill"</div>
+      <div class="row"><b>Loading state:</b> Skeleton 6 sections + progress bar shimmer</div>
+    </div>
+  </div>
+
+  <!-- ============ 06 HISTORY (LOFI) ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label">06 — History</div>
+    <div class="screen-sublabel">Conversation list, reverse chronological</div>
+    <div class="phone lofi">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span>LTE ||||</span></div>
+      <div style="padding:0 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div class="lf-text" style="height:24px; width:90px;"></div>
+          <div class="lf-circle" style="width:32px; height:32px;"></div>
+        </div>
+        <div class="lf-block" style="height:40px; margin-bottom:14px; display:flex; align-items:center; padding:0 16px; gap:8px;">
+          <div class="lf-circle" style="width:14px; height:14px;"></div>
+          <div class="lf-text med"></div>
+        </div>
+        <!-- Section header -->
+        <div class="lf-label" style="margin-bottom:8px;">TODAY</div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
+          <div class="lf-block" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><div class="lf-text med" style="height:13px;"></div><div class="lf-text" style="width:40px; height:11px;"></div></div>
+            <div class="lf-text long"></div>
+          </div>
+          <div class="lf-block" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><div class="lf-text med" style="height:13px;"></div><div class="lf-text" style="width:40px; height:11px;"></div></div>
+            <div class="lf-text long"></div>
+          </div>
+        </div>
+        <div class="lf-label" style="margin-bottom:8px;">YESTERDAY</div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
+          <div class="lf-block" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><div class="lf-text med" style="height:13px;"></div><div class="lf-text" style="width:40px; height:11px;"></div></div>
+            <div class="lf-text long"></div>
+          </div>
+        </div>
+        <div class="lf-label" style="margin-bottom:8px;">EARLIER</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="lf-block" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><div class="lf-text med" style="height:13px;"></div><div class="lf-text" style="width:40px; height:11px;"></div></div>
+            <div class="lf-text long"></div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar lofi">
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-chat"/></svg></div>Chat</div>
+        <div class="tab-item active"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="annotations">
+      <div class="row"><b>Primary action:</b> Tap conversation row → resume in /chat</div>
+      <div class="row"><b>Nav in:</b> Tab bar History · Home "Recent Conversations" "see all"</div>
+      <div class="row"><b>Nav out:</b> /chat?conversationId · search results · new chat (top-right +)</div>
+      <div class="row"><b>Empty state:</b> Illustration + "No conversations yet — Start chatting" CTA</div>
+      <div class="row"><b>Loading state:</b> 5 skeleton rows under each date header</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- =================================================================== -->
+<!-- TIER 2 — HI-FI MOCKUPS (3 PRIORITY SCREENS)                          -->
+<!-- =================================================================== -->
+
+<h2 class="section-title">Tier 2 — Hi-Fi Mockups · 3 Priority Screens</h2>
+<div class="section-sub">Build order: Home → Cabinet → Chat. Mirrors web v6-light language; native iOS conventions applied.</div>
+
+<div class="grid">
+
+  <!-- ============ HIFI: HOME ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label" style="color:var(--purple);">HI-FI 01 — Home</div>
+    <div class="screen-sublabel">Chat-centric dashboard</div>
+    <div class="phone">
+      <div class="dynamic-island"></div>
+      <!-- Soft tinted top -->
+      <div style="position:absolute; top:0; left:0; right:0; height:200px; background:linear-gradient(180deg, #ECFDF5 0%, var(--bg) 100%);"></div>
+      <div class="status-bar" style="position:relative; z-index:1;"><span>9:41</span><span style="font-size:13px;color:var(--text3);">LTE ||||</span></div>
+
+      <div style="position:relative; z-index:1; padding:0 20px;">
+        <!-- Greeting -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; margin-bottom:20px;">
+          <div>
+            <div style="font-size:14px; color:var(--text2);">Good morning</div>
+            <div style="font-family:'Space Grotesk'; font-size:26px; font-weight:700; color:var(--text);">Sarah</div>
+          </div>
+          <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#059669,#34D399); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff;">S</div>
+        </div>
+
+        <!-- HERO CHAT INPUT -->
+        <div class="card-elevated" style="padding:20px; margin-bottom:14px; border:1px solid var(--purple-mid); background:linear-gradient(180deg, var(--purple-light) 0%, var(--surface) 100%);">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <div style="width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,#7C3AED,#6D28D9); display:flex; align-items:center; justify-content:center; color:#fff;"><svg style="width:20px;height:20px;"><use href="#i-sparkle"/></svg></div>
+            <div>
+              <div style="font-size:17px; font-weight:600; color:var(--text);">What's on your mind?</div>
+              <div style="font-size:13px; color:var(--text2);">I remember everything about your health</div>
+            </div>
+          </div>
+          <div style="padding:14px 16px; border-radius:14px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:14px; color:var(--text3);">Ask about supplements, dosing…</span>
+            <span style="color:var(--text3);"><svg style="width:18px;height:18px;"><use href="#i-mic"/></svg></span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <div style="padding:6px 12px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:12px; color:var(--text2);">Should I take D3 with food?</div>
+            <div style="padding:6px 12px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:12px; color:var(--text2);">Check my interactions</div>
+            <div style="padding:6px 12px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:12px; color:var(--text2);">Best time for magnesium?</div>
+          </div>
+        </div>
+
+        <!-- 3-stat row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
+          <div class="card-elevated" style="padding:14px; text-align:center;">
+            <div style="font-family:'Space Grotesk'; font-size:24px; font-weight:800; color:var(--green);">67%</div>
+            <div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Profile</div>
+          </div>
+          <div class="card-elevated" style="padding:14px; text-align:center;">
+            <div style="font-family:'Space Grotesk'; font-size:24px; font-weight:800; color:var(--text);">8</div>
+            <div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Cabinet</div>
+          </div>
+          <div class="card-elevated" style="padding:14px; text-align:center; background:var(--amber-light); border-color:var(--amber-mid);">
+            <div style="font-family:'Space Grotesk'; font-size:24px; font-weight:800; color:var(--amber);">1</div>
+            <div style="font-size:10px; color:var(--amber); text-transform:uppercase; letter-spacing:0.5px;">Alert</div>
+          </div>
+        </div>
+
+        <!-- Recent chats -->
+        <div class="card-elevated" style="padding:16px;">
+          <div style="font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; font-weight:500; margin-bottom:12px;">Recent Conversations</div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border);">
+            <div style="width:34px; height:34px; border-radius:11px; background:var(--purple-light); display:flex; align-items:center; justify-content:center; color:var(--purple);"><svg style="width:16px;height:16px;"><use href="#i-sparkle"/></svg></div>
+            <div style="flex:1;"><div style="font-size:14px; font-weight:500; color:var(--text);">B12 timing and absorption</div><div style="font-size:12px; color:var(--text3);">2 hours ago · 4 messages</div></div>
+            <span style="color:var(--text3);"><svg style="width:14px;height:14px;"><use href="#i-arrow"/></svg></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border);">
+            <div style="width:34px; height:34px; border-radius:11px; background:var(--purple-light); display:flex; align-items:center; justify-content:center; color:var(--purple);"><svg style="width:16px;height:16px;"><use href="#i-sparkle"/></svg></div>
+            <div style="flex:1;"><div style="font-size:14px; font-weight:500; color:var(--text);">Creatine + exercise timing</div><div style="font-size:12px; color:var(--text3);">Yesterday · 6 messages</div></div>
+            <span style="color:var(--text3);"><svg style="width:14px;height:14px;"><use href="#i-arrow"/></svg></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0;">
+            <div style="width:34px; height:34px; border-radius:11px; background:var(--green-light); display:flex; align-items:center; justify-content:center; color:var(--green);"><svg style="width:16px;height:16px;"><use href="#i-pill"/></svg></div>
+            <div style="flex:1;"><div style="font-size:14px; font-weight:500; color:var(--text);">Added Omega-3 Fish Oil</div><div style="font-size:12px; color:var(--text3);">2 days ago</div></div>
+            <span style="color:var(--text3);"><svg style="width:14px;height:14px;"><use href="#i-arrow"/></svg></span>
+          </div>
+        </div>
+
+        <div style="text-align:center; margin-top:14px; font-size:11px; color:var(--text4); padding-bottom:110px;">Not medical advice. Always consult your doctor.</div>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <div class="tab-item active"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item"><div class="tab-icon" style="color:var(--purple);"><svg><use href="#i-chat"/></svg></div><span style="color:var(--purple); font-weight:600;">Chat</span></div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ============ HIFI: CABINET ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label" style="color:var(--purple);">HI-FI 02 — Cabinet</div>
+    <div class="screen-sublabel">Supplement manager</div>
+    <div class="phone">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span style="font-size:13px;color:var(--text3);">LTE ||||</span></div>
+
+      <div style="padding:0 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div style="font-family:'Space Grotesk'; font-size:24px; font-weight:700; color:var(--text);">My Cabinet</div>
+          <div style="width:36px; height:36px; border-radius:11px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text2);"><svg style="width:18px;height:18px;"><use href="#i-more"/></svg></div>
+        </div>
+
+        <!-- Search -->
+        <div class="card" style="padding:12px 16px; display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <span style="color:var(--text3);"><svg style="width:18px;height:18px;"><use href="#i-search"/></svg></span>
+          <span style="color:var(--text3); font-size:14px;">Search supplements…</span>
+        </div>
+
+        <!-- Filters -->
+        <div style="display:flex; gap:6px; margin-bottom:14px; overflow-x:auto;">
+          <div style="padding:6px 14px; border-radius:100px; background:var(--green-light); border:1px solid var(--green-mid); font-size:13px; color:var(--green); font-weight:600; flex-shrink:0;">All (8)</div>
+          <div style="padding:6px 14px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:13px; color:var(--text2); flex-shrink:0;">Supplements</div>
+          <div style="padding:6px 14px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:13px; color:var(--text2); flex-shrink:0;">Medications</div>
+          <div style="padding:6px 14px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:13px; color:var(--text2); flex-shrink:0;">Archive</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <!-- D3 -->
+          <div class="card-elevated" style="padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:42px; height:42px; border-radius:13px; background:linear-gradient(135deg,#FEF3C7,#FFFBEB); border:1px solid #FDE68A; display:flex; align-items:center; justify-content:center; color:var(--amber);"><svg style="width:22px;height:22px;"><use href="#i-sun"/></svg></div>
+                <div>
+                  <div style="font-size:16px; font-weight:600; color:var(--text);">Vitamin D3</div>
+                  <div style="display:inline-block; padding:2px 7px; border-radius:5px; background:var(--green-light); font-size:11px; color:var(--green); font-weight:500; margin-top:3px;">Supplement</div>
+                </div>
+              </div>
+              <span style="color:var(--text3);"><svg style="width:18px;height:18px;"><use href="#i-more"/></svg></span>
+            </div>
+            <div style="display:flex; gap:24px;">
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Dose</div><div style="font-size:14px; color:var(--text); font-weight:500;">5000 IU</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Freq</div><div style="font-size:14px; color:var(--text); font-weight:500;">Daily</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Time</div><div style="font-size:14px; color:var(--text); font-weight:500;">Morning</div></div>
+            </div>
+          </div>
+
+          <!-- Magnesium with warning -->
+          <div class="card-elevated" style="padding:16px; background:var(--amber-light); border-color:var(--amber-mid);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:42px; height:42px; border-radius:13px; background:var(--green-light); border:1px solid var(--green-mid); display:flex; align-items:center; justify-content:center; color:var(--green);"><svg style="width:22px;height:22px;"><use href="#i-magnet"/></svg></div>
+                <div>
+                  <div style="font-size:16px; font-weight:600; color:var(--text);">Magnesium</div>
+                  <div style="display:inline-block; padding:2px 7px; border-radius:5px; background:var(--green-light); font-size:11px; color:var(--green); font-weight:500; margin-top:3px;">Supplement</div>
+                </div>
+              </div>
+              <span style="color:var(--text3);"><svg style="width:18px;height:18px;"><use href="#i-more"/></svg></span>
+            </div>
+            <div style="display:flex; gap:24px; margin-bottom:10px;">
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Dose</div><div style="font-size:14px; color:var(--text); font-weight:500;">500mg</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Freq</div><div style="font-size:14px; color:var(--text); font-weight:500;">Daily</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Time</div><div style="font-size:14px; color:var(--text); font-weight:500;">Evening</div></div>
+            </div>
+            <div style="padding:8px 12px; border-radius:10px; background:var(--amber-mid); display:flex; align-items:center; gap:6px;">
+              <span style="color:var(--amber);"><svg style="width:14px;height:14px;"><use href="#i-alert"/></svg></span>
+              <span style="font-size:12px; color:var(--amber); font-weight:500;">Moderate interaction with Metformin</span>
+            </div>
+          </div>
+
+          <!-- Metformin -->
+          <div class="card-elevated" style="padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:42px; height:42px; border-radius:13px; background:var(--blue-light); border:1px solid rgba(37,99,235,0.15); display:flex; align-items:center; justify-content:center; color:var(--blue);"><svg style="width:22px;height:22px;"><use href="#i-pill"/></svg></div>
+                <div>
+                  <div style="font-size:16px; font-weight:600; color:var(--text);">Metformin</div>
+                  <div style="display:inline-block; padding:2px 7px; border-radius:5px; background:var(--blue-light); font-size:11px; color:var(--blue); font-weight:500; margin-top:3px;">Medication</div>
+                </div>
+              </div>
+              <span style="color:var(--text3);"><svg style="width:18px;height:18px;"><use href="#i-more"/></svg></span>
+            </div>
+            <div style="display:flex; gap:24px;">
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Dose</div><div style="font-size:14px; color:var(--text); font-weight:500;">500mg</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Freq</div><div style="font-size:14px; color:var(--text); font-weight:500;">2× daily</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Time</div><div style="font-size:14px; color:var(--text); font-weight:500;">AM / PM</div></div>
+            </div>
+          </div>
+
+          <!-- Omega-3 -->
+          <div class="card-elevated" style="padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:42px; height:42px; border-radius:13px; background:var(--purple-light); border:1px solid var(--purple-mid); display:flex; align-items:center; justify-content:center; color:var(--purple);"><svg style="width:22px;height:22px;"><use href="#i-leaf"/></svg></div>
+                <div>
+                  <div style="font-size:16px; font-weight:600; color:var(--text);">Omega-3</div>
+                  <div style="display:inline-block; padding:2px 7px; border-radius:5px; background:var(--green-light); font-size:11px; color:var(--green); font-weight:500; margin-top:3px;">Supplement</div>
+                </div>
+              </div>
+              <span style="color:var(--text3);"><svg style="width:18px;height:18px;"><use href="#i-more"/></svg></span>
+            </div>
+            <div style="display:flex; gap:24px;">
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Dose</div><div style="font-size:14px; color:var(--text); font-weight:500;">1000mg</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Freq</div><div style="font-size:14px; color:var(--text); font-weight:500;">Daily</div></div>
+              <div><div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px;">Time</div><div style="font-size:14px; color:var(--text); font-weight:500;">w/ meal</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAB -->
+      <div style="position:absolute; bottom:108px; right:20px; width:58px; height:58px; border-radius:18px; background:linear-gradient(135deg,#059669,#34D399); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 8px 24px rgba(5,150,105,0.3);"><svg style="width:26px;height:26px;"><use href="#i-plus"/></svg></div>
+
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item active"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item"><div class="tab-icon" style="color:var(--purple);"><svg><use href="#i-chat"/></svg></div><span style="color:var(--purple); font-weight:600;">Chat</span></div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ============ HIFI: CHAT ============ -->
+  <div class="screen-wrapper">
+    <div class="screen-label" style="color:var(--purple);">HI-FI 03 — AI Chat</div>
+    <div class="screen-sublabel">Conversation + extraction toast</div>
+    <div class="phone" style="background:#FFFFFF;">
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>9:41</span><span style="font-size:13px;color:var(--text3);">LTE ||||</span></div>
+
+      <!-- Header -->
+      <div style="padding:6px 20px 12px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border);">
+        <span style="color:var(--text2);"><svg style="width:22px;height:22px;"><use href="#i-back"/></svg></span>
+        <div style="width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,#7C3AED,#6D28D9); display:flex; align-items:center; justify-content:center; color:#fff;"><svg style="width:18px;height:18px;"><use href="#i-sparkle"/></svg></div>
+        <div style="flex:1;">
+          <div style="font-size:16px; font-weight:600; color:var(--text);">Recallth AI</div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <div style="width:6px; height:6px; border-radius:3px; background:var(--green-bright);"></div>
+            <span style="font-size:12px; color:var(--text3);">Knows your profile</span>
+          </div>
+        </div>
+        <span style="color:var(--text2);"><svg style="width:22px;height:22px;"><use href="#i-more"/></svg></span>
+      </div>
+
+      <!-- Disclaimer -->
+      <div style="margin:10px 20px; padding:8px 12px; border-radius:10px; background:var(--card-solid); text-align:center;">
+        <span style="font-size:11px; color:var(--text3);">Not medical advice. Always consult your doctor.</span>
+      </div>
+
+      <!-- Messages -->
+      <div style="padding:8px 20px; display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; justify-content:flex-end;">
+          <div style="max-width:280px; padding:13px 17px; border-radius:20px 20px 4px 20px; background:linear-gradient(135deg,#059669,#34D399); font-size:15px; color:#fff; line-height:1.4; box-shadow:0 2px 8px rgba(5,150,105,0.15);">
+            I'm 185cm, 78kg, taking creatine and magnesium daily. Should I add Vitamin D?
+          </div>
+        </div>
+
+        <!-- Extraction toast -->
+        <div style="margin:0 auto; padding:8px 14px; border-radius:100px; background:var(--green-light); border:1px solid var(--green-mid); display:inline-flex; align-items:center; gap:6px;">
+          <span style="color:var(--green);"><svg style="width:14px;height:14px;"><use href="#i-check"/></svg></span>
+          <span style="font-size:12px; color:var(--green); font-weight:500;">Saved: 185cm, 78kg, Creatine &amp; Magnesium</span>
+        </div>
+
+        <!-- AI response -->
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <div style="width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#7C3AED,#6D28D9); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff;"><svg style="width:14px;height:14px;"><use href="#i-sparkle"/></svg></div>
+          <div style="max-width:290px;">
+            <div style="padding:14px 16px; border-radius:4px 20px 20px 20px; background:var(--card-solid); border:1px solid var(--border); font-size:15px; color:var(--text); line-height:1.5;">
+              At
+              <span style="display:inline-block; padding:2px 8px; border-radius:6px; background:var(--purple-light); color:var(--purple); font-size:13px; font-weight:500;">185cm / 78kg</span>
+              with your stack of
+              <span style="display:inline-block; padding:2px 8px; border-radius:6px; background:var(--green-light); color:var(--green); font-size:13px; font-weight:500;">Creatine</span>
+              and
+              <span style="display:inline-block; padding:2px 8px; border-radius:6px; background:var(--green-light); color:var(--green); font-size:13px; font-weight:500;">Magnesium</span>, adding D3 5000 IU is a solid idea — no interactions.
+            </div>
+            <div style="display:flex; gap:8px; margin-top:6px;">
+              <div style="padding:5px 10px; border-radius:8px; background:var(--card-solid); font-size:11px; color:var(--text2); display:inline-flex; align-items:center; gap:4px;"><svg style="width:10px;height:10px;"><use href="#i-link"/></svg> NIH Source</div>
+              <div style="padding:5px 10px; border-radius:8px; background:var(--purple-light); color:var(--purple); font-size:11px; font-weight:500;">+ Add to Cabinet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User follow-up -->
+        <div style="display:flex; justify-content:flex-end;">
+          <div style="max-width:240px; padding:13px 17px; border-radius:20px 20px 4px 20px; background:linear-gradient(135deg,#059669,#34D399); font-size:15px; color:#fff; line-height:1.4;">
+            I sleep about 6 hours, that enough?
+          </div>
+        </div>
+
+        <!-- Toast -->
+        <div style="margin:0 auto; padding:8px 14px; border-radius:100px; background:var(--green-light); border:1px solid var(--green-mid); display:inline-flex; align-items:center; gap:6px;">
+          <span style="color:var(--green);"><svg style="width:14px;height:14px;"><use href="#i-check"/></svg></span>
+          <span style="font-size:12px; color:var(--green); font-weight:500;">Saved: sleep ~6 hours</span>
+        </div>
+
+        <!-- Typing -->
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <div style="width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#7C3AED,#6D28D9); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff;"><svg style="width:14px;height:14px;"><use href="#i-sparkle"/></svg></div>
+          <div style="padding:14px 22px; border-radius:4px 20px 20px 20px; background:var(--card-solid); border:1px solid var(--border);">
+            <div style="display:flex; gap:5px;">
+              <div style="width:7px; height:7px; border-radius:3.5px; background:var(--purple);"></div>
+              <div style="width:7px; height:7px; border-radius:3.5px; background:var(--purple); opacity:0.6;"></div>
+              <div style="width:7px; height:7px; border-radius:3.5px; background:var(--purple); opacity:0.3;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div style="position:absolute; bottom:88px; left:0; right:0; padding:10px 16px; background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); border-top:1px solid var(--border);">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="width:42px; height:42px; border-radius:13px; background:var(--card-solid); display:flex; align-items:center; justify-content:center; color:var(--text2);"><svg style="width:20px;height:20px;"><use href="#i-plus"/></svg></div>
+          <div style="flex:1; padding:12px 16px; border-radius:13px; background:var(--card-solid); border:1px solid var(--border); font-size:14px; color:var(--text3); display:flex; align-items:center; justify-content:space-between;">
+            <span>Ask about your health…</span>
+            <span style="color:var(--text3);"><svg style="width:18px;height:18px;"><use href="#i-mic"/></svg></span>
+          </div>
+          <div style="width:42px; height:42px; border-radius:13px; background:linear-gradient(135deg,#7C3AED,#6D28D9); display:flex; align-items:center; justify-content:center; color:#fff;"><svg style="width:18px;height:18px;"><use href="#i-send"/></svg></div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-home"/></svg></div>Home</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-cabinet"/></svg></div>Cabinet</div>
+        <div class="tab-item active" style="color:var(--purple);"><div class="tab-icon"><svg><use href="#i-chat"/></svg></div>Chat</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-history"/></svg></div>History</div>
+        <div class="tab-item"><div class="tab-icon"><svg><use href="#i-profile"/></svg></div>Profile</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- =================================================================== -->
+<!-- DESIGN TOKENS                                                        -->
+<!-- =================================================================== -->
+<h2 class="section-title">Design Tokens — Mobile</h2>
+<div class="section-sub">Aligned with Recallth web v6-light · Use exact values for NativeWind / RN-Paper theme</div>
+
+<div style="max-width:1200px; margin:0 auto; padding:24px; border-radius:20px; background:rgba(255,255,255,0.85); border:1px solid rgba(0,0,0,0.06);">
+
+  <div style="font-family:'Space Grotesk'; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px;">COLOR</div>
+  <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px;">
+    <div class="swatch"><div class="swatch-color" style="background:linear-gradient(135deg,#059669,#34D399);"></div><div class="swatch-name">Primary (Green)</div><div class="swatch-hex">#059669</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:linear-gradient(135deg,#7C3AED,#6D28D9);"></div><div class="swatch-name">AI / Chat</div><div class="swatch-hex">#7C3AED</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#D97706;"></div><div class="swatch-name">Warning</div><div class="swatch-hex">#D97706</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#DC2626;"></div><div class="swatch-name">Danger</div><div class="swatch-hex">#DC2626</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#2563EB;"></div><div class="swatch-name">Medication</div><div class="swatch-hex">#2563EB</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F7F8FA; border:1px solid var(--border);"></div><div class="swatch-name">BG</div><div class="swatch-hex">#F7F8FA</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FFFFFF; border:1px solid var(--border);"></div><div class="swatch-name">Surface</div><div class="swatch-hex">#FFFFFF</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#111827;"></div><div class="swatch-name">Text</div><div class="swatch-hex">#111827</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#6B7280;"></div><div class="swatch-name">Text/2</div><div class="swatch-hex">#6B7280</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#9CA3AF;"></div><div class="swatch-name">Text/3</div><div class="swatch-hex">#9CA3AF</div></div>
+  </div>
+
+  <div style="font-family:'Space Grotesk'; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px;">TYPOGRAPHY</div>
+  <table style="font-size:13px; color:var(--text2); margin-bottom:24px;">
+    <tr><td style="padding:4px 16px 4px 0;"><b style="color:var(--text);">Heading 1 (page title)</b></td><td>Space Grotesk, 700, 26 / 32 lh</td></tr>
+    <tr><td style="padding:4px 16px 4px 0;"><b style="color:var(--text);">Heading 2 (section)</b></td><td>Space Grotesk, 600, 18 / 24 lh</td></tr>
+    <tr><td style="padding:4px 16px 4px 0;"><b style="color:var(--text);">Body</b></td><td>Inter, 400, 15 / 22 lh</td></tr>
+    <tr><td style="padding:4px 16px 4px 0;"><b style="color:var(--text);">Body Small</b></td><td>Inter, 400, 13 / 18 lh</td></tr>
+    <tr><td style="padding:4px 16px 4px 0;"><b style="color:var(--text);">Caption / Meta</b></td><td>Inter, 500, 11 / 14 lh, uppercase, ls 0.5px</td></tr>
+    <tr><td style="padding:4px 16px 4px 0;"><b style="color:var(--text);">Button / CTA</b></td><td>Inter, 600, 16 / 22 lh</td></tr>
+    <tr><td style="padding:4px 16px 4px 0;"><b style="color:var(--text);">Stat (numeric)</b></td><td>Space Grotesk, 800, 24 / 28 lh</td></tr>
+  </table>
+
+  <div style="font-family:'Space Grotesk'; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px;">SPACING (4px base)</div>
+  <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px; font-size:13px; color:var(--text2);">
+    <span><b style="color:var(--text);">xs</b> 4</span>
+    <span><b style="color:var(--text);">sm</b> 8</span>
+    <span><b style="color:var(--text);">md</b> 12</span>
+    <span><b style="color:var(--text);">lg</b> 16</span>
+    <span><b style="color:var(--text);">xl</b> 20</span>
+    <span><b style="color:var(--text);">2xl</b> 24</span>
+    <span><b style="color:var(--text);">3xl</b> 32</span>
+    <span><b style="color:var(--text);">screen-pad</b> 20 (horizontal)</span>
+  </div>
+
+  <div style="font-family:'Space Grotesk'; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px;">RADIUS</div>
+  <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px; font-size:13px; color:var(--text2);">
+    <span><b style="color:var(--text);">sm</b> 8 (chips)</span>
+    <span><b style="color:var(--text);">md</b> 12 (icon tiles)</span>
+    <span><b style="color:var(--text);">lg</b> 14 (input/CTA)</span>
+    <span><b style="color:var(--text);">xl</b> 16 (cards)</span>
+    <span><b style="color:var(--text);">2xl</b> 20 (chat bubble)</span>
+    <span><b style="color:var(--text);">full</b> 100 (pill, avatar dot)</span>
+  </div>
+
+  <div style="font-family:'Space Grotesk'; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px;">SHADOW / ELEVATION</div>
+  <div style="font-size:13px; color:var(--text2); margin-bottom:24px;">
+    <div><b style="color:var(--text);">card</b>: 0 1px 3px rgba(0,0,0,0.04)</div>
+    <div><b style="color:var(--text);">card-elevated</b>: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)</div>
+    <div><b style="color:var(--text);">fab</b>: 0 8px 24px rgba(5,150,105,0.30)</div>
+    <div><b style="color:var(--text);">fab-purple</b>: 0 8px 24px rgba(124,58,237,0.30)</div>
+  </div>
+
+  <div style="font-family:'Space Grotesk'; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px;">SAFE AREA / SYSTEM</div>
+  <div style="font-size:13px; color:var(--text2);">
+    <div><b style="color:var(--text);">Frame</b>: iPhone 15 Pro 393×852 · Dynamic Island top</div>
+    <div><b style="color:var(--text);">Safe-top</b>: 54px (status bar incl. Island)</div>
+    <div><b style="color:var(--text);">Safe-bottom</b>: 34px home indicator zone</div>
+    <div><b style="color:var(--text);">Tab bar</b>: 88px including bottom safe area, blurred translucent</div>
+    <div><b style="color:var(--text);">Touch target min</b>: 44×44pt (Apple HIG)</div>
+  </div>
+
+</div>
+
+<div style="max-width:1200px; margin:32px auto 0; text-align:center; font-size:11px; color:var(--text3);">Recallth Mobile Design v1 · Issue #7 · Generated by Designer agent</div>
+
+</body>
+</html>
