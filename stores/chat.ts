@@ -135,13 +135,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Add a placeholder assistant message that will be streamed into
       const assistantId = makeId();
+      const assistantText = response.message.content;
       const assistantMessage: LocalMessage = {
         id: assistantId,
         role: 'assistant',
-        content: response.message,
+        content: assistantText,
         streamingContent: '',
         isStreaming: true,
-        timestamp: new Date().toISOString(),
+        timestamp: response.message.timestamp ?? new Date().toISOString(),
         extractedData: response.extractedData,
         actions: response.actions,
       };
@@ -157,7 +158,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Stream simulation
       await simulateStreaming(
-        response.message,
+        assistantText,
         (partial) => {
           set((s) => ({
             messages: s.messages.map((m) =>
