@@ -23,6 +23,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="cabinet"
+        options={{
+          title: 'Cabinet',
+          tabBarLabel: 'Cabinet',
+          headerShown: true,
+          headerTitle: 'My Cabinet',
+        }}
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: 'AI Chat',
