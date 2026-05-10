@@ -31,6 +31,13 @@ export default function TabsLayout() {
           tabBarActiveTintColor: colors.ai,
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Health Profile',
+          tabBarLabel: 'Profile',
+        }}
+      />
     </Tabs>
   );
 }
