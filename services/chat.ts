@@ -48,7 +48,7 @@ export interface Conversation {
 
 export interface SendMessageResponse {
   conversationId: string;
-  message: string;
+  message: ChatMessage;
   extractedData: ExtractedData | null;
   detectedLanguage: string;
   suggestions: string[];
