@@ -47,7 +47,9 @@ export default function SignupScreen() {
     setSubmitting(true);
     try {
       await signup(email, password);
-      router.replace('/(tabs)');
+      // New users always go through onboarding; AuthGate will also handle
+      // this reactively, but explicit routing avoids the round-trip delay.
+      router.replace('/(onboarding)/welcome');
     } catch (err) {
       const message =
         err instanceof Error && err.message
