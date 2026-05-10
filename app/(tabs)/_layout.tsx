@@ -32,6 +32,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="history"
+        options={{
+          title: 'History',
+          tabBarLabel: 'History',
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Health Profile',
