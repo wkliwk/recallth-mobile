@@ -31,6 +31,42 @@ export class ApiError extends Error {
 }
 
 /**
+ * Extracts a human-readable error message from the backend response payload.
+ *
+ * The Recallth backend wraps all responses in `{ success, data, error }`. The
+ * `error` field may be a plain string or an object with a `message` property.
+ * Other error shapes (e.g. `{ message }` at the top level) are supported as
+ * a fallback for future endpoints.
+ */
+function extractErrorMessage(payload: unknown, status: number): string {
+  if (typeof payload === 'object' && payload !== null) {
+    const p = payload as Record<string, unknown>;
+
+    // Backend envelope: { error: { message: string } }
+    if (typeof p['error'] === 'object' && p['error'] !== null) {
+      const errObj = p['error'] as Record<string, unknown>;
+      if (typeof errObj['message'] === 'string' && errObj['message'].length > 0) {
+        return errObj['message'];
+      }
+    }
+
+    // Backend envelope: { error: string }
+    if (typeof p['error'] === 'string' && p['error'].length > 0) {
+      return p['error'];
+    }
+
+    // Generic API shape: { message: string }
+    if (typeof p['message'] === 'string' && p['message'].length > 0) {
+      return p['message'];
+    }
+  }
+
+  return status === 401
+    ? "We couldn't sign you in. Please try again."
+    : `Request failed with status ${status}`;
+}
+
+/**
  * Thin fetch wrapper. Intentionally minimal — we'll layer TanStack Query and
  * auth (expo-secure-store) on top of this in later issues (#7/#8).
  */
@@ -68,10 +104,7 @@ export async function apiRequest<TResponse>(
   }
 
   if (!response.ok) {
-    const message =
-      typeof payload === 'object' && payload !== null && 'message' in payload
-        ? String((payload as { message: unknown }).message)
-        : `Request failed with status ${response.status}`;
+    const message = extractErrorMessage(payload, response.status);
     throw new ApiError(response.status, message, payload);
   }
 
