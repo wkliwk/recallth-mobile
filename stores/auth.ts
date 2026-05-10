@@ -1,18 +1,7 @@
-/**
- * Auth store.
- *
- * Holds the JWT + minimal user info in memory; persists to `expo-secure-store`
- * (NOT AsyncStorage) so the token survives app restarts.
- *
- * `hydrate()` is called once on app launch from `app/_layout.tsx`. Until it
- * resolves, `isHydrated` is false and the root layout shows a splash so we
- * don't flash the login screen for already-signed-in users.
- */
-
-import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 
 import * as authService from '../services/auth';
+import * as storage from '../services/storage';
 
 const TOKEN_KEY = 'recallth.auth.token';
 const USER_KEY = 'recallth.auth.user';
@@ -30,13 +19,13 @@ type AuthState = {
 };
 
 async function persist(token: string, user: AuthUser): Promise<void> {
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
-  await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+  await storage.setItem(TOKEN_KEY, token);
+  await storage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 async function clearPersisted(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
-  await SecureStore.deleteItemAsync(USER_KEY);
+  await storage.deleteItem(TOKEN_KEY);
+  await storage.deleteItem(USER_KEY);
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -47,8 +36,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   hydrate: async () => {
     try {
       const [token, userJson] = await Promise.all([
-        SecureStore.getItemAsync(TOKEN_KEY),
-        SecureStore.getItemAsync(USER_KEY),
+        storage.getItem(TOKEN_KEY),
+        storage.getItem(USER_KEY),
       ]);
       if (token && userJson) {
         const user = JSON.parse(userJson) as AuthUser;
