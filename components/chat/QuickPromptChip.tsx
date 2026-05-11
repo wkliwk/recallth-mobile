@@ -39,20 +39,20 @@ export const QuickPromptChip = React.memo(function QuickPromptChip({
 
 const styles = StyleSheet.create({
   chip: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primaryLight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primaryMid,
     borderRadius: radius.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   chipPressed: {
     opacity: 0.7,
-    backgroundColor: colors.cardSolid,
+    backgroundColor: colors.primaryMid,
   },
   label: {
     ...typography.bodySmall,
-    color: colors.text2,
+    color: colors.primary,
     fontWeight: '500',
   },
 });

@@ -97,11 +97,12 @@ const styles = StyleSheet.create({
   userBubble: {
     maxWidth: MAX_BUBBLE_WIDTH,
     backgroundColor: colors.primary,
-    borderRadius: radius.xxl,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 18,
     borderBottomRightRadius: 4,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    // Brand gradient approximated with solid primary (LinearGradient needs extra dep)
   },
   userText: {
     ...typography.body,
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: radius.full,
-    backgroundColor: colors.ai,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -133,9 +134,11 @@ const styles = StyleSheet.create({
   },
   assistantBubble: {
     maxWidth: MAX_BUBBLE_WIDTH,
-    backgroundColor: colors.cardSolid,
-    borderRadius: radius.xxl,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
     borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.lg,

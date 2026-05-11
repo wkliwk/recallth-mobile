@@ -106,7 +106,7 @@ export const ChatComposer = React.memo(function ChatComposer({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.md,
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    backgroundColor: colors.cardSolid,
+    backgroundColor: colors.bg,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.full,
-    backgroundColor: colors.ai,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
