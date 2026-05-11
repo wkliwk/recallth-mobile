@@ -1,37 +1,37 @@
-/**
- * Design tokens — mirrors `DESIGN_SYSTEM.md`.
- *
- * Scope intentionally small for issue #8 (auth screens only). Future issues
- * may migrate to NativeWind as recommended in the design system; this file
- * keeps consumption typed and centralized in the meantime.
- */
+// B·Health design system — warm cream + orange accent (#ed8547)
+// Source: design/proto-shared.jsx
 
 export const colors = {
-  primary: '#059669',
-  primaryBright: '#34D399',
-  primaryLight: '#ECFDF5',
-  primaryMid: '#D1FAE5',
-  ai: '#7C3AED',
-  aiDeep: '#6D28D9',
-  aiLight: '#F5F3FF',
-  aiMid: '#EDE9FE',
-  warning: '#D97706',
-  warningLight: '#FFFBEB',
-  warningMid: '#FEF3C7',
-  danger: '#DC2626',
-  dangerLight: '#FEF2F2',
-  dangerMid: '#FEE2E2',
+  primary: '#ed8547',
+  primaryBright: '#d9772e',
+  primaryLight: '#fdf0e6',
+  primaryMid: '#fce8d0',
+  // ai tokens remapped to orange (preserves existing consumers)
+  ai: '#ed8547',
+  aiDeep: '#c66a2e',
+  aiLight: '#fdf0e6',
+  aiMid: '#fce8d0',
+  // evidence bar colors
+  ok: '#2d9d5a',
+  okLight: '#e8f7ee',
+  warning: '#c4880f',
+  warningLight: '#fef6e0',
+  warningMid: '#fef3c7',
+  danger: '#b91c1c',
+  dangerLight: '#fde8e8',
+  dangerMid: '#fee2e2',
   info: '#2563EB',
   infoLight: '#EFF6FF',
-  bg: '#F7F8FA',
-  surface: '#FFFFFF',
-  cardSolid: '#F2F3F5',
-  border: 'rgba(0,0,0,0.06)',
-  borderStrong: 'rgba(0,0,0,0.10)',
-  text: '#111827',
-  text2: '#6B7280',
-  text3: '#9CA3AF',
-  text4: '#D1D5DB',
+  bg: '#f5f5f0',
+  surface: '#ffffff',
+  cardSolid: '#f0ede4',
+  border: '#e7e5dc',
+  borderStrong: '#d6d3c4',
+  dim: '#a8a8a8',
+  text: '#1c1c1e',
+  text2: '#6b6b70',
+  text3: '#a8a8a8',
+  text4: '#d6d3c4',
 } as const;
 
 export const spacing = {

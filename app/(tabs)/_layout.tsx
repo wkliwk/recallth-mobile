@@ -3,25 +3,21 @@ import { Platform, StyleSheet, Text } from 'react-native';
 
 import { colors } from '../../utils/theme';
 
-// ─── Icon glyphs (text-based; swap for an icon library in a follow-up) ────────
-
-function HomeIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>⌂</Text>;
-}
-
-function CabinetIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>⬜</Text>;
+function SummaryIcon({ color }: { color: string }) {
+  return <Text style={[styles.tabIcon, { color }]}>◉</Text>;
 }
 
 function ChatIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>✦</Text>;
+  return <Text style={[styles.tabIcon, { color }]}>◎</Text>;
 }
 
-function ProfileIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>◯</Text>;
+function CabinetIcon({ color }: { color: string }) {
+  return <Text style={[styles.tabIcon, { color }]}>◇</Text>;
 }
 
-// ─── Layout ──────────────────────────────────────────────────────────────────
+function TrendsIcon({ color }: { color: string }) {
+  return <Text style={[styles.tabIcon, { color }]}>△</Text>;
+}
 
 export default function TabsLayout() {
   return (
@@ -29,13 +25,14 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text3,
+        tabBarInactiveTintColor: colors.dim,
         tabBarStyle: {
-          backgroundColor: 'rgba(255,255,255,0.92)',
+          backgroundColor: 'rgba(245,245,240,0.92)',
           borderTopColor: colors.border,
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 88 : 64,
-          paddingTop: 10,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
         },
         tabBarLabelStyle: {
           fontSize: 10,
@@ -47,42 +44,39 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="cabinet"
-        options={{
-          title: 'Cabinet',
-          tabBarLabel: 'Cabinet',
-          headerShown: true,
-          headerTitle: 'My Cabinet',
-          tabBarIcon: ({ color }) => <CabinetIcon color={color} />,
+          tabBarLabel: 'Summary',
+          tabBarIcon: ({ color }) => <SummaryIcon color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'AI Chat',
           tabBarLabel: 'Chat',
           tabBarIcon: ({ color }) => <ChatIcon color={color} />,
         }}
       />
       <Tabs.Screen
-        name="history"
+        name="cabinet"
         options={{
-          title: 'History',
-          tabBarLabel: 'History',
+          tabBarLabel: 'Cabinet',
+          tabBarIcon: ({ color }) => <CabinetIcon color={color} />,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="trends"
         options={{
-          title: 'Health Profile',
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <ProfileIcon color={color} />,
+          tabBarLabel: 'Trends',
+          tabBarIcon: ({ color }) => <TrendsIcon color={color} />,
         }}
+      />
+      {/* Hidden from tab bar — accessible via deep link */}
+      <Tabs.Screen
+        name="history"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{ href: null }}
       />
     </Tabs>
   );
