@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { CabinetCard } from '../../components/cabinet/CabinetCard';
+import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
 import type { CabinetMockItem } from '../../components/cabinet/CabinetCard';
 import {
   createCabinetItem,
@@ -384,6 +385,11 @@ export default function CabinetScreen() {
           />
         </View>
 
+        {/* First-run nudge for authenticated users with empty cabinet */}
+        {!state.usedMock && state.items.length === 0 && !search && !state.loading && (
+          <FirstRunNudge onAdd={() => setShowAddSheet(true)} />
+        )}
+
         {/* Grid */}
         {filtered.length > 0 ? (
           <View style={styles.grid}>
@@ -414,9 +420,9 @@ export default function CabinetScreen() {
               </View>
             ))}
           </View>
-        ) : (
-          <SearchEmptyState query={search} isEmpty={state.items.length === 0} />
-        )}
+        ) : search ? (
+          <SearchEmptyState query={search} isEmpty={false} />
+        ) : null}
       </ScrollView>
 
       <AddSheet
