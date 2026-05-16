@@ -43,7 +43,7 @@ import {
   updateProfile,
 } from '../../services/profile';
 import { useAuthStore } from '../../stores/auth';
-import { colors, spacing, typography } from '../../utils/theme';
+import { colors, radius, spacing, typography } from '../../utils/theme';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -176,6 +176,7 @@ function sectionProvenance(section: unknown): Provenance {
 
 export default function ProfileScreen() {
   const token = useAuthStore((s) => s.token);
+  const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
 
@@ -514,6 +515,19 @@ export default function ProfileScreen() {
           <Text style={styles.historyLinkText}>View History →</Text>
         </Pressable>
 
+        {/* Sign out */}
+        <Pressable
+          onPress={async () => {
+            await logout();
+            router.replace('/(auth)/login' as Parameters<typeof router.replace>[0]);
+          }}
+          style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+        >
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </Pressable>
+
         {/* Bottom spacer for tab bar */}
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
@@ -572,6 +586,22 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
+  },
+  signOutBtn: {
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.dangerLight,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.dangerMid,
+    alignItems: 'center',
+  },
+  signOutText: {
+    ...typography.bodyStrong,
+    color: colors.danger,
+    fontSize: 15,
   },
   chartContainer: {
     gap: spacing.sm,
