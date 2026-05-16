@@ -19,9 +19,11 @@ import {
   deriveStatus,
   getInteractions,
   listAllCabinetItems,
+  updateCabinetItem,
   type CabinetItem,
   type CreateCabinetItemInput,
   type Interaction,
+  type UpdateCabinetItemInput,
 } from '../../services/cabinet';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
@@ -41,7 +43,7 @@ const MOCK_DATA: CabinetMockItem[] = [
 
 // ─── API → card adapter ───────────────────────────────────────────────────────
 
-function apiItemToCard(item: CabinetItem, interactions: Interaction[]): CabinetMockItem & { _id: string } {
+function apiItemToCard(item: CabinetItem, interactions: Interaction[]): ApiItem {
   const hasConflict = interactions.some(
     (ix) => ix.item1 === item._id || ix.item2 === item._id,
   );
@@ -64,6 +66,7 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[]): CabinetM
     status: hasConflict ? 'conflict' : 'ok',
     stock: item.daysSupplyRemaining,
     conflictNote,
+    _source: item,
   };
 }
 
@@ -88,7 +91,7 @@ const emptyStyles = StyleSheet.create({
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-type ApiItem = CabinetMockItem & { _id: string };
+type ApiItem = CabinetMockItem & { _id: string; _source?: CabinetItem };
 
 interface ScreenState {
   items: ApiItem[];
@@ -112,6 +115,7 @@ export default function CabinetScreen() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [editingItem, setEditingItem] = useState<CabinetItem | null>(null);
 
   const load = useCallback(
     async (isRefresh = false) => {
@@ -173,6 +177,20 @@ export default function CabinetScreen() {
       setState((s) => ({ ...s, items: [card, ...s.items] }));
     },
     [token],
+  );
+
+  const handleUpdate = useCallback(
+    async (input: CreateCabinetItemInput) => {
+      if (!token || !editingItem) return;
+      const updated = await updateCabinetItem(editingItem._id, input, token);
+      const interactions = await getInteractions(token).catch(() => [] as Interaction[]);
+      const card = apiItemToCard(updated, interactions);
+      setState((s) => ({
+        ...s,
+        items: s.items.map((item) => (item._id === updated._id ? card : item)),
+      }));
+    },
+    [token, editingItem],
   );
 
   const handleDelete = useCallback(
@@ -287,6 +305,7 @@ export default function CabinetScreen() {
                     isExpanded={expandedId === left._id}
                     onToggle={() => setExpandedId((prev) => (prev === left._id ? null : left._id))}
                     onDelete={() => handleDelete(left._id)}
+                    onEdit={left._source ? () => setEditingItem(left._source!) : undefined}
                   />
                 </View>
                 <View style={styles.gridCell}>
@@ -296,6 +315,7 @@ export default function CabinetScreen() {
                       isExpanded={expandedId === right._id}
                       onToggle={() => setExpandedId((prev) => (prev === right._id ? null : right._id))}
                       onDelete={() => handleDelete(right._id)}
+                      onEdit={right._source ? () => setEditingItem(right._source!) : undefined}
                     />
                   )}
                 </View>
@@ -311,6 +331,12 @@ export default function CabinetScreen() {
         visible={showAddSheet}
         onClose={() => setShowAddSheet(false)}
         onSave={handleAdd}
+      />
+      <AddSheet
+        visible={editingItem !== null}
+        onClose={() => setEditingItem(null)}
+        onSave={handleUpdate}
+        item={editingItem}
       />
     </SafeAreaView>
   );

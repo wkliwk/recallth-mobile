@@ -22,9 +22,10 @@ interface CabinetCardProps {
   isExpanded: boolean;
   onToggle: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
-export function CabinetCard({ item, isExpanded, onToggle, onDelete }: CabinetCardProps) {
+export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: CabinetCardProps) {
   return (
     <Pressable
       onPress={onToggle}
@@ -98,6 +99,7 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete }: CabinetCar
               style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
               accessibilityRole="button"
               accessibilityLabel={`Edit ${item.name}`}
+              onPress={onEdit}
             >
               <Text style={styles.actionBtnText}>Edit</Text>
             </Pressable>
