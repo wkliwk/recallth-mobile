@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -187,6 +188,26 @@ export default function SignupScreen() {
                 </Pressable>
               </Link>
             </View>
+
+            <Text style={styles.legalText}>
+              By creating an account, you agree to our{' '}
+              <Text
+                style={styles.legalLink}
+                onPress={() => void Linking.openURL('https://recallth.app/terms')}
+                accessibilityRole="link"
+              >
+                Terms of Service
+              </Text>
+              {' '}and{' '}
+              <Text
+                style={styles.legalLink}
+                onPress={() => void Linking.openURL('https://recallth.app/privacy')}
+                accessibilityRole="link"
+              >
+                Privacy Policy
+              </Text>
+              .
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -253,4 +274,12 @@ const styles = StyleSheet.create({
   },
   footerText: { ...typography.body, color: colors.text2 },
   footerLink: { ...typography.bodyStrong, color: colors.primary },
+  legalText: {
+    ...typography.caption,
+    color: colors.text3,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    lineHeight: 18,
+  },
+  legalLink: { color: colors.primary, fontWeight: '600' },
 });

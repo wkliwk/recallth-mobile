@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -24,6 +25,7 @@ import {
   requestPermissions,
   scheduleDailyReminders,
 } from '../../services/notifications';
+import { deleteAccount } from '../../services/auth';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
@@ -50,6 +52,7 @@ function formatHHMM(date: Date): string {
 export default function SettingsScreen() {
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
+  const logout = useAuthStore((s) => s.logout);
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -280,6 +283,65 @@ export default function SettingsScreen() {
           )}
           {saving && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />}
 
+          {/* Account section */}
+          <Text style={styles.sectionLabel}>Account</Text>
+          <View style={styles.card}>
+            <Pressable
+              onPress={() => void Linking.openURL('https://recallth.app/privacy')}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+              accessibilityRole="link"
+              accessibilityLabel="Privacy Policy"
+            >
+              <Text style={styles.rowLabel}>Privacy Policy</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <View style={styles.divider} />
+            <Pressable
+              onPress={() => void Linking.openURL('https://recallth.app/terms')}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+              accessibilityRole="link"
+              accessibilityLabel="Terms of Service"
+            >
+              <Text style={styles.rowLabel}>Terms of Service</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </View>
+
+          {/* Danger zone */}
+          <Text style={styles.sectionLabel}>Danger Zone</Text>
+          <View style={styles.card}>
+            <Pressable
+              onPress={() => {
+                Alert.alert(
+                  'Delete Account',
+                  'This will permanently delete your account and all your data. This action cannot be undone.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete Account',
+                      style: 'destructive',
+                      onPress: async () => {
+                        if (!token) return;
+                        try {
+                          await deleteAccount(token);
+                          await logout();
+                          router.replace('/(auth)/login' as Parameters<typeof router.replace>[0]);
+                        } catch {
+                          Alert.alert('Error', 'Could not delete account. Please try again.');
+                        }
+                      },
+                    },
+                  ],
+                );
+              }}
+              style={({ pressed }) => [styles.deleteAccountBtn, pressed && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Delete account"
+            >
+              <Text style={styles.deleteAccountText}>Delete Account</Text>
+            </Pressable>
+          </View>
+
           <View style={{ height: spacing.xxxl }} />
         </ScrollView>
       )}
@@ -394,4 +456,14 @@ const styles = StyleSheet.create({
   saveMsg: { fontSize: 13, textAlign: 'center', marginTop: spacing.md, fontWeight: '600' },
   saveMsgOk: { color: colors.ok },
   saveMsgErr: { color: colors.danger },
+  chevron: { fontSize: 18, color: colors.text3 },
+  deleteAccountBtn: {
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  deleteAccountText: {
+    fontSize: 15,
+    color: colors.danger,
+    fontWeight: '600',
+  },
 });
