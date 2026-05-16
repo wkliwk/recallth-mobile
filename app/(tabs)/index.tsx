@@ -8,6 +8,7 @@ import { DailyCheckInCard } from '../../components/summary/DailyCheckInCard';
 import { InteractionWarningBanner } from '../../components/summary/InteractionWarningBanner';
 import { RestockAlertBanner } from '../../components/summary/RestockAlertBanner';
 import { StreakMilestoneModal } from '../../components/summary/StreakMilestoneModal';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { fetchDailyBrief } from '../../services/insights';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
@@ -66,9 +67,10 @@ function cabinetToEntry(item: CabinetItem): SupplementEntry {
 
 export default function HomeScreen() {
   const token = useAuthStore((s) => s.token);
-  const [supplements, setSupplements] = useState<SupplementEntry[]>(MOCK_SUPPLEMENTS);
+  const [supplements, setSupplements] = useState<SupplementEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
   const router = useRouter();
@@ -84,10 +86,10 @@ export default function HomeScreen() {
   const loadSupplements = useCallback(
     async (isRefresh = false, isSilent = false) => {
       if (!token) {
-        setSupplements(MOCK_SUPPLEMENTS);
         setLoading(false);
         return;
       }
+      setLoadError(false);
 
       if (isRefresh) setRefreshing(true);
       else if (!isSilent) setLoading(true);
@@ -119,6 +121,7 @@ export default function HomeScreen() {
         }
       } else {
         setSupplements([]);
+        setLoadError(true);
       }
 
       if (briefRes.status === 'fulfilled') {
@@ -219,6 +222,17 @@ export default function HomeScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError && supplements.length === 0) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ErrorState
+          message="Could not load your supplements. Check your connection and try again."
+          onRetry={() => void loadSupplements(false)}
+        />
       </SafeAreaView>
     );
   }
