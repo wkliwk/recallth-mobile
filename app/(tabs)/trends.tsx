@@ -7,7 +7,7 @@
  *   - Wellness score    (GET /wellness/score)
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import StreakCard from '../../components/trends/StreakCard';
@@ -93,9 +94,27 @@ export default function TrendsScreen() {
     [token],
   );
 
+  // Initial load.
   useEffect(() => {
     void load(false);
   }, [load]);
+
+  // Refetch streak only when tab regains focus (e.g. after tapping Summary checkboxes).
+  // Skip the very first focus event since useEffect above already loads.
+  const mountedRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!mountedRef.current) {
+        mountedRef.current = true;
+        return;
+      }
+      // Only refresh streak — avoid hammering all 3 endpoints on every tab switch.
+      if (!token) return;
+      void fetchStreak(token).then((streak) => {
+        setState((s) => ({ ...s, streak }));
+      });
+    }, [token]),
+  );
 
   if (state.loading) {
     return (
