@@ -82,6 +82,10 @@ export default function TabsLayout() {
         name="extractionReview"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
