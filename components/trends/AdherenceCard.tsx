@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { type DoseLogEntry } from '../../services/schedule';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import TrendsCard from './TrendsCard';
@@ -17,11 +17,11 @@ interface DayBar {
   count: number;
 }
 
-function buildWeekBars(logs: DoseLogEntry[], totalScheduled: number): DayBar[] {
+function buildBars(logs: DoseLogEntry[], totalScheduled: number, days = 14): DayBar[] {
   const today = new Date();
   const bars: DayBar[] = [];
 
-  for (let i = 6; i >= 0; i--) {
+  for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
@@ -42,62 +42,92 @@ function buildWeekBars(logs: DoseLogEntry[], totalScheduled: number): DayBar[] {
   return bars;
 }
 
-const BAR_HEIGHT = 80;
+function barColor(pct: number): string {
+  if (pct === 0) return colors.border;
+  if (pct >= 1) return colors.ok;
+  return colors.warning;
+}
+
+const BAR_HEIGHT = 72;
 
 export default function AdherenceCard({ logs, totalScheduled }: Props) {
-  const bars = useMemo(() => buildWeekBars(logs, totalScheduled), [logs, totalScheduled]);
-  const hasData = logs.length > 0;
+  const bars = useMemo(() => buildBars(logs, totalScheduled, 14), [logs, totalScheduled]);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+
+  const daysWithData = bars.filter((b) => b.count > 0).length;
+  const hasEnoughData = daysWithData >= 2;
 
   const avgPct = useMemo(() => {
-    const sum = bars.reduce((acc, b) => acc + b.pct, 0);
-    return Math.round((sum / bars.length) * 100);
+    const activeBars = bars.filter((b) => b.pct > 0);
+    if (activeBars.length === 0) return 0;
+    const sum = activeBars.reduce((acc, b) => acc + b.pct, 0);
+    return Math.round((sum / activeBars.length) * 100);
   }, [bars]);
 
+  const selectedBar = selectedIdx !== null ? bars[selectedIdx] : null;
+
   return (
-    <TrendsCard label="7-day adherence">
-      {hasData ? (
-        <>
-          <View style={styles.summaryRow}>
-            <Text style={styles.avgNumber}>{avgPct}%</Text>
-            <Text style={styles.avgLabel}> avg this week</Text>
-          </View>
-        </>
-      ) : (
+    <TrendsCard label="Dose Adherence — Last 14 Days">
+      {!hasEnoughData ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No doses logged yet</Text>
+          <Text style={styles.emptyTitle}>Not enough data yet</Text>
           <Text style={styles.emptyBody}>
-            Mark doses as taken on the Home tab to track weekly adherence.
+            Log doses on the Home tab for at least 2 days to see your adherence chart.
           </Text>
+        </View>
+      ) : (
+        <View style={styles.summaryRow}>
+          <Text style={styles.avgNumber}>{avgPct}%</Text>
+          <Text style={styles.avgLabel}> avg on active days</Text>
         </View>
       )}
 
+      {/* Tooltip row */}
+      <View style={styles.tooltipRow}>
+        {selectedBar !== null ? (
+          <Text style={styles.tooltip}>
+            {selectedBar.weekday} {selectedBar.date.slice(5)} — {selectedBar.count} of {totalScheduled} dose{totalScheduled !== 1 ? 's' : ''}
+          </Text>
+        ) : (
+          <Text style={styles.tooltipHint}>Tap a bar for details</Text>
+        )}
+      </View>
+
       {/* Bar chart */}
       <View style={styles.chartRow}>
-        {bars.map((bar) => (
-          <View key={bar.date} style={styles.barCol}>
+        {bars.map((bar, idx) => (
+          <Pressable
+            key={bar.date}
+            style={styles.barCol}
+            onPress={() => setSelectedIdx((prev) => (prev === idx ? null : idx))}
+            accessibilityRole="button"
+            accessibilityLabel={`${bar.weekday}: ${bar.count} of ${totalScheduled} doses`}
+          >
             <View style={styles.barTrack}>
               <View
                 style={[
                   styles.barFill,
-                  { height: BAR_HEIGHT * bar.pct },
-                  bar.isToday ? styles.barFillToday : styles.barFillPast,
-                  bar.pct === 0 && styles.barFillEmpty,
+                  { height: Math.max(BAR_HEIGHT * bar.pct, bar.pct > 0 ? 4 : 0) },
+                  { backgroundColor: barColor(bar.pct) },
+                  selectedIdx === idx && styles.barSelected,
                 ]}
               />
             </View>
             <Text style={[styles.dayLabel, bar.isToday && styles.dayLabelToday]}>
               {bar.weekday.slice(0, 1)}
             </Text>
-          </View>
+          </Pressable>
         ))}
       </View>
 
       {/* Legend */}
       <View style={styles.legend}>
-        <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-        <Text style={styles.legendText}>Today</Text>
-        <View style={[styles.legendDot, { backgroundColor: colors.text4, marginLeft: spacing.md }]} />
-        <Text style={styles.legendText}>Past days</Text>
+        <View style={[styles.legendDot, { backgroundColor: colors.ok }]} />
+        <Text style={styles.legendText}>All</Text>
+        <View style={[styles.legendDot, { backgroundColor: colors.warning, marginLeft: spacing.md }]} />
+        <Text style={styles.legendText}>Partial</Text>
+        <View style={[styles.legendDot, { backgroundColor: colors.border, marginLeft: spacing.md }]} />
+        <Text style={styles.legendText}>None</Text>
       </View>
     </TrendsCard>
   );
@@ -107,13 +137,13 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   avgNumber: {
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '700',
     color: colors.text,
-    lineHeight: 48,
+    lineHeight: 44,
   },
   avgLabel: {
     ...typography.body,
@@ -133,17 +163,31 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.text2,
   },
+  tooltipRow: {
+    minHeight: 20,
+    marginBottom: spacing.sm,
+  },
+  tooltip: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  tooltipHint: {
+    ...typography.caption,
+    color: colors.text4,
+  },
   chartRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: spacing.xs,
-    height: BAR_HEIGHT + 24,
+    gap: 3,
+    height: BAR_HEIGHT + 20,
+    marginBottom: spacing.sm,
   },
   barCol: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    height: BAR_HEIGHT + 24,
+    height: BAR_HEIGHT + 20,
   },
   barTrack: {
     width: '100%',
@@ -156,31 +200,23 @@ const styles = StyleSheet.create({
   barFill: {
     width: '100%',
     borderRadius: radius.sm,
-    minHeight: 4,
   },
-  barFillToday: {
-    backgroundColor: colors.primary,
-  },
-  barFillPast: {
-    backgroundColor: colors.text4,
-  },
-  barFillEmpty: {
-    opacity: 0,
-    minHeight: 0,
+  barSelected: {
+    opacity: 0.75,
   },
   dayLabel: {
     ...typography.caption,
     color: colors.text3,
     marginTop: 4,
+    fontSize: 9,
   },
   dayLabelToday: {
-    color: colors.primaryBright,
+    color: colors.primary,
     fontWeight: '700',
   },
   legend: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.md,
     gap: spacing.xs,
   },
   legendDot: {
