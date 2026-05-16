@@ -56,4 +56,8 @@ export async function register(email: string, password: string): Promise<AuthRes
   return unwrap(envelope);
 }
 
+export async function deleteAccount(token: string): Promise<void> {
+  await api.delete<{ success: boolean }>('/auth/account', { token });
+}
+
 export { ApiError };
