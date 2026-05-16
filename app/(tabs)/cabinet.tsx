@@ -66,6 +66,7 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[]): ApiItem 
     status: hasConflict ? 'conflict' : 'ok',
     stock: item.daysSupplyRemaining,
     conflictNote,
+    startDate: item.startDate,
     _source: item,
   };
 }
