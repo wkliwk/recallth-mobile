@@ -18,11 +18,13 @@ import {
   createCabinetItem,
   deleteCabinetItem,
   deriveStatus,
+  getEvidenceScores,
   getInteractions,
   listAllCabinetItems,
   updateCabinetItem,
   type CabinetItem,
   type CreateCabinetItemInput,
+  type EvidenceScore,
   type Interaction,
   type UpdateCabinetItemInput,
 } from '../../services/cabinet';
@@ -44,7 +46,16 @@ const MOCK_DATA: CabinetMockItem[] = [
 
 // ─── API → card adapter ───────────────────────────────────────────────────────
 
-function apiItemToCard(item: CabinetItem, interactions: Interaction[]): ApiItem {
+import type { EvidenceLevel } from '../../components/cabinet/CabinetCard';
+
+function gradeToEvidence(grade: string | undefined): { evidence: EvidenceLevel; pct: number } {
+  if (grade === 'A') return { evidence: 'High', pct: 90 };
+  if (grade === 'B') return { evidence: 'Moderate', pct: 65 };
+  if (grade === 'C') return { evidence: 'Limited', pct: 35 };
+  return { evidence: 'Limited', pct: 10 };
+}
+
+function apiItemToCard(item: CabinetItem, interactions: Interaction[], evidenceScores: EvidenceScore[]): ApiItem {
   const hasConflict = interactions.some(
     (ix) => ix.item1 === item._id || ix.item2 === item._id,
   );
@@ -57,13 +68,16 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[]): ApiItem 
   if (item.timing) scheduleArr.push(item.timing);
   const schedule = scheduleArr.join(' · ') || 'As needed';
 
+  const score = evidenceScores.find((s) => s.name.toLowerCase() === item.name.toLowerCase());
+  const { evidence, pct } = score ? gradeToEvidence(score.level) : { evidence: 'Moderate' as EvidenceLevel, pct: 60 };
+
   return {
     _id: item._id,
     name: item.name,
     dose: item.dosage ?? '—',
     schedule,
-    evidence: 'Moderate',
-    pct: 60,
+    evidence,
+    pct,
     status: hasConflict ? 'conflict' : 'ok',
     stock: item.daysSupplyRemaining,
     conflictNote,
@@ -134,9 +148,10 @@ export default function CabinetScreen() {
 
       setState((s) => ({ ...s, loading: !isRefresh, refreshing: isRefresh, error: null }));
 
-      const [itemsRes, interactionsRes] = await Promise.allSettled([
+      const [itemsRes, interactionsRes, evidenceRes] = await Promise.allSettled([
         listAllCabinetItems(token),
         getInteractions(token),
+        getEvidenceScores(token),
       ]);
 
       if (itemsRes.status === 'rejected') {
@@ -151,9 +166,10 @@ export default function CabinetScreen() {
 
       const rawItems = itemsRes.value;
       const interactions = interactionsRes.status === 'fulfilled' ? interactionsRes.value : [];
+      const evidenceScores = evidenceRes.status === 'fulfilled' ? evidenceRes.value : [];
 
       const activeItems = rawItems.filter((item) => deriveStatus(item) === 'active');
-      const cards = activeItems.map((item) => apiItemToCard(item, interactions));
+      const cards = activeItems.map((item) => apiItemToCard(item, interactions, evidenceScores));
 
       setState({
         items: cards,
@@ -184,8 +200,11 @@ export default function CabinetScreen() {
     async (input: CreateCabinetItemInput) => {
       if (!token) return;
       const newItem = await createCabinetItem(input, token);
-      const interactions = await getInteractions(token).catch(() => [] as Interaction[]);
-      const card = apiItemToCard(newItem, interactions);
+      const [interactions, evidenceScores] = await Promise.all([
+        getInteractions(token).catch(() => [] as Interaction[]),
+        getEvidenceScores(token).catch(() => [] as EvidenceScore[]),
+      ]);
+      const card = apiItemToCard(newItem, interactions, evidenceScores);
       setState((s) => ({ ...s, items: [card, ...s.items] }));
     },
     [token],
@@ -195,8 +214,11 @@ export default function CabinetScreen() {
     async (input: CreateCabinetItemInput) => {
       if (!token || !editingItem) return;
       const updated = await updateCabinetItem(editingItem._id, input, token);
-      const interactions = await getInteractions(token).catch(() => [] as Interaction[]);
-      const card = apiItemToCard(updated, interactions);
+      const [interactions, evidenceScores] = await Promise.all([
+        getInteractions(token).catch(() => [] as Interaction[]),
+        getEvidenceScores(token).catch(() => [] as EvidenceScore[]),
+      ]);
+      const card = apiItemToCard(updated, interactions, evidenceScores);
       setState((s) => ({
         ...s,
         items: s.items.map((item) => (item._id === updated._id ? card : item)),
