@@ -11,6 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -175,6 +176,7 @@ function sectionProvenance(section: unknown): Provenance {
 
 export default function ProfileScreen() {
   const token = useAuthStore((s) => s.token);
+  const router = useRouter();
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
 
   // Auto-reset success feedback after 2s
@@ -502,6 +504,16 @@ export default function ProfileScreen() {
           />
         </AccordionSection>
 
+        {/* History link */}
+        <Pressable
+          onPress={() => router.push('/(tabs)/history' as Parameters<typeof router.push>[0])}
+          style={({ pressed }) => [styles.historyLink, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="View history"
+        >
+          <Text style={styles.historyLinkText}>View History →</Text>
+        </Pressable>
+
         {/* Bottom spacer for tab bar */}
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
@@ -550,6 +562,16 @@ const styles = StyleSheet.create({
   retryText: {
     ...typography.bodyStrong,
     color: colors.text,
+  },
+  historyLink: {
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  historyLinkText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
   },
   chartContainer: {
     gap: spacing.sm,
