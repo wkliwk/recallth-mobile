@@ -30,6 +30,7 @@ import {
 import { AiSuggestion, CabinetItem, CreateCabinetItemInput, SupplementStatus, SupplementType, aiLookupSupplement, deriveStatus, statusToFields } from '../../services/cabinet';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
+import { BarcodeScannerSheet } from './BarcodeScannerSheet';
 
 type Props = {
   visible: boolean;
@@ -78,6 +79,7 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
   const [localSuggestions] = useState<string[]>(() => getRandomSuggestions(3));
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const nameInputRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
@@ -255,20 +257,30 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
               <Text style={styles.label}>
                 Name <Text style={styles.required}>*</Text>
               </Text>
-              <TextInput
-                ref={nameInputRef}
-                style={styles.input}
-                placeholder="e.g. Vitamin D3, Omega-3, Magnesium"
-                placeholderTextColor={colors.text3}
-                value={name}
-                onChangeText={handleNameChange}
-                onFocus={handleNameFocus}
-                onBlur={handleNameBlur}
-                autoCapitalize="words"
-                returnKeyType="next"
-                maxLength={100}
-                testID="input-name"
-              />
+              <View style={styles.nameRow}>
+                <TextInput
+                  ref={nameInputRef}
+                  style={[styles.input, styles.nameInput]}
+                  placeholder="e.g. Vitamin D3, Omega-3, Magnesium"
+                  placeholderTextColor={colors.text3}
+                  value={name}
+                  onChangeText={handleNameChange}
+                  onFocus={handleNameFocus}
+                  onBlur={handleNameBlur}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                  maxLength={100}
+                  testID="input-name"
+                />
+                <Pressable
+                  onPress={() => setScannerOpen(true)}
+                  style={({ pressed }) => [styles.scanBtn, pressed && { opacity: 0.7 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Scan barcode"
+                >
+                  <Text style={styles.scanBtnIcon}>⌗</Text>
+                </Pressable>
+              </View>
 
               {showSuggestions && (
                 <View style={styles.suggestions}>
@@ -436,6 +448,17 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
           </ScrollView>
         </Animated.View>
       </KeyboardAvoidingView>
+
+      <BarcodeScannerSheet
+        visible={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onResult={(product) => {
+          setName(product.name);
+          if (product.dosage) setDosage(product.dosage);
+          setScannerOpen(false);
+          setShowSuggestions(false);
+        }}
+      />
     </Modal>
   );
 }
@@ -521,6 +544,28 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     minHeight: 48,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  nameInput: {
+    flex: 1,
+  },
+  scanBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanBtnIcon: {
+    fontSize: 22,
+    color: colors.text2,
   },
   suggestions: {
     gap: spacing.sm,
