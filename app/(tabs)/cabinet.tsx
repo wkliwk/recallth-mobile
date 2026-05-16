@@ -36,14 +36,14 @@ import { colors, radius, spacing, typography } from '../../utils/theme';
 // ─── Mock fallback (unauthenticated / demo) ───────────────────────────────────
 
 const MOCK_DATA: CabinetMockItem[] = [
-  { name: 'Vitamin D3', dose: '2000 IU', schedule: 'Daily · Morning', evidence: 'High', pct: 92, status: 'ok', stock: 24 },
-  { name: 'Omega-3 EPA/DHA', dose: '1000 mg', schedule: 'Daily · Morning', evidence: 'High', pct: 95, status: 'ok', stock: 30 },
-  { name: 'Creatine monohydrate', dose: '5 g', schedule: 'Daily', evidence: 'High', pct: 96, status: 'ok', stock: 45 },
-  { name: 'Magnesium glycinate', dose: '200 mg', schedule: 'Noon + Night', evidence: 'Moderate', pct: 68, status: 'ok', stock: 18 },
-  { name: 'Ashwagandha KSM-66', dose: '600 mg', schedule: 'Night', evidence: 'Moderate', pct: 58, status: 'conflict', conflictNote: 'Mild serotonergic — flag if taking SSRI' },
-  { name: 'L-theanine', dose: '200 mg', schedule: 'With caffeine', evidence: 'Moderate', pct: 62, status: 'ok', stock: 40 },
-  { name: 'B-complex', dose: '1 cap', schedule: 'Noon', evidence: 'Limited', pct: 35, status: 'ok', stock: 60 },
-  { name: 'Zinc picolinate', dose: '15 mg', schedule: 'Noon', evidence: 'Moderate', pct: 55, status: 'conflict', conflictNote: 'May reduce Mg absorption — space 2hrs' },
+  { id: 'mock-1', name: 'Vitamin D3', dose: '2000 IU', schedule: 'Daily · Morning', evidence: 'High', pct: 92, status: 'ok', stock: 24 },
+  { id: 'mock-2', name: 'Omega-3 EPA/DHA', dose: '1000 mg', schedule: 'Daily · Morning', evidence: 'High', pct: 95, status: 'ok', stock: 30 },
+  { id: 'mock-3', name: 'Creatine monohydrate', dose: '5 g', schedule: 'Daily', evidence: 'High', pct: 96, status: 'ok', stock: 45 },
+  { id: 'mock-4', name: 'Magnesium glycinate', dose: '200 mg', schedule: 'Noon + Night', evidence: 'Moderate', pct: 68, status: 'ok', stock: 18 },
+  { id: 'mock-5', name: 'Ashwagandha KSM-66', dose: '600 mg', schedule: 'Night', evidence: 'Moderate', pct: 58, status: 'conflict', conflictNote: 'Mild serotonergic — flag if taking SSRI' },
+  { id: 'mock-6', name: 'L-theanine', dose: '200 mg', schedule: 'With caffeine', evidence: 'Moderate', pct: 62, status: 'ok', stock: 40 },
+  { id: 'mock-7', name: 'B-complex', dose: '1 cap', schedule: 'Noon', evidence: 'Limited', pct: 35, status: 'ok', stock: 60 },
+  { id: 'mock-8', name: 'Zinc picolinate', dose: '15 mg', schedule: 'Noon', evidence: 'Moderate', pct: 55, status: 'conflict', conflictNote: 'May reduce Mg absorption — space 2hrs' },
 ];
 
 // ─── API → card adapter ───────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[], evidenceS
   const { evidence, pct } = score ? gradeToEvidence(score.level) : { evidence: 'Moderate' as EvidenceLevel, pct: 60 };
 
   return {
+    id: item._id,
     _id: item._id,
     name: item.name,
     dose: item.dosage ?? '—',

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { EvidenceBar } from './EvidenceBar';
+import { SideEffectSheet } from './SideEffectSheet';
 
 export type EvidenceLevel = 'High' | 'Moderate' | 'Limited';
 export type SupplementStatus = 'ok' | 'conflict';
@@ -14,6 +15,7 @@ export interface ResearchNotes {
 }
 
 export interface CabinetMockItem {
+  id: string;
   name: string;
   dose: string;
   schedule: string;
@@ -36,7 +38,15 @@ interface CabinetCardProps {
 
 export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: CabinetCardProps) {
   const router = useRouter();
+  const [sideEffectSheetVisible, setSideEffectSheetVisible] = useState(false);
   return (
+    <>
+    <SideEffectSheet
+      visible={sideEffectSheetVisible}
+      cabinetItemId={item.id}
+      supplementName={item.name}
+      onClose={() => setSideEffectSheetVisible(false)}
+    />
     <Pressable
       onPress={onToggle}
       style={({ pressed }) => [
@@ -136,6 +146,14 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
               <Text style={styles.actionBtnText}>History</Text>
             </Pressable>
             <Pressable
+              style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Log side effect for ${item.name}`}
+              onPress={() => setSideEffectSheetVisible(true)}
+            >
+              <Text style={styles.actionBtnText}>Log Effect</Text>
+            </Pressable>
+            <Pressable
               style={({ pressed }) => [styles.actionBtn, styles.actionBtnDanger, pressed && styles.actionBtnPressed]}
               accessibilityRole="button"
               accessibilityLabel={`Remove ${item.name}`}
@@ -147,6 +165,7 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
         </View>
       )}
     </Pressable>
+    </>
   );
 }
 
