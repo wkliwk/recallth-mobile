@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -286,6 +287,30 @@ export default function SettingsScreen() {
           <Text style={styles.sectionLabel}>Account</Text>
           <View style={styles.card}>
             <Pressable
+              onPress={() => void Linking.openURL('https://recallth.app/privacy')}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+              accessibilityRole="link"
+              accessibilityLabel="Privacy Policy"
+            >
+              <Text style={styles.rowLabel}>Privacy Policy</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <View style={styles.divider} />
+            <Pressable
+              onPress={() => void Linking.openURL('https://recallth.app/terms')}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+              accessibilityRole="link"
+              accessibilityLabel="Terms of Service"
+            >
+              <Text style={styles.rowLabel}>Terms of Service</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </View>
+
+          {/* Danger zone */}
+          <Text style={styles.sectionLabel}>Danger Zone</Text>
+          <View style={styles.card}>
+            <Pressable
               onPress={() => {
                 Alert.alert(
                   'Delete Account',
@@ -431,6 +456,7 @@ const styles = StyleSheet.create({
   saveMsg: { fontSize: 13, textAlign: 'center', marginTop: spacing.md, fontWeight: '600' },
   saveMsgOk: { color: colors.ok },
   saveMsgErr: { color: colors.danger },
+  chevron: { fontSize: 18, color: colors.text3 },
   deleteAccountBtn: {
     paddingVertical: spacing.sm,
     alignItems: 'center',
