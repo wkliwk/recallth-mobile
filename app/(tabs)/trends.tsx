@@ -20,9 +20,11 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import RedundancyCard from '../../components/trends/RedundancyCard';
 import StreakCard from '../../components/trends/StreakCard';
 import WeightCard from '../../components/trends/WeightCard';
 import WellnessCard from '../../components/trends/WellnessCard';
+import { getRedundancies, type Redundancy } from '../../services/cabinet';
 import {
   fetchStreak,
   fetchWeightTrend,
@@ -38,6 +40,7 @@ interface TrendsState {
   streak: IntakeStreak | null;
   weight: WeightTrendEntry[];
   wellness: WellnessScore | null;
+  redundancies: Redundancy[];
   loading: boolean;
   refreshing: boolean;
   error: string | null;
@@ -47,6 +50,7 @@ const initialState: TrendsState = {
   streak: null,
   weight: [],
   wellness: null,
+  redundancies: [],
   loading: true,
   refreshing: false,
   error: null,
@@ -71,16 +75,18 @@ export default function TrendsScreen() {
       }));
 
       // Resolve each card independently — one endpoint failing shouldn't blank the screen.
-      const [streakRes, weightRes, wellnessRes] = await Promise.allSettled([
+      const [streakRes, weightRes, wellnessRes, redundanciesRes] = await Promise.allSettled([
         fetchStreak(token),
         fetchWeightTrend(token),
         fetchWellnessScore(token),
+        getRedundancies(token),
       ]);
 
       setState({
         streak: streakRes.status === 'fulfilled' ? streakRes.value : null,
         weight: weightRes.status === 'fulfilled' ? weightRes.value : [],
         wellness: wellnessRes.status === 'fulfilled' ? wellnessRes.value : null,
+        redundancies: redundanciesRes.status === 'fulfilled' ? redundanciesRes.value : [],
         loading: false,
         refreshing: false,
         error:
@@ -167,6 +173,7 @@ export default function TrendsScreen() {
         <StreakCard streak={state.streak} />
         <WeightCard entries={state.weight} />
         <WellnessCard score={state.wellness} />
+        <RedundancyCard redundancies={state.redundancies} />
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
