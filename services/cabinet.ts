@@ -169,3 +169,23 @@ export async function aiLookupSupplement(query: string, token: string): Promise<
   const res = await api.post<AiLookupResponse>('/cabinet/ai-lookup', { query }, { token });
   return Array.isArray(res.data) ? res.data : [];
 }
+
+// ─── Evidence Scores ──────────────────────────────────────────────────────────
+
+export type EvidenceGrade = 'A' | 'B' | 'C' | 'D';
+
+export interface EvidenceScore {
+  name: string;
+  level: EvidenceGrade;
+  rationale: string;
+}
+
+interface EvidenceScoresResponse {
+  success: boolean;
+  data: { scores: EvidenceScore[] };
+}
+
+export async function getEvidenceScores(token: string): Promise<EvidenceScore[]> {
+  const res = await api.get<EvidenceScoresResponse>('/cabinet/evidence-scores', { token });
+  return res.data?.scores ?? [];
+}
