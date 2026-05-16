@@ -78,6 +78,10 @@ export default function TabsLayout() {
         name="profile"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="extractionReview"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

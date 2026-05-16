@@ -505,6 +505,16 @@ export default function ProfileScreen() {
           />
         </AccordionSection>
 
+        {/* AI Extractions review link */}
+        <Pressable
+          onPress={() => router.push('/(tabs)/extractionReview' as Parameters<typeof router.push>[0])}
+          style={({ pressed }) => [styles.extractionReviewBtn, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Review AI extractions"
+        >
+          <Text style={styles.extractionReviewText}>Review AI Extractions →</Text>
+        </Pressable>
+
         {/* History link */}
         <Pressable
           onPress={() => router.push('/(tabs)/history' as Parameters<typeof router.push>[0])}
@@ -577,8 +587,18 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
     color: colors.text,
   },
-  historyLink: {
+  extractionReviewBtn: {
     marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  extractionReviewText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  historyLink: {
+    marginTop: spacing.sm,
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
