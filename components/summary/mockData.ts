@@ -8,6 +8,7 @@ export type SupplementEntry = {
   dose: string;
   timeBlock: TimeBlock;
   taken: boolean;
+  doseLogId?: string;
 };
 
 export const MOCK_SUPPLEMENTS: SupplementEntry[] = [
