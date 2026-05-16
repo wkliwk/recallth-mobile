@@ -45,7 +45,13 @@
           "mode": "production"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Recallth uses your camera to scan supplement barcodes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
