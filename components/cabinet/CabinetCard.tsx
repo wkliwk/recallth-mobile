@@ -44,9 +44,10 @@ interface CabinetCardProps {
   onDelete?: () => void;
   onEdit?: () => void;
   onUpdateStock?: (delta: number) => void;
+  onViewDetail?: () => void;
 }
 
-export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUpdateStock }: CabinetCardProps) {
+export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUpdateStock, onViewDetail }: CabinetCardProps) {
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
   const [sideEffectSheetVisible, setSideEffectSheetVisible] = useState(false);
@@ -286,6 +287,16 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
 
           {/* Action buttons */}
           <View style={styles.actions}>
+            {onViewDetail !== undefined && (
+              <Pressable
+                style={({ pressed }) => [styles.actionBtn, styles.actionBtnDetail, pressed && styles.actionBtnPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`View details for ${item.name}`}
+                onPress={onViewDetail}
+              >
+                <Text style={[styles.actionBtnText, styles.actionBtnTextDetail]}>Details →</Text>
+              </Pressable>
+            )}
             <Pressable
               style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
               accessibilityRole="button"
@@ -546,6 +557,13 @@ const styles = StyleSheet.create({
   actionBtnDanger: {
     backgroundColor: colors.dangerLight,
     borderColor: colors.dangerMid,
+  },
+  actionBtnDetail: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary + '40',
+  },
+  actionBtnTextDetail: {
+    color: colors.primary,
   },
   actionBtnPressed: {
     opacity: 0.7,
