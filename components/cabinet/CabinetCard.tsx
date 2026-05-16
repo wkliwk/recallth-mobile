@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { EvidenceBar } from './EvidenceBar';
 import { SideEffectSheet } from './SideEffectSheet';
+import { type DeepResearch, getSupplementResearch } from '../../services/cabinet';
+import { useAuthStore } from '../../stores/auth';
 
 export type EvidenceLevel = 'High' | 'Moderate' | 'Limited';
 export type SupplementStatus = 'ok' | 'conflict';
@@ -38,7 +40,39 @@ interface CabinetCardProps {
 
 export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: CabinetCardProps) {
   const router = useRouter();
+  const token = useAuthStore((s) => s.token);
   const [sideEffectSheetVisible, setSideEffectSheetVisible] = useState(false);
+  const [deepResearch, setDeepResearch] = useState<DeepResearch | null>(null);
+  const [loadingResearch, setLoadingResearch] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+
+  const handleFetchResearch = useCallback(async () => {
+    if (deepResearch !== null || loadingResearch || !token) return;
+    setLoadingResearch(true);
+    setResearchError(null);
+    try {
+      const { research, generating } = await getSupplementResearch(item.id, token);
+      if (research) {
+        setDeepResearch(research);
+      } else if (generating) {
+        setResearchError('Generating… check back in a moment.');
+        // Poll once after 3s
+        setTimeout(() => {
+          void getSupplementResearch(item.id, token).then(({ research: r }) => {
+            if (r) setDeepResearch(r);
+            else setResearchError('Still generating. Tap Research again shortly.');
+          }).catch(() => setResearchError('Could not load research.'));
+        }, 3000);
+      } else {
+        setResearchError('No research available yet.');
+      }
+    } catch {
+      setResearchError('Failed to load research.');
+    } finally {
+      setLoadingResearch(false);
+    }
+  }, [deepResearch, loadingResearch, token, item.id]);
+
   return (
     <>
     <SideEffectSheet
@@ -113,7 +147,7 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
             </View>
           )}
 
-          {/* Research notes */}
+          {/* Research notes (AI summary from cabinet item) */}
           {item.researchNotes !== undefined && (
             <View style={styles.researchSection}>
               <Text style={styles.researchLabel}>Research</Text>
@@ -125,6 +159,42 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
                 <Text style={styles.researchCautions}>⚠ {item.researchNotes.cautions}</Text>
               )}
             </View>
+          )}
+
+          {/* Deep research panel */}
+          {deepResearch !== null && (
+            <View style={styles.deepResearchSection}>
+              <Text style={styles.deepResearchLabel}>Deep Research</Text>
+              <Text style={styles.deepResearchSummary}>{deepResearch.summary}</Text>
+              <View style={styles.deepResearchMeta}>
+                {deepResearch.keyStudiesCount > 0 && (
+                  <Text style={styles.deepResearchMetaText}>
+                    {deepResearch.keyStudiesCount} key {deepResearch.keyStudiesCount === 1 ? 'study' : 'studies'}
+                  </Text>
+                )}
+                {deepResearch.dosageRange.length > 0 && (
+                  <Text style={styles.deepResearchMetaText}>Dosage: {deepResearch.dosageRange}</Text>
+                )}
+              </View>
+              {deepResearch.safetyNotes.length > 0 && (
+                <Text style={styles.deepResearchCautions}>⚠ {deepResearch.safetyNotes}</Text>
+              )}
+              {deepResearch.sources.length > 0 && (
+                <View style={styles.sourcesRow}>
+                  {deepResearch.sources.slice(0, 4).map((src, i) => {
+                    const domain = src.replace(/^https?:\/\//, '').split('/')[0] ?? src;
+                    return (
+                      <View key={i} style={styles.sourceChip}>
+                        <Text style={styles.sourceChipText}>{domain}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+          {researchError !== null && (
+            <Text style={styles.researchErrorText}>{researchError}</Text>
           )}
 
           {/* Action buttons */}
@@ -144,6 +214,17 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
               onPress={() => router.push('/(tabs)/history' as Parameters<typeof router.push>[0])}
             >
               <Text style={styles.actionBtnText}>History</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Deep research for ${item.name}`}
+              onPress={() => { void handleFetchResearch(); }}
+              disabled={loadingResearch}
+            >
+              {loadingResearch
+                ? <ActivityIndicator size="small" color={colors.primary} />
+                : <Text style={styles.actionBtnText}>Research</Text>}
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
@@ -352,5 +433,68 @@ const styles = StyleSheet.create({
   },
   actionBtnTextDanger: {
     color: colors.danger,
+  },
+
+  // Deep research
+  deepResearchSection: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  deepResearchLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
+  },
+  deepResearchSummary: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
+  },
+  deepResearchMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  deepResearchMetaText: {
+    fontSize: 12,
+    color: colors.text2,
+  },
+  deepResearchCautions: {
+    fontSize: 12,
+    color: colors.warning,
+    marginTop: spacing.xs,
+    lineHeight: 17,
+  },
+  sourcesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  sourceChip: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sourceChipText: {
+    fontSize: 10,
+    color: colors.text3,
+  },
+  researchErrorText: {
+    fontSize: 12,
+    color: colors.text3,
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
   },
 });
