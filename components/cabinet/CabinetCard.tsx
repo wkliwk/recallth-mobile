@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { EvidenceBar } from './EvidenceBar';
@@ -27,6 +28,7 @@ interface CabinetCardProps {
 }
 
 export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: CabinetCardProps) {
+  const router = useRouter();
   return (
     <Pressable
       onPress={onToggle}
@@ -108,6 +110,7 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
               style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
               accessibilityRole="button"
               accessibilityLabel={`History for ${item.name}`}
+              onPress={() => router.push('/(tabs)/history' as Parameters<typeof router.push>[0])}
             >
               <Text style={styles.actionBtnText}>History</Text>
             </Pressable>
