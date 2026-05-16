@@ -1,19 +1,8 @@
-/**
- * Cabinet screen — B·Health 2-column grid rebuild.
- *
- * Displays static mock data in a 2-column card grid with:
- *   - Header: active count · conflict count + "+ Add" button
- *   - Full-width search bar (orange focus border)
- *   - 2-column grid of CabinetCard components
- *   - Card expand/collapse showing stats + action buttons
- *   - Empty search state
- *
- * API wiring deferred to follow-up issue.
- */
-
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,11 +12,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CabinetCard } from '../../components/cabinet/CabinetCard';
 import type { CabinetMockItem } from '../../components/cabinet/CabinetCard';
+import {
+  deleteCabinetItem,
+  deriveStatus,
+  getInteractions,
+  listAllCabinetItems,
+  type CabinetItem,
+  type Interaction,
+} from '../../services/cabinet';
+import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Mock fallback (unauthenticated / demo) ───────────────────────────────────
 
-const CABINET_DATA: CabinetMockItem[] = [
+const MOCK_DATA: CabinetMockItem[] = [
   { name: 'Vitamin D3', dose: '2000 IU', schedule: 'Daily · Morning', evidence: 'High', pct: 92, status: 'ok', stock: 24 },
   { name: 'Omega-3 EPA/DHA', dose: '1000 mg', schedule: 'Daily · Morning', evidence: 'High', pct: 95, status: 'ok', stock: 30 },
   { name: 'Creatine monohydrate', dose: '5 g', schedule: 'Daily', evidence: 'High', pct: 96, status: 'ok', stock: 45 },
@@ -38,56 +36,169 @@ const CABINET_DATA: CabinetMockItem[] = [
   { name: 'Zinc picolinate', dose: '15 mg', schedule: 'Noon', evidence: 'Moderate', pct: 55, status: 'conflict', conflictNote: 'May reduce Mg absorption — space 2hrs' },
 ];
 
-// ─── Search empty state ───────────────────────────────────────────────────────
+// ─── API → card adapter ───────────────────────────────────────────────────────
 
-function SearchEmptyState({ query }: { query: string }) {
+function apiItemToCard(item: CabinetItem, interactions: Interaction[]): CabinetMockItem & { _id: string } {
+  const hasConflict = interactions.some(
+    (ix) => ix.item1 === item._id || ix.item2 === item._id,
+  );
+  const conflictNote = hasConflict
+    ? interactions.find((ix) => ix.item1 === item._id || ix.item2 === item._id)?.description
+    : undefined;
+
+  const scheduleArr: string[] = [];
+  if (item.frequency) scheduleArr.push(item.frequency);
+  if (item.timing) scheduleArr.push(item.timing);
+  const schedule = scheduleArr.join(' · ') || 'As needed';
+
+  return {
+    _id: item._id,
+    name: item.name,
+    dose: item.dosage ?? '—',
+    schedule,
+    evidence: 'Moderate',
+    pct: 60,
+    status: hasConflict ? 'conflict' : 'ok',
+    stock: item.daysSupplyRemaining,
+    conflictNote,
+  };
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function SearchEmptyState({ query, isEmpty }: { query: string; isEmpty: boolean }) {
   return (
     <View style={emptyStyles.container}>
-      <Text style={emptyStyles.text}>No supplements match &ldquo;{query}&rdquo;</Text>
+      <Text style={emptyStyles.text}>
+        {isEmpty
+          ? 'No supplements in your cabinet yet.\nTap "+ Add" to get started.'
+          : `No supplements match "${query}"`}
+      </Text>
     </View>
   );
 }
 
 const emptyStyles = StyleSheet.create({
-  container: {
-    paddingTop: 40,
-    alignItems: 'center',
-  },
-  text: {
-    ...typography.body,
-    color: colors.text2,
-    textAlign: 'center',
-  },
+  container: { paddingTop: 40, alignItems: 'center' },
+  text: { ...typography.body, color: colors.text2, textAlign: 'center', lineHeight: 22 },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
+type ApiItem = CabinetMockItem & { _id: string };
+
+interface ScreenState {
+  items: ApiItem[];
+  loading: boolean;
+  refreshing: boolean;
+  usedMock: boolean;
+  error: string | null;
+}
+
 export default function CabinetScreen() {
+  const token = useAuthStore((s) => s.token);
+
+  const [state, setState] = useState<ScreenState>({
+    items: [],
+    loading: true,
+    refreshing: false,
+    usedMock: false,
+    error: null,
+  });
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
-  const [expandedName, setExpandedName] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const activeCount = CABINET_DATA.length;
-  const conflictCount = CABINET_DATA.filter((x) => x.status === 'conflict').length;
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (!token) {
+        setState({
+          items: MOCK_DATA.map((m, i) => ({ ...m, _id: `mock-${i}` })),
+          loading: false,
+          refreshing: false,
+          usedMock: true,
+          error: null,
+        });
+        return;
+      }
+
+      setState((s) => ({ ...s, loading: !isRefresh, refreshing: isRefresh, error: null }));
+
+      const [itemsRes, interactionsRes] = await Promise.allSettled([
+        listAllCabinetItems(token),
+        getInteractions(token),
+      ]);
+
+      if (itemsRes.status === 'rejected') {
+        setState((s) => ({
+          ...s,
+          loading: false,
+          refreshing: false,
+          error: 'Could not load cabinet. Pull to refresh.',
+        }));
+        return;
+      }
+
+      const rawItems = itemsRes.value;
+      const interactions = interactionsRes.status === 'fulfilled' ? interactionsRes.value : [];
+
+      const activeItems = rawItems.filter((item) => deriveStatus(item) === 'active');
+      const cards = activeItems.map((item) => apiItemToCard(item, interactions));
+
+      setState({
+        items: cards,
+        loading: false,
+        refreshing: false,
+        usedMock: false,
+        error: null,
+      });
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    void load(false);
+  }, [load]);
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      // Optimistic removal.
+      setState((s) => ({ ...s, items: s.items.filter((item) => item._id !== id) }));
+      if (!token || id.startsWith('mock-')) return;
+      void deleteCabinetItem(id, token).catch(() => {
+        // Reload to restore removed item if delete failed.
+        void load(false);
+      });
+    },
+    [token, load],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return CABINET_DATA;
-    return CABINET_DATA.filter((item) => item.name.toLowerCase().includes(q));
-  }, [search]);
+    if (!q) return state.items;
+    return state.items.filter((item) => item.name.toLowerCase().includes(q));
+  }, [search, state.items]);
 
-  const handleToggle = useCallback((name: string) => {
-    setExpandedName((prev) => (prev === name ? null : name));
-  }, []);
-
-  // Build pairs for the 2-column grid layout
   const rows = useMemo(() => {
-    const pairs: [CabinetMockItem, CabinetMockItem | null][] = [];
+    const pairs: [ApiItem, ApiItem | null][] = [];
     for (let i = 0; i < filtered.length; i += 2) {
       pairs.push([filtered[i], filtered[i + 1] ?? null]);
     }
     return pairs;
   }, [filtered]);
+
+  const activeCount = state.items.length;
+  const conflictCount = state.items.filter((x) => x.status === 'conflict').length;
+
+  if (state.loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -96,12 +207,20 @@ export default function CabinetScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={state.refreshing}
+            onRefresh={() => void load(true)}
+            tintColor={colors.primary}
+          />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.headerSub}>
-              {activeCount} active · {conflictCount} conflicts
+              {activeCount} active · {conflictCount} conflict{conflictCount !== 1 ? 's' : ''}
+              {state.usedMock && ' · demo'}
             </Text>
             <Text style={styles.headerTitle}>Cabinet</Text>
           </View>
@@ -114,13 +233,15 @@ export default function CabinetScreen() {
           </Pressable>
         </View>
 
+        {/* Error banner */}
+        {state.error !== null && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{state.error}</Text>
+          </View>
+        )}
+
         {/* Search bar */}
-        <View
-          style={[
-            styles.searchBar,
-            searchFocused && styles.searchBarFocused,
-          ]}
-        >
+        <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
           <Text style={styles.searchIcon}>⌕</Text>
           <TextInput
             style={styles.searchInput}
@@ -143,20 +264,22 @@ export default function CabinetScreen() {
         {filtered.length > 0 ? (
           <View style={styles.grid}>
             {rows.map(([left, right]) => (
-              <View key={left.name} style={styles.gridRow}>
+              <View key={left._id} style={styles.gridRow}>
                 <View style={styles.gridCell}>
                   <CabinetCard
                     item={left}
-                    isExpanded={expandedName === left.name}
-                    onToggle={() => handleToggle(left.name)}
+                    isExpanded={expandedId === left._id}
+                    onToggle={() => setExpandedId((prev) => (prev === left._id ? null : left._id))}
+                    onDelete={() => handleDelete(left._id)}
                   />
                 </View>
                 <View style={styles.gridCell}>
                   {right !== null && (
                     <CabinetCard
                       item={right}
-                      isExpanded={expandedName === right.name}
-                      onToggle={() => handleToggle(right.name)}
+                      isExpanded={expandedId === right._id}
+                      onToggle={() => setExpandedId((prev) => (prev === right._id ? null : right._id))}
+                      onDelete={() => handleDelete(right._id)}
                     />
                   )}
                 </View>
@@ -164,7 +287,7 @@ export default function CabinetScreen() {
             ))}
           </View>
         ) : (
-          <SearchEmptyState query={search} />
+          <SearchEmptyState query={search} isEmpty={state.items.length === 0} />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -174,19 +297,14 @@ export default function CabinetScreen() {
 const GRID_GAP = 12;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing.screenPad,
     paddingBottom: spacing.xxxl,
   },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -214,16 +332,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addButtonPressed: {
-    opacity: 0.85,
-  },
-  addButtonText: {
-    ...typography.bodyStrong,
-    fontSize: 14,
-    color: '#ffffff',
-  },
+  addButtonPressed: { opacity: 0.85 },
+  addButtonText: { ...typography.bodyStrong, fontSize: 14, color: '#ffffff' },
 
-  // Search
+  errorBanner: {
+    backgroundColor: colors.dangerLight,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  errorText: { ...typography.bodySmall, color: colors.danger },
+
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -236,30 +355,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     gap: spacing.sm,
   },
-  searchBarFocused: {
-    borderColor: colors.primary,
-  },
-  searchIcon: {
-    fontSize: 18,
-    color: colors.text3,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text,
-    paddingVertical: 0,
-  },
+  searchBarFocused: { borderColor: colors.primary },
+  searchIcon: { fontSize: 18, color: colors.text3 },
+  searchInput: { flex: 1, ...typography.body, color: colors.text, paddingVertical: 0 },
 
-  // Grid
-  grid: {
-    gap: GRID_GAP,
-  },
-  gridRow: {
-    flexDirection: 'row',
-    gap: GRID_GAP,
-  },
-  gridCell: {
-    flex: 1,
-    minHeight: 0,
-  },
+  grid: { gap: GRID_GAP },
+  gridRow: { flexDirection: 'row', gap: GRID_GAP },
+  gridCell: { flex: 1, minHeight: 0 },
 });
