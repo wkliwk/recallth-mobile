@@ -83,6 +83,8 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[], evidenceS
     pct,
     status: hasConflict ? 'conflict' : 'ok',
     stock: item.daysSupplyRemaining,
+    quantityRemaining: item.quantityRemaining,
+    dailyDoseCount: item.dailyDoseCount,
     conflictNote,
     startDate: item.startDate,
     researchNotes: item.researchNotes,
@@ -238,6 +240,29 @@ export default function CabinetScreen() {
     [token, editingItem],
   );
 
+  const handleUpdateStock = useCallback(
+    (id: string, deltadays: number) => {
+      if (!token || id.startsWith('mock-')) return;
+      setState((s) => {
+        const item = s.items.find((x) => x._id === id);
+        if (!item) return s;
+        const dailyDoseCount = item._source?.dailyDoseCount ?? 1;
+        const currentQty = item._source?.quantityRemaining ?? 0;
+        const newQty = Math.max(0, currentQty + deltadays * dailyDoseCount);
+        const newDaysSupply = dailyDoseCount > 0 ? Math.floor(newQty / dailyDoseCount) : 0;
+        const updatedSource = item._source
+          ? { ...item._source, quantityRemaining: newQty, daysSupplyRemaining: newDaysSupply }
+          : item._source;
+        const updatedItem: typeof item = { ...item, stock: newDaysSupply, _source: updatedSource };
+        void updateCabinetItem(id, { quantityRemaining: newQty }, token).catch(() => {
+          void load(false, true);
+        });
+        return { ...s, items: s.items.map((x) => (x._id === id ? updatedItem : x)) };
+      });
+    },
+    [token, load],
+  );
+
   const handleDelete = useCallback(
     (id: string) => {
       // Optimistic removal.
@@ -371,6 +396,7 @@ export default function CabinetScreen() {
                     onToggle={() => setExpandedId((prev) => (prev === left._id ? null : left._id))}
                     onDelete={() => handleDelete(left._id)}
                     onEdit={left._source ? () => setEditingItem(left._source!) : undefined}
+                    onUpdateStock={left._source ? (delta) => handleUpdateStock(left._id, delta) : undefined}
                   />
                 </View>
                 <View style={styles.gridCell}>
@@ -381,6 +407,7 @@ export default function CabinetScreen() {
                       onToggle={() => setExpandedId((prev) => (prev === right._id ? null : right._id))}
                       onDelete={() => handleDelete(right._id)}
                       onEdit={right._source ? () => setEditingItem(right._source!) : undefined}
+                      onUpdateStock={right._source ? (delta) => handleUpdateStock(right._id, delta) : undefined}
                     />
                   )}
                 </View>

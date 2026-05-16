@@ -26,6 +26,8 @@ export interface CabinetMockItem {
   pct: number;
   status: SupplementStatus;
   stock?: number;
+  quantityRemaining?: number;
+  dailyDoseCount?: number;
   conflictNote?: string;
   startDate?: string;
   researchNotes?: ResearchNotes;
@@ -37,9 +39,10 @@ interface CabinetCardProps {
   onToggle: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  onUpdateStock?: (delta: number) => void;
 }
 
-export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: CabinetCardProps) {
+export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUpdateStock }: CabinetCardProps) {
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
   const [sideEffectSheetVisible, setSideEffectSheetVisible] = useState(false);
@@ -48,6 +51,8 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
   const [researchError, setResearchError] = useState<string | null>(null);
   const [sideEffects, setSideEffects] = useState<SideEffectEntry[]>([]);
   const sideEffectsLoaded = useRef(false);
+  const [localStock, setLocalStock] = useState<number | undefined>(item.stock);
+  const stockDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load side effects once when card first expands
   useEffect(() => {
@@ -82,6 +87,18 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
       setLoadingResearch(false);
     }
   }, [deepResearch, loadingResearch, token, item.id]);
+
+  const handleStockChange = useCallback((delta: number) => {
+    setLocalStock((prev) => {
+      const current = prev ?? 0;
+      const next = Math.max(0, current + delta);
+      if (stockDebounce.current) clearTimeout(stockDebounce.current);
+      stockDebounce.current = setTimeout(() => {
+        onUpdateStock?.(delta);
+      }, 800);
+      return next;
+    });
+  }, [onUpdateStock]);
 
   return (
     <>
@@ -136,9 +153,33 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>STOCK</Text>
-              <Text style={styles.statValue}>
-                {item.stock !== undefined ? `${item.stock}d` : '—'}
-              </Text>
+              <View style={styles.stockRow}>
+                <Text style={styles.statValue}>
+                  {localStock !== undefined ? `${localStock}d` : '—'}
+                </Text>
+                {onUpdateStock !== undefined && (
+                  <View style={styles.stockStepper}>
+                    <Pressable
+                      style={({ pressed }) => [styles.stepperBtn, pressed && styles.stepperBtnPressed]}
+                      onPress={() => handleStockChange(-1)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Remove 1 day of stock"
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.stepperBtnText}>−</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [styles.stepperBtn, styles.stepperBtnAdd, pressed && styles.stepperBtnPressed]}
+                      onPress={() => handleStockChange(30)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Add 30 days of stock"
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={[styles.stepperBtnText, styles.stepperBtnAddText]}>+30</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
             </View>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>SINCE</Text>
@@ -391,6 +432,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text,
     marginTop: 2,
+  },
+  stockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: 2,
+  },
+  stockStepper: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  stepperBtn: {
+    height: 24,
+    minWidth: 24,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.sm,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnAdd: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary + '60',
+  },
+  stepperBtnPressed: {
+    opacity: 0.6,
+  },
+  stepperBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text2,
+    lineHeight: 16,
+  },
+  stepperBtnAddText: {
+    color: colors.primary,
   },
   conflictNote: {
     marginTop: spacing.md,

@@ -48,6 +48,8 @@ export interface CabinetItem {
   imageUrl?: string;
   researchNotes?: ResearchNotes;
   daysSupplyRemaining?: number;
+  quantityRemaining?: number;
+  dailyDoseCount?: number;
   lowSupplyWarning?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -76,7 +78,10 @@ export type CreateCabinetItemInput = {
   source?: SupplementSource;
 };
 
-export type UpdateCabinetItemInput = Partial<CreateCabinetItemInput>;
+export type UpdateCabinetItemInput = Partial<CreateCabinetItemInput> & {
+  quantityRemaining?: number;
+  dailyDoseCount?: number;
+};
 
 interface ApiResponse<T> {
   success: boolean;
