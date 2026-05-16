@@ -10,7 +10,7 @@
  *     - Goals accordion
  */
 
-import React, { useCallback, useEffect, useReducer, useRef } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AccordionSection from '../../components/profile/AccordionSection';
+import { BloodworkSection } from '../../components/profile/BloodworkSection';
 import CompletenessBar from '../../components/profile/CompletenessBar';
 import ProfileField from '../../components/profile/ProfileField';
 import WeightLogChart from '../../components/profile/WeightLogChart';
@@ -43,6 +44,7 @@ import {
   updateProfile,
 } from '../../services/profile';
 import { useAuthStore } from '../../stores/auth';
+import { listBloodwork, type BloodworkEntry } from '../../services/bloodwork';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -179,6 +181,7 @@ export default function ProfileScreen() {
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const [bloodworkEntries, setBloodworkEntries] = useState<BloodworkEntry[]>([]);
 
   // Auto-reset success feedback after 2s
   const successTimers = useRef<Record<SectionKey, ReturnType<typeof setTimeout> | null>>({
@@ -193,10 +196,12 @@ export default function ProfileScreen() {
       if (!token) return;
       dispatch({ type: isRefresh ? 'REFRESH_START' : 'LOAD_START' });
       try {
-        const [profile, weightLog] = await Promise.all([
+        const [profile, weightLog, bloodwork] = await Promise.all([
           fetchProfile(token),
           fetchWeightLog(token, 30),
+          listBloodwork(token).catch(() => [] as BloodworkEntry[]),
         ]);
+        setBloodworkEntries(bloodwork);
         dispatch({ type: 'LOAD_SUCCESS', profile, weightLog });
       } catch (err) {
         const message =
@@ -504,6 +509,17 @@ export default function ProfileScreen() {
             editable
           />
         </AccordionSection>
+
+        {/* Bloodwork */}
+        {token !== null && (
+          <AccordionSection title="Bloodwork" provenance="user_edited" defaultOpen={false}>
+            <BloodworkSection
+              token={token}
+              entries={bloodworkEntries}
+              onEntryAdded={(entry) => setBloodworkEntries((prev) => [...prev, entry])}
+            />
+          </AccordionSection>
+        )}
 
         {/* Settings link */}
         <Pressable
