@@ -505,6 +505,16 @@ export default function ProfileScreen() {
           />
         </AccordionSection>
 
+        {/* Settings link */}
+        <Pressable
+          onPress={() => router.push('/(tabs)/settings' as Parameters<typeof router.push>[0])}
+          style={({ pressed }) => [styles.extractionReviewBtn, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Open settings"
+        >
+          <Text style={styles.extractionReviewText}>Settings →</Text>
+        </Pressable>
+
         {/* AI Extractions review link */}
         <Pressable
           onPress={() => router.push('/(tabs)/extractionReview' as Parameters<typeof router.push>[0])}
