@@ -1,23 +1,8 @@
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, Text } from 'react-native';
+import { Platform } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { colors } from '../../utils/theme';
-
-function SummaryIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>◉</Text>;
-}
-
-function ChatIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>◎</Text>;
-}
-
-function CabinetIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>◇</Text>;
-}
-
-function TrendsIcon({ color }: { color: string }) {
-  return <Text style={[styles.tabIcon, { color }]}>△</Text>;
-}
 
 export default function TabsLayout() {
   return (
@@ -45,28 +30,36 @@ export default function TabsLayout() {
         name="index"
         options={{
           tabBarLabel: 'Summary',
-          tabBarIcon: ({ color }) => <SummaryIcon color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           tabBarLabel: 'Chat',
-          tabBarIcon: ({ color }) => <ChatIcon color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="cabinet"
         options={{
           tabBarLabel: 'Cabinet',
-          tabBarIcon: ({ color }) => <CabinetIcon color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="flask-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="trends"
         options={{
           tabBarLabel: 'Trends',
-          tabBarIcon: ({ color }) => <TrendsIcon color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart-outline" color={color} size={size} />
+          ),
         }}
       />
       {/* Hidden from tab bar — accessible via deep link */}
@@ -89,10 +82,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabIcon: {
-    fontSize: 20,
-    lineHeight: 24,
-  },
-});
