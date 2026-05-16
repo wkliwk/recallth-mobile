@@ -20,12 +20,14 @@ import {
   deriveStatus,
   getEvidenceScores,
   getInteractions,
+  getRestockAlerts,
   listAllCabinetItems,
   updateCabinetItem,
   type CabinetItem,
   type CreateCabinetItemInput,
   type EvidenceScore,
   type Interaction,
+  type RestockAlert,
   type UpdateCabinetItemInput,
 } from '../../services/cabinet';
 import { useAuthStore } from '../../stores/auth';
@@ -111,6 +113,7 @@ type ApiItem = CabinetMockItem & { _id: string; _source?: CabinetItem };
 
 interface ScreenState {
   items: ApiItem[];
+  restockAlerts: RestockAlert[];
   loading: boolean;
   refreshing: boolean;
   usedMock: boolean;
@@ -122,6 +125,7 @@ export default function CabinetScreen() {
 
   const [state, setState] = useState<ScreenState>({
     items: [],
+    restockAlerts: [],
     loading: true,
     refreshing: false,
     usedMock: false,
@@ -132,12 +136,14 @@ export default function CabinetScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [editingItem, setEditingItem] = useState<CabinetItem | null>(null);
+  const [restockDismissed, setRestockDismissed] = useState(false);
 
   const load = useCallback(
     async (isRefresh = false) => {
       if (!token) {
         setState({
           items: MOCK_DATA.map((m, i) => ({ ...m, _id: `mock-${i}` })),
+          restockAlerts: [],
           loading: false,
           refreshing: false,
           usedMock: true,
@@ -148,10 +154,11 @@ export default function CabinetScreen() {
 
       setState((s) => ({ ...s, loading: !isRefresh, refreshing: isRefresh, error: null }));
 
-      const [itemsRes, interactionsRes, evidenceRes] = await Promise.allSettled([
+      const [itemsRes, interactionsRes, evidenceRes, restockRes] = await Promise.allSettled([
         listAllCabinetItems(token),
         getInteractions(token),
         getEvidenceScores(token),
+        getRestockAlerts(token),
       ]);
 
       if (itemsRes.status === 'rejected') {
@@ -167,12 +174,14 @@ export default function CabinetScreen() {
       const rawItems = itemsRes.value;
       const interactions = interactionsRes.status === 'fulfilled' ? interactionsRes.value : [];
       const evidenceScores = evidenceRes.status === 'fulfilled' ? evidenceRes.value : [];
+      const restockAlerts = restockRes.status === 'fulfilled' ? restockRes.value : [];
 
       const activeItems = rawItems.filter((item) => deriveStatus(item) === 'active');
       const cards = activeItems.map((item) => apiItemToCard(item, interactions, evidenceScores));
 
       setState({
         items: cards,
+        restockAlerts,
         loading: false,
         refreshing: false,
         usedMock: false,
@@ -308,6 +317,26 @@ export default function CabinetScreen() {
           </View>
         )}
 
+        {/* Restock alerts banner */}
+        {!restockDismissed && state.restockAlerts.length > 0 && (
+          <View style={styles.restockBanner}>
+            <View style={styles.restockContent}>
+              <Text style={styles.restockTitle}>⚠ Running low</Text>
+              <Text style={styles.restockText}>
+                {state.restockAlerts.map((a) => `${a.name} (${a.daysSupplyRemaining}d)`).join(' · ')}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setRestockDismissed(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss restock alert"
+            >
+              <Text style={styles.restockDismiss}>✕</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Search bar */}
         <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
           <Text style={styles.searchIcon}>⌕</Text>
@@ -424,6 +453,25 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   errorText: { ...typography.bodySmall, color: colors.danger },
+
+  restockBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warningLight,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  restockContent: { flex: 1 },
+  restockTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.warning,
+    marginBottom: 2,
+  },
+  restockText: { ...typography.bodySmall, color: colors.text2, lineHeight: 18 },
+  restockDismiss: { fontSize: 14, color: colors.text3, fontWeight: '600' },
 
   searchBar: {
     flexDirection: 'row',
