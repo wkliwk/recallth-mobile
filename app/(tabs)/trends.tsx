@@ -21,11 +21,13 @@ import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AdherenceCard from '../../components/trends/AdherenceCard';
+import MoodEnergyCard from '../../components/trends/MoodEnergyCard';
 import RedundancyCard from '../../components/trends/RedundancyCard';
 import StreakCard from '../../components/trends/StreakCard';
 import WeightCard from '../../components/trends/WeightCard';
 import WellnessCard from '../../components/trends/WellnessCard';
 import { getRedundancies, listCabinetItems, type Redundancy } from '../../services/cabinet';
+import { getJournalEntries, type JournalEntry } from '../../services/journal';
 import { getDoseLogsRange, type DoseLogEntry } from '../../services/schedule';
 import {
   fetchStreak,
@@ -45,6 +47,7 @@ interface TrendsState {
   redundancies: Redundancy[];
   weekLogs: DoseLogEntry[];
   weekScheduled: number;
+  journalEntries: JournalEntry[];
   loading: boolean;
   refreshing: boolean;
   error: string | null;
@@ -57,6 +60,7 @@ const initialState: TrendsState = {
   redundancies: [],
   weekLogs: [],
   weekScheduled: 0,
+  journalEntries: [],
   loading: true,
   refreshing: false,
   error: null,
@@ -84,13 +88,14 @@ export default function TrendsScreen() {
       const today = new Date().toISOString().slice(0, 10);
       const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-      const [streakRes, weightRes, wellnessRes, redundanciesRes, weekLogsRes, cabinetRes] = await Promise.allSettled([
+      const [streakRes, weightRes, wellnessRes, redundanciesRes, weekLogsRes, cabinetRes, journalRes] = await Promise.allSettled([
         fetchStreak(token),
         fetchWeightTrend(token),
         fetchWellnessScore(token),
         getRedundancies(token),
         getDoseLogsRange(token, weekAgo, today),
         listCabinetItems(token),
+        getJournalEntries(token, 7),
       ]);
 
       const weekLogs = weekLogsRes.status === 'fulfilled' ? weekLogsRes.value : [];
@@ -104,6 +109,7 @@ export default function TrendsScreen() {
         redundancies: redundanciesRes.status === 'fulfilled' ? redundanciesRes.value : [],
         weekLogs,
         weekScheduled: cabinetCount,
+        journalEntries: journalRes.status === 'fulfilled' ? journalRes.value : [],
         loading: false,
         refreshing: false,
         error:
@@ -189,6 +195,7 @@ export default function TrendsScreen() {
 
         <StreakCard streak={state.streak} />
         <AdherenceCard logs={state.weekLogs} totalScheduled={state.weekScheduled} />
+        <MoodEnergyCard entries={state.journalEntries} />
         <WeightCard entries={state.weight} />
         <WellnessCard score={state.wellness} />
         <RedundancyCard redundancies={state.redundancies} />

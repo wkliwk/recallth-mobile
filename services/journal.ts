@@ -36,3 +36,8 @@ export async function getTodayJournal(token: string): Promise<JournalEntry | nul
   const today = new Date().toISOString().slice(0, 10);
   return entries.find((e) => e.date === today) ?? null;
 }
+
+export async function getJournalEntries(token: string, days = 7): Promise<JournalEntry[]> {
+  const res = await api.get<JournalListResponse>(`/journal?days=${days}`, { token });
+  return Array.isArray(res.data) ? res.data : [];
+}
