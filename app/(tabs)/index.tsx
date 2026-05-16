@@ -6,9 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AISuggestionBanner } from '../../components/summary/AISuggestionBanner';
 import { DailyCheckInCard } from '../../components/summary/DailyCheckInCard';
 import { InteractionWarningBanner } from '../../components/summary/InteractionWarningBanner';
+import { NotificationNudgeModal } from '../../components/summary/NotificationNudgeModal';
 import { RestockAlertBanner } from '../../components/summary/RestockAlertBanner';
 import { StreakMilestoneModal } from '../../components/summary/StreakMilestoneModal';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
 import { fetchDailyBrief } from '../../services/insights';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
@@ -80,6 +82,7 @@ export default function HomeScreen() {
   const [restockNames, setRestockNames] = useState<string[]>([]);
   const userId = useAuthStore((s) => s.user?.userId ?? null);
   const [milestoneDays, setMilestoneDays] = useState<number | null>(null);
+  const [showNotifNudge, setShowNotifNudge] = useState(false);
 
   const MILESTONES = [7, 30, 100];
 
@@ -180,10 +183,22 @@ export default function HomeScreen() {
 
       if (becameTaken) {
         // Log the specific dose + call streak endpoint on first mark of the day.
-        void logDose(token, id, target.name, target.timeBlock).then((log) => {
+        void logDose(token, id, target.name, target.timeBlock).then(async (log) => {
           setSupplements((prev) =>
             prev.map((s) => (s.id === id ? { ...s, doseLogId: log._id } : s)),
           );
+          // Show notification nudge after first-ever dose log if permission not yet granted.
+          const nudgeKey = `recallth:notif-nudge-shown:${userId ?? 'anon'}`;
+          const alreadyShown = await storage.getItem(nudgeKey);
+          if (!alreadyShown) {
+            const { status } = await import('expo-notifications').then((m) =>
+              m.getPermissionsAsync(),
+            );
+            if (status !== 'granted') {
+              await storage.setItem(nudgeKey, 'true');
+              setShowNotifNudge(true);
+            }
+          }
         }).catch(() => {
           setSupplements((prev) =>
             prev.map((s) => (s.id === id ? { ...s, taken: false, doseLogId: undefined } : s)),
@@ -326,6 +341,19 @@ export default function HomeScreen() {
           onDismiss={() => setMilestoneDays(null)}
         />
       )}
+
+      <NotificationNudgeModal
+        visible={showNotifNudge}
+        onNotNow={() => setShowNotifNudge(false)}
+        onSure={async () => {
+          setShowNotifNudge(false);
+          const status = await requestPermissions();
+          if (status === 'granted') {
+            // Schedule a default 9am reminder if no times configured yet.
+            await scheduleDailyReminders(['09:00']);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
