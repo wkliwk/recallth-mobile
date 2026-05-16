@@ -1,24 +1,78 @@
 /**
  * Done screen — shown after completing the 3-step onboarding.
- * "You're set up — ask Recallth anything" + CTA into Chat.
+ * Persists profile stats + cabinet items to the backend, then
+ * shows the "You're set up" success state with a CTA into Chat.
  */
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { seedProfile, seedSupplements } from '../../services/onboarding';
+import { useAuthStore } from '../../stores/auth';
 import { useOnboardingStore } from '../../stores/onboarding';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 export default function DoneScreen() {
   const router = useRouter();
+  const token = useAuthStore((s) => s.token);
   const goal = useOnboardingStore((s) => s.goal);
   const cabinetItems = useOnboardingStore((s) => s.cabinetItems);
+  const heightCm = useOnboardingStore((s) => s.heightCm);
+  const weightKg = useOnboardingStore((s) => s.weightKg);
+  const sex = useOnboardingStore((s) => s.sex);
+  const age = useOnboardingStore((s) => s.age);
+  const markSeen = useOnboardingStore((s) => s.markSeen);
+
+  const [saving, setSaving] = useState(true);
+  const savedRef = useRef(false);
+
+  useEffect(() => {
+    if (savedRef.current) return;
+    savedRef.current = true;
+
+    async function persist() {
+      try {
+        if (token) {
+          await Promise.allSettled([
+            seedProfile(
+              {
+                height_cm: heightCm ? parseFloat(heightCm) : undefined,
+                weight_kg: weightKg ? parseFloat(weightKg) : undefined,
+                sex: sex ?? undefined,
+                age: age ? parseInt(age, 10) : undefined,
+                primary_goal: goal ?? undefined,
+              },
+              token,
+            ),
+            seedSupplements(cabinetItems, token),
+          ]);
+        }
+      } finally {
+        await markSeen();
+        setSaving(false);
+      }
+    }
+
+    void persist();
+  }, [token, heightCm, weightKg, sex, age, goal, cabinetItems, markSeen]);
 
   const hasData = goal !== null || cabinetItems.length > 0;
 
   const onChat = () => {
     router.replace('/(tabs)');
   };
+
+  if (saving) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={styles.savingText}>Setting up your profile…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -81,6 +135,16 @@ export default function DoneScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  savingText: {
+    ...typography.body,
+    color: colors.text2,
+  },
   container: {
     flex: 1,
     paddingHorizontal: spacing.screenPad,
