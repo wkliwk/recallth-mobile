@@ -7,6 +7,7 @@
  */
 
 import { api } from './api';
+import type { DoseLogEntry } from './schedule';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,15 @@ export interface CabinetChangeEntry {
 }
 
 export type TimelineEntry = ConversationEntry | ProfileChangeEntry | CabinetChangeEntry;
+
+export interface DoseEntry {
+  type: 'dose';
+  timestamp: string;
+  summary: string;
+  data: DoseLogEntry;
+}
+
+export type AnyHistoryEntry = TimelineEntry | DoseEntry;
 
 export interface TimelineResponse {
   data: TimelineEntry[];

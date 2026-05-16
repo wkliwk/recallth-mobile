@@ -26,7 +26,8 @@ import { FilterChip, FilterValue } from '../../components/history/FilterChip';
 import { HistoryRow } from '../../components/history/HistoryRow';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonRow } from '../../components/ui/SkeletonRow';
-import { TimelineEntry, fetchTimeline } from '../../services/history';
+import { AnyHistoryEntry, DoseEntry, TimelineEntry, fetchTimeline } from '../../services/history';
+import { getDoseLogsRange } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
 import { groupByDate } from '../../utils/dateGrouping';
 import { colors, spacing, typography } from '../../utils/theme';
@@ -34,7 +35,7 @@ import { colors, spacing, typography } from '../../utils/theme';
 // ─── List item discriminated union ────────────────────────────────────────
 
 type ListHeader = { kind: 'header'; label: string; id: string };
-type ListEntry = { kind: 'entry'; entry: TimelineEntry; id: string };
+type ListEntry = { kind: 'entry'; entry: AnyHistoryEntry; id: string };
 type ListItem = ListHeader | ListEntry;
 
 // ─── Filter config ────────────────────────────────────────────────────────
@@ -48,7 +49,8 @@ const FILTERS: FilterConfig[] = [
   { label: 'All', value: 'all' },
   { label: 'Chats', value: 'conversation' },
   { label: 'Cabinet', value: 'cabinet_change' },
-  { label: 'Doses', value: 'profile_change' },
+  { label: 'Profile', value: 'profile_change' },
+  { label: 'Doses', value: 'dose' },
 ];
 
 const EMPTY_MESSAGES: Record<FilterValue, { title: string; subtitle: string; illustration: string }> = {
@@ -72,6 +74,11 @@ const EMPTY_MESSAGES: Record<FilterValue, { title: string; subtitle: string; ill
     title: 'No profile updates',
     subtitle: 'Profile updates from your conversations will appear here.',
   },
+  dose: {
+    illustration: '💊',
+    title: 'No doses logged',
+    subtitle: 'Tap the checkmarks on the Home screen to log your daily doses.',
+  },
 };
 
 const PAGE_SIZE = 20;
@@ -83,6 +90,7 @@ export default function HistoryScreen(): React.JSX.Element {
   const token = useAuthStore((s) => s.token);
 
   const [allEntries, setAllEntries] = useState<TimelineEntry[]>([]);
+  const [doseEntries, setDoseEntries] = useState<DoseEntry[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -121,12 +129,33 @@ export default function HistoryScreen(): React.JSX.Element {
     [token],
   );
 
+  const loadDoseLogs = useCallback(async () => {
+    if (!token) return;
+    const to = new Date().toISOString().slice(0, 10);
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - 30);
+    const from = fromDate.toISOString().slice(0, 10);
+    try {
+      const logs = await getDoseLogsRange(token, from, to);
+      setDoseEntries(
+        logs.map((log) => ({
+          type: 'dose' as const,
+          timestamp: log.takenAt,
+          summary: `${log.supplementName} — ${log.slot}`,
+          data: log,
+        })),
+      );
+    } catch {
+      // non-critical
+    }
+  }, [token]);
+
   // Initial load — once on mount via ref guard
   const startedRef = useRef(false);
   if (!startedRef.current) {
     startedRef.current = true;
     initialLoadDone.current = false;
-    void loadPage(1, true).then(() => {
+    void Promise.all([loadPage(1, true), loadDoseLogs()]).then(() => {
       initialLoadDone.current = true;
     });
   }
@@ -134,8 +163,8 @@ export default function HistoryScreen(): React.JSX.Element {
   // ── Retry ────────────────────────────────────────────────────────────
 
   const handleRetry = useCallback(() => {
-    void loadPage(1, true);
-  }, [loadPage]);
+    void Promise.all([loadPage(1, true), loadDoseLogs()]);
+  }, [loadPage, loadDoseLogs]);
 
   // ── Load more ────────────────────────────────────────────────────────
 
@@ -146,10 +175,18 @@ export default function HistoryScreen(): React.JSX.Element {
 
   // ── Filter entries ───────────────────────────────────────────────────
 
-  const filteredEntries = useMemo<TimelineEntry[]>(() => {
-    if (activeFilter === 'all') return allEntries;
-    return allEntries.filter((e) => e.type === activeFilter);
-  }, [allEntries, activeFilter]);
+  const filteredEntries = useMemo<AnyHistoryEntry[]>(() => {
+    if (activeFilter === 'dose') return doseEntries;
+    const base = activeFilter === 'all'
+      ? allEntries
+      : allEntries.filter((e) => e.type === activeFilter);
+    if (activeFilter === 'all') {
+      return [...base, ...doseEntries].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
+    }
+    return base;
+  }, [allEntries, doseEntries, activeFilter]);
 
   // ── Build flat list ──────────────────────────────────────────────────
   // We interleave DateGroupHeader items as synthetic list entries so FlatList
@@ -161,10 +198,11 @@ export default function HistoryScreen(): React.JSX.Element {
     for (const group of groups) {
       result.push({ kind: 'header', label: group.label, id: `header-${group.label}` });
       for (const entry of group.items) {
-        // Derive a stable id — conversation _id or timestamp+type fallback
         const entryId =
           entry.type === 'conversation'
             ? entry.data._id
+            : entry.type === 'dose'
+            ? `dose-${entry.data._id}`
             : `${entry.type}-${entry.timestamp}`;
         result.push({ kind: 'entry', entry, id: entryId });
       }
