@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   Pressable,
@@ -165,9 +166,19 @@ export default function CabinetScreen() {
     [token],
   );
 
+  const cabinetInitDone = useRef(false);
+
   useEffect(() => {
     void load(false);
+    cabinetInitDone.current = true;
   }, [load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!cabinetInitDone.current) return;
+      void load(false);
+    }, [load]),
+  );
 
   const handleAdd = useCallback(
     async (input: CreateCabinetItemInput) => {
