@@ -21,9 +21,10 @@ interface CabinetCardProps {
   item: CabinetMockItem;
   isExpanded: boolean;
   onToggle: () => void;
+  onDelete?: () => void;
 }
 
-export function CabinetCard({ item, isExpanded, onToggle }: CabinetCardProps) {
+export function CabinetCard({ item, isExpanded, onToggle, onDelete }: CabinetCardProps) {
   return (
     <Pressable
       onPress={onToggle}
@@ -111,6 +112,7 @@ export function CabinetCard({ item, isExpanded, onToggle }: CabinetCardProps) {
               style={({ pressed }) => [styles.actionBtn, styles.actionBtnDanger, pressed && styles.actionBtnPressed]}
               accessibilityRole="button"
               accessibilityLabel={`Remove ${item.name}`}
+              onPress={onDelete}
             >
               <Text style={[styles.actionBtnText, styles.actionBtnTextDanger]}>Remove</Text>
             </Pressable>
