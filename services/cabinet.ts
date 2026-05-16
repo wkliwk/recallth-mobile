@@ -147,3 +147,25 @@ export async function getInteractions(token: string): Promise<Interaction[]> {
   });
   return res.data?.interactions ?? [];
 }
+
+// ─── AI Lookup ────────────────────────────────────────────────────────────────
+
+export interface AiSuggestion {
+  name: string;
+  brand: string | null;
+  type: SupplementType;
+  dosage: string | null;
+  frequency: string | null;
+  timing: string | null;
+  description: string;
+}
+
+interface AiLookupResponse {
+  success: boolean;
+  data: AiSuggestion[];
+}
+
+export async function aiLookupSupplement(query: string, token: string): Promise<AiSuggestion[]> {
+  const res = await api.post<AiLookupResponse>('/cabinet/ai-lookup', { query }, { token });
+  return Array.isArray(res.data) ? res.data : [];
+}

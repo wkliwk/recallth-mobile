@@ -27,7 +27,8 @@ import {
   View,
 } from 'react-native';
 
-import { CabinetItem, CreateCabinetItemInput, SupplementStatus, SupplementType, deriveStatus, statusToFields } from '../../services/cabinet';
+import { AiSuggestion, CabinetItem, CreateCabinetItemInput, SupplementStatus, SupplementType, aiLookupSupplement, deriveStatus, statusToFields } from '../../services/cabinet';
+import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 type Props = {
@@ -64,6 +65,7 @@ function getRandomSuggestions(count: number): string[] {
 
 export function AddSheet({ visible, onClose, onSave, item }: Props) {
   const isEdit = Boolean(item);
+  const token = useAuthStore((s) => s.token);
 
   const [name, setName] = useState('');
   const [type, setType] = useState<SupplementType>('supplement');
@@ -72,11 +74,14 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
   const [timing, setTiming] = useState('');
   const [status, setStatus] = useState<SupplementStatus>('active');
   const [saving, setSaving] = useState(false);
-  const [suggestions] = useState<string[]>(() => getRandomSuggestions(3));
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
+  const [localSuggestions] = useState<string[]>(() => getRandomSuggestions(3));
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
 
   const nameInputRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Populate form when editing.
   useEffect(() => {
@@ -151,6 +156,32 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
     }
   }, [name, type, dosage, frequency, timing, status, onSave, handleClose]);
 
+  const handleNameChange = useCallback((text: string) => {
+    setName(text);
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+
+    const q = text.trim();
+    if (q.length < 3) {
+      setShowSuggestions(q.length === 0 && !isEdit);
+      setAiSuggestions([]);
+      setLookingUp(false);
+      return;
+    }
+
+    setShowSuggestions(true);
+    if (!token) return;
+
+    setLookingUp(true);
+    lookupTimer.current = setTimeout(() => {
+      void aiLookupSupplement(q, token).then((results) => {
+        setAiSuggestions(results);
+        setLookingUp(false);
+      }).catch(() => {
+        setLookingUp(false);
+      });
+    }, 500);
+  }, [isEdit, token]);
+
   const handleNameFocus = useCallback(() => {
     if (!isEdit && name.trim() === '') {
       setShowSuggestions(true);
@@ -158,11 +189,20 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
   }, [isEdit, name]);
 
   const handleNameBlur = useCallback(() => {
-    // Keep suggestions visible briefly so tap registers.
-    setTimeout(() => setShowSuggestions(false), 150);
+    setTimeout(() => setShowSuggestions(false), 200);
   }, []);
 
-  const applySuggestion = useCallback((suggestion: string) => {
+  const applyAiSuggestion = useCallback((s: AiSuggestion) => {
+    setName(s.name);
+    if (s.type) setType(s.type);
+    if (s.dosage) setDosage(s.dosage);
+    if (s.frequency) setFrequency(s.frequency);
+    if (s.timing) setTiming(s.timing);
+    setShowSuggestions(false);
+    setAiSuggestions([]);
+  }, []);
+
+  const applyLocalSuggestion = useCallback((suggestion: string) => {
     setName(suggestion);
     setShowSuggestions(false);
   }, []);
@@ -221,11 +261,7 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
                 placeholder="e.g. Vitamin D3, Omega-3, Magnesium"
                 placeholderTextColor={colors.text3}
                 value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  if (text.trim() === '') setShowSuggestions(true);
-                  else setShowSuggestions(false);
-                }}
+                onChangeText={handleNameChange}
                 onFocus={handleNameFocus}
                 onBlur={handleNameBlur}
                 autoCapitalize="words"
@@ -234,23 +270,47 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
                 testID="input-name"
               />
 
-              {/* AI Suggestion chips (stub) */}
               {showSuggestions && (
                 <View style={styles.suggestions}>
-                  <Text style={styles.suggestionLabel}>AI suggestions</Text>
-                  <View style={styles.chips}>
-                    {suggestions.map((s) => (
-                      <Pressable
-                        key={s}
-                        onPress={() => applySuggestion(s)}
-                        style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Suggest ${s}`}
-                      >
-                        <Text style={styles.chipText}>{s}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
+                  {lookingUp ? (
+                    <View style={styles.lookupRow}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text style={styles.suggestionLabel}>Searching supplements…</Text>
+                    </View>
+                  ) : aiSuggestions.length > 0 ? (
+                    <>
+                      <Text style={styles.suggestionLabel}>AI suggestions</Text>
+                      {aiSuggestions.map((s) => (
+                        <Pressable
+                          key={s.name}
+                          onPress={() => applyAiSuggestion(s)}
+                          style={({ pressed }) => [styles.aiChip, pressed && styles.chipPressed]}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Select ${s.name}`}
+                        >
+                          <Text style={styles.aiChipName}>{s.name}{s.brand ? ` · ${s.brand}` : ''}</Text>
+                          {s.dosage && <Text style={styles.aiChipDetail}>{s.dosage}{s.frequency ? ` · ${s.frequency}` : ''}</Text>}
+                        </Pressable>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.suggestionLabel}>Quick add</Text>
+                      <View style={styles.chips}>
+                        {localSuggestions.map((s) => (
+                          <Pressable
+                            key={s}
+                            onPress={() => applyLocalSuggestion(s)}
+                            style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Suggest ${s}`}
+                          >
+                            <Text style={styles.chipText}>{s}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </>
+                  )}
                 </View>
               )}
             </View>
@@ -491,6 +551,29 @@ const styles = StyleSheet.create({
   chipText: {
     ...typography.bodySmall,
     color: colors.ai,
+  },
+  lookupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  aiChip: {
+    backgroundColor: colors.aiLight,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.aiMid,
+  },
+  aiChipName: {
+    ...typography.bodySmall,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  aiChipDetail: {
+    ...typography.caption,
+    color: colors.text3,
+    marginTop: 2,
   },
   typeRow: {
     flexDirection: 'row',
