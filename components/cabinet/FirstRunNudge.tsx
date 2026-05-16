@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 interface Props {
@@ -9,11 +10,11 @@ export function FirstRunNudge({ onAdd }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
-        <Text style={styles.icon}>◇</Text>
+        <Ionicons name="flask-outline" size={36} color={colors.primary} />
       </View>
-      <Text style={styles.headline}>Add your first supplement</Text>
+      <Text style={styles.headline}>Your supplement cabinet is empty</Text>
       <Text style={styles.copy}>
-        Track doses, spot conflicts, and get AI suggestions personalised to your stack.
+        Add your first supplement to start tracking doses, spot conflicts, and get AI suggestions personalised to your stack.
       </Text>
       <Pressable
         onPress={onAdd}
@@ -35,8 +36,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   iconWrap: {
-    width: 72,
-    height: 72,
+    width: 80,
+    height: 80,
     borderRadius: radius.xl,
     backgroundColor: colors.primaryLight,
     borderWidth: 1.5,
@@ -44,10 +45,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
-  },
-  icon: {
-    fontSize: 32,
-    color: colors.primary,
   },
   headline: {
     fontSize: 20,

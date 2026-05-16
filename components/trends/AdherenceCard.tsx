@@ -55,7 +55,7 @@ export default function AdherenceCard({ logs, totalScheduled }: Props) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   const daysWithData = bars.filter((b) => b.count > 0).length;
-  const hasEnoughData = daysWithData >= 2;
+  const hasEnoughData = daysWithData >= 3;
 
   const avgPct = useMemo(() => {
     const activeBars = bars.filter((b) => b.pct > 0);
@@ -72,7 +72,7 @@ export default function AdherenceCard({ logs, totalScheduled }: Props) {
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Not enough data yet</Text>
           <Text style={styles.emptyBody}>
-            Log doses on the Home tab for at least 2 days to see your adherence chart.
+            Log doses for 3+ days to unlock your adherence trends.
           </Text>
         </View>
       ) : (
