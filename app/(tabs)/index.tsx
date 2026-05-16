@@ -4,7 +4,9 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AISuggestionBanner } from '../../components/summary/AISuggestionBanner';
+import { DailyCheckInCard } from '../../components/summary/DailyCheckInCard';
 import { fetchDailyBrief } from '../../services/insights';
+import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
 import { ScheduleSection } from '../../components/summary/ScheduleSection';
 import {
@@ -69,6 +71,7 @@ export default function HomeScreen() {
 
   const router = useRouter();
   const lastLogAt = useRef<number>(0);
+  const [todayJournal, setTodayJournal] = useState<JournalEntry | null>(null);
 
   const loadSupplements = useCallback(
     async (isRefresh = false, isSilent = false) => {
@@ -81,10 +84,11 @@ export default function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else if (!isSilent) setLoading(true);
 
-      const [supplementsRes, briefRes, doseLogsRes] = await Promise.allSettled([
+      const [supplementsRes, briefRes, doseLogsRes, journalRes] = await Promise.allSettled([
         listCabinetItems(token),
         fetchDailyBrief(token),
         getTodayDoseLogs(token),
+        getTodayJournal(token),
       ]);
 
       if (supplementsRes.status === 'fulfilled') {
@@ -110,6 +114,10 @@ export default function HomeScreen() {
 
       if (briefRes.status === 'fulfilled') {
         setAiSuggestion(briefRes.value);
+      }
+
+      if (journalRes.status === 'fulfilled') {
+        setTodayJournal(journalRes.value);
       }
 
       setLoading(false);
@@ -238,6 +246,15 @@ export default function HomeScreen() {
             />
           ))}
         </View>
+
+        {/* Daily check-in */}
+        {token !== null && (
+          <DailyCheckInCard
+            token={token}
+            existing={todayJournal}
+            onLogged={(entry) => setTodayJournal(entry)}
+          />
+        )}
 
         {/* AI suggestion banner */}
         {aiSuggestion !== null && <AISuggestionBanner suggestion={aiSuggestion} />}
