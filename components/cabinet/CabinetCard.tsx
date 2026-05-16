@@ -15,6 +15,7 @@ export interface CabinetMockItem {
   status: SupplementStatus;
   stock?: number;
   conflictNote?: string;
+  startDate?: string;
 }
 
 interface CabinetCardProps {
@@ -73,16 +74,16 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
             <View style={styles.stat}>
               <Text style={styles.statLabel}>STOCK</Text>
               <Text style={styles.statValue}>
-                {item.stock !== undefined ? `${item.stock} days` : '—'}
+                {item.stock !== undefined ? `${item.stock}d` : '—'}
               </Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statLabel}>ADHERENCE</Text>
-              <Text style={styles.statValue}>91%</Text>
-            </View>
-            <View style={styles.stat}>
               <Text style={styles.statLabel}>SINCE</Text>
-              <Text style={styles.statValue}>Jan 14</Text>
+              <Text style={styles.statValue}>
+                {item.startDate
+                  ? new Date(item.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : '—'}
+              </Text>
             </View>
           </View>
 
