@@ -7,6 +7,7 @@ import { AISuggestionBanner } from '../../components/summary/AISuggestionBanner'
 import { DailyCheckInCard } from '../../components/summary/DailyCheckInCard';
 import { InteractionWarningBanner } from '../../components/summary/InteractionWarningBanner';
 import { RestockAlertBanner } from '../../components/summary/RestockAlertBanner';
+import { StreakMilestoneModal } from '../../components/summary/StreakMilestoneModal';
 import { fetchDailyBrief } from '../../services/insights';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
@@ -22,6 +23,7 @@ import { getInteractions, getRestockAlerts, listCabinetItems, type CabinetItem }
 import { logIntakeToday } from '../../services/intake';
 import { getTodayDoseLogs, logDose, unlogDose } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
+import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -76,6 +78,10 @@ export default function HomeScreen() {
   const [todayJournal, setTodayJournal] = useState<JournalEntry | null>(null);
   const [interactionCount, setInteractionCount] = useState(0);
   const [restockNames, setRestockNames] = useState<string[]>([]);
+  const userId = useAuthStore((s) => s.user?.userId ?? null);
+  const [milestoneDays, setMilestoneDays] = useState<number | null>(null);
+
+  const MILESTONES = [7, 30, 100];
 
   const loadSupplements = useCallback(
     async (isRefresh = false, isSilent = false) => {
@@ -187,7 +193,16 @@ export default function HomeScreen() {
         const now = Date.now();
         if (now - lastLogAt.current >= 500) {
           lastLogAt.current = now;
-          void logIntakeToday(token).catch(() => {/* streak failure is non-critical */});
+          void logIntakeToday(token).then(async (result) => {
+            const streak = result.currentStreak;
+            if (!userId || !MILESTONES.includes(streak)) return;
+            const key = `recallth:streak-milestone:${userId}:${streak}`;
+            const already = await storage.getItem(key);
+            if (!already) {
+              await storage.setItem(key, 'true');
+              setMilestoneDays(streak);
+            }
+          }).catch(() => {/* streak failure is non-critical */});
         }
       } else if (target.doseLogId) {
         // Undo the dose log.
@@ -293,6 +308,13 @@ export default function HomeScreen() {
           Not medical advice. Always consult your doctor.
         </Text>
       </ScrollView>
+
+      {milestoneDays !== null && (
+        <StreakMilestoneModal
+          days={milestoneDays}
+          onDismiss={() => setMilestoneDays(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
