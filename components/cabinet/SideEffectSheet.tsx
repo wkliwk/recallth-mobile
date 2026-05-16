@@ -22,8 +22,8 @@ interface Props {
   onClose: () => void;
 }
 
-const SEVERITIES = [1, 2, 3, 4, 5];
-const SEVERITY_LABELS: Record<number, string> = {
+const RATINGS = [1, 2, 3, 4, 5];
+const RATING_LABELS: Record<number, string> = {
   1: 'Mild',
   2: 'Low',
   3: 'Moderate',
@@ -34,7 +34,7 @@ const SEVERITY_LABELS: Record<number, string> = {
 export function SideEffectSheet({ visible, cabinetItemId, supplementName, onClose }: Props) {
   const token = useAuthStore((s) => s.token);
   const [symptom, setSymptom] = useState('');
-  const [severity, setSeverity] = useState<number>(3);
+  const [rating, setRating] = useState<number>(3);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -44,7 +44,7 @@ export function SideEffectSheet({ visible, cabinetItemId, supplementName, onClos
   useEffect(() => {
     if (visible) {
       setSymptom('');
-      setSeverity(3);
+      setRating(3);
       setSaving(false);
       setError(null);
       setSuccess(false);
@@ -69,7 +69,7 @@ export function SideEffectSheet({ visible, cabinetItemId, supplementName, onClos
     setError(null);
 
     try {
-      await logSideEffect(token, cabinetItemId, trimmed, severity);
+      await logSideEffect(token, cabinetItemId, trimmed, rating);
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -112,20 +112,20 @@ export function SideEffectSheet({ visible, cabinetItemId, supplementName, onClos
             editable={!saving && !success}
           />
 
-          {/* Severity picker */}
+          {/* Rating picker */}
           <Text style={styles.label}>Severity</Text>
           <View style={styles.severityRow}>
-            {SEVERITIES.map((s) => (
+            {RATINGS.map((r) => (
               <Pressable
-                key={s}
-                onPress={() => setSeverity(s)}
-                style={[styles.severityBtn, severity === s && styles.severityBtnActive]}
+                key={r}
+                onPress={() => setRating(r)}
+                style={[styles.severityBtn, rating === r && styles.severityBtnActive]}
               >
-                <Text style={[styles.severityNum, severity === s && styles.severityNumActive]}>
-                  {s}
+                <Text style={[styles.severityNum, rating === r && styles.severityNumActive]}>
+                  {r}
                 </Text>
-                <Text style={[styles.severityLabel, severity === s && styles.severityLabelActive]}>
-                  {SEVERITY_LABELS[s]}
+                <Text style={[styles.severityLabel, rating === r && styles.severityLabelActive]}>
+                  {RATING_LABELS[r]}
                 </Text>
               </Pressable>
             ))}

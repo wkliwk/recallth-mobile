@@ -1,10 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { EvidenceBar } from './EvidenceBar';
 import { SideEffectSheet } from './SideEffectSheet';
 import { type DeepResearch, getSupplementResearch } from '../../services/cabinet';
+import { type SideEffectEntry, getSideEffects } from '../../services/sideEffects';
 import { useAuthStore } from '../../stores/auth';
 
 export type EvidenceLevel = 'High' | 'Moderate' | 'Limited';
@@ -45,6 +46,15 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
   const [deepResearch, setDeepResearch] = useState<DeepResearch | null>(null);
   const [loadingResearch, setLoadingResearch] = useState(false);
   const [researchError, setResearchError] = useState<string | null>(null);
+  const [sideEffects, setSideEffects] = useState<SideEffectEntry[]>([]);
+  const sideEffectsLoaded = useRef(false);
+
+  // Load side effects once when card first expands
+  useEffect(() => {
+    if (!isExpanded || sideEffectsLoaded.current || !token || item.id.startsWith('mock-')) return;
+    sideEffectsLoaded.current = true;
+    void getSideEffects(token, item.id, 5).then(setSideEffects).catch(() => {/* non-critical */});
+  }, [isExpanded, token, item.id]);
 
   const handleFetchResearch = useCallback(async () => {
     if (deepResearch !== null || loadingResearch || !token) return;
@@ -158,6 +168,26 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
               {item.researchNotes.cautions.length > 0 && (
                 <Text style={styles.researchCautions}>⚠ {item.researchNotes.cautions}</Text>
               )}
+            </View>
+          )}
+
+          {/* Logged side effects */}
+          {sideEffects.length > 0 && (
+            <View style={styles.sideEffectsSection}>
+              <Text style={styles.sideEffectsLabel}>Recent Reactions</Text>
+              {sideEffects.slice(0, 3).map((se) => (
+                <View key={se._id} style={styles.sideEffectRow}>
+                  <View style={styles.sideEffectRating}>
+                    <Text style={styles.sideEffectRatingText}>{se.rating}</Text>
+                  </View>
+                  <View style={styles.sideEffectInfo}>
+                    <Text style={styles.sideEffectSymptom}>{se.symptom}</Text>
+                    <Text style={styles.sideEffectDate}>
+                      {new Date(se.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                </View>
+              ))}
             </View>
           )}
 
@@ -496,5 +526,59 @@ const styles = StyleSheet.create({
     color: colors.text3,
     marginTop: spacing.sm,
     fontStyle: 'italic',
+  },
+
+  // Side effects
+  sideEffectsSection: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.warningLight,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.warning + '30',
+  },
+  sideEffectsLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.warning,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  sideEffectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  sideEffectRating: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.warning + '30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  sideEffectRatingText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.warning,
+  },
+  sideEffectInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sideEffectSymptom: {
+    fontSize: 12,
+    color: colors.text,
+    flex: 1,
+  },
+  sideEffectDate: {
+    fontSize: 11,
+    color: colors.text3,
+    marginLeft: spacing.xs,
   },
 });
