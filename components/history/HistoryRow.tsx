@@ -11,15 +11,16 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
+  AnyHistoryEntry,
   CabinetChangeEntry,
   ConversationEntry,
+  DoseEntry,
   ProfileChangeEntry,
-  TimelineEntry,
 } from '../../services/history';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 interface Props {
-  item: TimelineEntry;
+  item: AnyHistoryEntry;
   onPressChatItem?: (conversationId: string) => void;
 }
 
@@ -105,12 +106,35 @@ function ProfileRow({ item }: { item: ProfileChangeEntry }): React.JSX.Element {
   );
 }
 
+function DoseRow({ item }: { item: DoseEntry }): React.JSX.Element {
+  const slotLabel = item.data.slot.charAt(0).toUpperCase() + item.data.slot.slice(1);
+  return (
+    <View style={styles.row}>
+      <View style={[styles.iconWrap, styles.iconDose]}>
+        <Text style={styles.iconText}>💊</Text>
+      </View>
+      <View style={styles.content}>
+        <View style={styles.topRow}>
+          <Text style={styles.title} numberOfLines={1}>
+            {item.data.supplementName}
+          </Text>
+          <Text style={styles.time}>{formatTime(item.timestamp)}</Text>
+        </View>
+        <Text style={styles.meta}>{slotLabel} dose logged</Text>
+      </View>
+    </View>
+  );
+}
+
 function HistoryRowInner({ item, onPressChatItem }: Props): React.JSX.Element {
   if (item.type === 'conversation') {
     return <ConversationRow item={item} onPress={onPressChatItem} />;
   }
   if (item.type === 'cabinet_change') {
     return <CabinetRow item={item} />;
+  }
+  if (item.type === 'dose') {
+    return <DoseRow item={item} />;
   }
   return <ProfileRow item={item} />;
 }
@@ -150,6 +174,9 @@ const styles = StyleSheet.create({
   },
   iconProfile: {
     backgroundColor: colors.warningLight,
+  },
+  iconDose: {
+    backgroundColor: '#edf8f1',
   },
   iconText: {
     fontSize: 18,

@@ -8,7 +8,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
-export type FilterValue = 'all' | 'conversation' | 'cabinet_change' | 'profile_change';
+export type FilterValue = 'all' | 'conversation' | 'cabinet_change' | 'profile_change' | 'dose';
 
 interface Props {
   label: string;

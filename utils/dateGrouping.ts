@@ -4,13 +4,11 @@
  * Groups: Today / Yesterday / This Week / <Month Year>
  */
 
-import { TimelineEntry } from '../services/history';
-
 export type GroupLabel = string;
 
-export interface DateGroup {
+export interface DateGroup<T = { timestamp: string }> {
   label: GroupLabel;
-  items: TimelineEntry[];
+  items: T[];
 }
 
 /**
@@ -63,8 +61,11 @@ function groupSortKey(label: string): number {
  * @param entries - flat list from the API (newest first)
  * @param now - injectable "current time" for deterministic testing; defaults to `new Date()`
  */
-export function groupByDate(entries: TimelineEntry[], now: Date = new Date()): DateGroup[] {
-  const map = new Map<string, TimelineEntry[]>();
+export function groupByDate<T extends { timestamp: string }>(
+  entries: T[],
+  now: Date = new Date(),
+): DateGroup<T>[] {
+  const map = new Map<string, T[]>();
 
   for (const entry of entries) {
     const label = getGroupLabel(entry.timestamp, now);
@@ -76,7 +77,7 @@ export function groupByDate(entries: TimelineEntry[], now: Date = new Date()): D
     }
   }
 
-  return [...map.entries()]
+  return ([...map.entries()] as Array<[string, T[]]>)
     .map(([label, items]) => ({ label, items }))
     .sort((a, b) => groupSortKey(a.label) - groupSortKey(b.label));
 }
