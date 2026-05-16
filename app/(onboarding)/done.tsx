@@ -60,7 +60,7 @@ export default function DoneScreen() {
   const hasData = goal !== null || cabinetItems.length > 0;
 
   const onChat = () => {
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/chat');
   };
 
   if (saving) {
