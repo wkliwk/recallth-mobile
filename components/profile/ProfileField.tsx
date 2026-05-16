@@ -8,6 +8,7 @@
 
 import React, { useState } from 'react';
 import {
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -17,7 +18,13 @@ import {
 
 import type { Provenance } from '../../services/profile';
 import { colors, radius, spacing, typography } from '../../utils/theme';
+import { PickerSheet } from './PickerSheet';
 import ProvenanceBadge from './ProvenanceBadge';
+
+interface PickerOption {
+  label: string;
+  value: string;
+}
 
 interface Props {
   label: string;
@@ -27,8 +34,10 @@ interface Props {
   keyboardType?: 'default' | 'numeric' | 'email-address';
   multiline?: boolean;
   onChangeText?: (text: string) => void;
-  /** When true the field renders as an active TextInput */
+  /** When true the field renders as an active TextInput (or picker if options provided) */
   editable?: boolean;
+  /** When provided alongside editable, renders as a picker instead of a TextInput */
+  options?: PickerOption[];
   onPressEdit?: () => void;
 }
 
@@ -41,6 +50,7 @@ export default function ProfileField({
   multiline = false,
   onChangeText,
   editable = false,
+  options,
   onPressEdit,
 }: Props) {
   const displayValue =
@@ -49,11 +59,16 @@ export default function ProfileField({
       : String(value);
 
   const [localText, setLocalText] = useState(displayValue ?? '');
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleChange = (text: string) => {
     setLocalText(text);
     onChangeText?.(text);
   };
+
+  const displayLabel = options
+    ? (options.find((o) => o.value === localText)?.label ?? localText)
+    : null;
 
   return (
     <View style={styles.row}>
@@ -62,7 +77,32 @@ export default function ProfileField({
         <ProvenanceBadge provenance={provenance} />
       </View>
 
-      {editable ? (
+      {editable && options ? (
+        <>
+          <Pressable
+            style={({ pressed }) => [styles.pickerRow, pressed && { opacity: 0.7 }]}
+            onPress={() => setPickerOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Select ${label}`}
+          >
+            <Text style={displayLabel || localText ? styles.pickerValue : styles.placeholder}>
+              {displayLabel || localText || `Select ${label.toLowerCase()}`}
+            </Text>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+          <PickerSheet
+            visible={pickerOpen}
+            title={`Select ${label}`}
+            options={options}
+            selected={localText}
+            onSelect={(v) => {
+              setLocalText(v);
+              onChangeText?.(v);
+            }}
+            onClose={() => setPickerOpen(false)}
+          />
+        </>
+      ) : editable ? (
         <View style={styles.inputWrapper}>
           <TextInput
             style={[styles.input, multiline && styles.inputMultiline]}
@@ -166,5 +206,27 @@ const styles = StyleSheet.create({
   inputMultiline: {
     minHeight: 72,
     textAlignVertical: 'top',
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.bg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 40,
+  },
+  pickerValue: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  chevron: {
+    fontSize: 20,
+    color: colors.text3,
+    marginLeft: spacing.xs,
   },
 });

@@ -366,6 +366,12 @@ export default function ProfileScreen() {
             provenance={fieldProv('body', 'sex')}
             onChangeText={(t) => draftChange('body', 'sex', t)}
             editable
+            options={[
+              { label: 'Male', value: 'male' },
+              { label: 'Female', value: 'female' },
+              { label: 'Other', value: 'other' },
+              { label: 'Prefer not to say', value: 'prefer_not_to_say' },
+            ]}
           />
           <ProfileField
             label="Height"
@@ -488,9 +494,15 @@ export default function ProfileScreen() {
             label="Primary goal"
             value={fieldVal('goals', 'primary_goal')}
             provenance={fieldProv('goals', 'primary_goal')}
-            multiline
             onChangeText={(t) => draftChange('goals', 'primary_goal', t)}
             editable
+            options={[
+              { label: 'Energy — Boost daily vitality', value: 'energy' },
+              { label: 'Sleep — Improve sleep quality', value: 'sleep' },
+              { label: 'Recovery — Faster muscle repair', value: 'recovery' },
+              { label: 'Longevity — Healthy aging', value: 'longevity' },
+              { label: 'Other — Tell Recallth in chat', value: 'other' },
+            ]}
           />
           <ProfileField
             label="Secondary goals"
