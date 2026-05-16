@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -100,9 +101,19 @@ export default function HomeScreen() {
     [token],
   );
 
+  const initialLoadDone = useRef(false);
+
   useEffect(() => {
     void loadSupplements(false);
+    initialLoadDone.current = true;
   }, [loadSupplements]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!initialLoadDone.current) return;
+      void loadSupplements(false);
+    }, [loadSupplements]),
+  );
 
   const taken = supplements.filter((s) => s.taken).length;
   const total = supplements.length;
