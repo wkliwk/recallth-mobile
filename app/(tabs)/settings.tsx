@@ -3,14 +3,15 @@ import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   getSettings,
@@ -40,8 +41,10 @@ const DEFAULT_SETTINGS: UserSettings = {
   emailDigestDay: 'sunday',
 };
 
-function isValidTime(t: string): boolean {
-  return /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+function formatHHMM(date: Date): string {
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 export default function SettingsScreen() {
@@ -51,8 +54,12 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [newTime, setNewTime] = useState('');
-  const [timeError, setTimeError] = useState<string | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerDate, setPickerDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(9, 0, 0, 0);
+    return d;
+  });
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -78,7 +85,6 @@ export default function SettingsScreen() {
     try {
       await patchSettings(token, update);
 
-      // Sync local push notifications.
       const remindersEnabled = next.remindersEnabled;
       const times = next.reminderTimes;
 
@@ -106,19 +112,26 @@ export default function SettingsScreen() {
     }
   }, [token, settings]);
 
-  const addTime = () => {
-    if (!isValidTime(newTime)) {
-      setTimeError('Use HH:MM format (e.g. 08:00)');
-      return;
+  const onPickerChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setPickerVisible(false);
+      if (event.type === 'dismissed' || !date) return;
+      addTimeFromDate(date);
+    } else {
+      if (date) setPickerDate(date);
     }
-    if (settings.reminderTimes.includes(newTime)) {
-      setTimeError('Time already added');
-      return;
-    }
-    setTimeError(null);
-    const times = [...settings.reminderTimes, newTime].sort();
-    setNewTime('');
+  };
+
+  const addTimeFromDate = (date: Date) => {
+    const timeStr = formatHHMM(date);
+    if (settings.reminderTimes.includes(timeStr)) return;
+    const times = [...settings.reminderTimes, timeStr].sort();
     void save({ reminderTimes: times });
+  };
+
+  const confirmIOSPicker = () => {
+    setPickerVisible(false);
+    addTimeFromDate(pickerDate);
   };
 
   const removeTime = (t: string) => {
@@ -175,26 +188,50 @@ export default function SettingsScreen() {
                     </Pressable>
                   </View>
                 ))}
-                <View style={styles.addTimeRow}>
-                  <TextInput
-                    style={[styles.timeInput, timeError ? styles.timeInputError : null]}
-                    value={newTime}
-                    onChangeText={(t) => { setNewTime(t); setTimeError(null); }}
-                    placeholder="08:00"
-                    placeholderTextColor={colors.text4}
-                    keyboardType="numbers-and-punctuation"
-                    maxLength={5}
-                  />
-                  <Pressable
-                    onPress={addTime}
-                    style={({ pressed }) => [styles.addTimeBtn, pressed && { opacity: 0.8 }]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Add time"
-                  >
-                    <Text style={styles.addTimeBtnText}>Add</Text>
-                  </Pressable>
-                </View>
-                {timeError && <Text style={styles.timeErrorText}>{timeError}</Text>}
+
+                <Pressable
+                  onPress={() => {
+                    const d = new Date();
+                    d.setHours(9, 0, 0, 0);
+                    setPickerDate(d);
+                    setPickerVisible(true);
+                  }}
+                  style={({ pressed }) => [styles.addTimeBtn, pressed && { opacity: 0.8 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add reminder time"
+                >
+                  <Text style={styles.addTimeBtnText}>+ Add Time</Text>
+                </Pressable>
+
+                {pickerVisible && (
+                  <>
+                    <DateTimePicker
+                      value={pickerDate}
+                      mode="time"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={onPickerChange}
+                      style={styles.picker}
+                    />
+                    {Platform.OS === 'ios' && (
+                      <View style={styles.pickerActions}>
+                        <Pressable
+                          onPress={() => setPickerVisible(false)}
+                          style={({ pressed }) => [styles.pickerCancelBtn, pressed && { opacity: 0.7 }]}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.pickerCancelText}>Cancel</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={confirmIOSPicker}
+                          style={({ pressed }) => [styles.pickerConfirmBtn, pressed && { opacity: 0.8 }]}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.pickerConfirmText}>Add</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </>
+                )}
               </>
             )}
           </View>
@@ -311,29 +348,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   removeTimeBtnText: { fontSize: 12, color: colors.danger, fontWeight: '700' },
-  addTimeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  timeInput: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 15,
-    color: colors.text,
-    fontFamily: 'monospace',
-  },
-  timeInputError: { borderColor: colors.danger },
   addTimeBtn: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  addTimeBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  picker: {
+    marginTop: spacing.sm,
+  },
+  pickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+  },
+  pickerCancelBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  pickerCancelText: { fontSize: 14, color: colors.text3 },
+  pickerConfirmBtn: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: spacing.sm,
   },
-  addTimeBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  timeErrorText: { fontSize: 12, color: colors.danger, marginTop: spacing.xs },
+  pickerConfirmText: { fontSize: 14, fontWeight: '700', color: '#fff' },
   dayRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
   dayBtn: {
     paddingHorizontal: spacing.sm,
