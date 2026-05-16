@@ -10,14 +10,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AddSheet } from '../../components/cabinet/AddSheet';
 import { CabinetCard } from '../../components/cabinet/CabinetCard';
 import type { CabinetMockItem } from '../../components/cabinet/CabinetCard';
 import {
+  createCabinetItem,
   deleteCabinetItem,
   deriveStatus,
   getInteractions,
   listAllCabinetItems,
   type CabinetItem,
+  type CreateCabinetItemInput,
   type Interaction,
 } from '../../services/cabinet';
 import { useAuthStore } from '../../stores/auth';
@@ -108,6 +111,7 @@ export default function CabinetScreen() {
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
 
   const load = useCallback(
     async (isRefresh = false) => {
@@ -159,6 +163,17 @@ export default function CabinetScreen() {
   useEffect(() => {
     void load(false);
   }, [load]);
+
+  const handleAdd = useCallback(
+    async (input: CreateCabinetItemInput) => {
+      if (!token) return;
+      const newItem = await createCabinetItem(input, token);
+      const interactions = await getInteractions(token).catch(() => [] as Interaction[]);
+      const card = apiItemToCard(newItem, interactions);
+      setState((s) => ({ ...s, items: [card, ...s.items] }));
+    },
+    [token],
+  );
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -228,6 +243,7 @@ export default function CabinetScreen() {
             style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
             accessibilityRole="button"
             accessibilityLabel="Add supplement"
+            onPress={() => setShowAddSheet(true)}
           >
             <Text style={styles.addButtonText}>+ Add</Text>
           </Pressable>
@@ -290,6 +306,12 @@ export default function CabinetScreen() {
           <SearchEmptyState query={search} isEmpty={state.items.length === 0} />
         )}
       </ScrollView>
+
+      <AddSheet
+        visible={showAddSheet}
+        onClose={() => setShowAddSheet(false)}
+        onSave={handleAdd}
+      />
     </SafeAreaView>
   );
 }
