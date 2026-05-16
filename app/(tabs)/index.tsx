@@ -69,9 +69,7 @@ export default function HomeScreen() {
   const [supplements, setSupplements] = useState<SupplementEntry[]>(MOCK_SUPPLEMENTS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(
-    'You most often skip B-complex at midday. Consider moving it to your morning block to improve adherence.',
-  );
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
   const router = useRouter();
   const lastLogAt = useRef<number>(0);
@@ -105,7 +103,6 @@ export default function HomeScreen() {
 
       if (supplementsRes.status === 'fulfilled') {
         const entries = supplementsRes.value.map(cabinetToEntry);
-        const base = entries.length > 0 ? entries : MOCK_SUPPLEMENTS;
 
         // Restore taken state from today's dose logs.
         if (doseLogsRes.status === 'fulfilled' && doseLogsRes.value.length > 0) {
@@ -113,15 +110,15 @@ export default function HomeScreen() {
           for (const log of doseLogsRes.value) {
             logsBySuppId.set(log.supplementId, log._id);
           }
-          setSupplements(base.map((s) => {
+          setSupplements(entries.map((s) => {
             const logId = logsBySuppId.get(s.id);
             return logId ? { ...s, taken: true, doseLogId: logId } : s;
           }));
         } else {
-          setSupplements(base);
+          setSupplements(entries);
         }
       } else {
-        setSupplements(MOCK_SUPPLEMENTS);
+        setSupplements([]);
       }
 
       if (briefRes.status === 'fulfilled') {
