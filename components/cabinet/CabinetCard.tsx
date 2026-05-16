@@ -8,6 +8,10 @@ import { type DeepResearch, getSupplementResearch } from '../../services/cabinet
 import { type SideEffectEntry, getSideEffects } from '../../services/sideEffects';
 import { useAuthStore } from '../../stores/auth';
 
+const RATING_LABELS: Record<number, string> = {
+  1: 'Mild', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Severe',
+};
+
 export type EvidenceLevel = 'High' | 'Moderate' | 'Limited';
 export type SupplementStatus = 'ok' | 'conflict';
 
@@ -88,6 +92,11 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
     }
   }, [deepResearch, loadingResearch, token, item.id]);
 
+  const refreshSideEffects = useCallback(() => {
+    if (!token || item.id.startsWith('mock-')) return;
+    void getSideEffects(token, item.id, 5).then(setSideEffects).catch(() => {/* non-critical */});
+  }, [token, item.id]);
+
   const handleStockChange = useCallback((delta: number) => {
     setLocalStock((prev) => {
       const current = prev ?? 0;
@@ -106,7 +115,10 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
       visible={sideEffectSheetVisible}
       cabinetItemId={item.id}
       supplementName={item.name}
-      onClose={() => setSideEffectSheetVisible(false)}
+      onClose={() => {
+        setSideEffectSheetVisible(false);
+        refreshSideEffects();
+      }}
     />
     <Pressable
       onPress={onToggle}
@@ -212,23 +224,27 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
             </View>
           )}
 
-          {/* Logged side effects */}
-          {sideEffects.length > 0 && (
+          {/* Side effects history */}
+          {(isExpanded && !item.id.startsWith('mock-')) && (
             <View style={styles.sideEffectsSection}>
-              <Text style={styles.sideEffectsLabel}>Recent Reactions</Text>
-              {sideEffects.slice(0, 3).map((se) => (
-                <View key={se._id} style={styles.sideEffectRow}>
-                  <View style={styles.sideEffectRating}>
-                    <Text style={styles.sideEffectRatingText}>{se.rating}</Text>
+              <Text style={styles.sideEffectsLabel}>Side Effect History</Text>
+              {sideEffects.length === 0 ? (
+                <Text style={styles.sideEffectsEmpty}>No side effects logged yet.</Text>
+              ) : (
+                sideEffects.slice(0, 5).map((se) => (
+                  <View key={se._id} style={styles.sideEffectRow}>
+                    <View style={styles.sideEffectRating}>
+                      <Text style={styles.sideEffectRatingText}>{se.rating}</Text>
+                    </View>
+                    <View style={styles.sideEffectInfo}>
+                      <Text style={styles.sideEffectSymptom}>{se.symptom}</Text>
+                      <Text style={styles.sideEffectDate}>
+                        {RATING_LABELS[se.rating] ?? 'Unknown'} · {new Date(se.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.sideEffectInfo}>
-                    <Text style={styles.sideEffectSymptom}>{se.symptom}</Text>
-                    <Text style={styles.sideEffectDate}>
-                      {new Date(se.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                ))
+              )}
             </View>
           )}
 
@@ -622,6 +638,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
+  },
+  sideEffectsEmpty: {
+    fontSize: 12,
+    color: colors.text3,
+    fontStyle: 'italic',
   },
   sideEffectRow: {
     flexDirection: 'row',
