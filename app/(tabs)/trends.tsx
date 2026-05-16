@@ -1,38 +1,212 @@
-import { StyleSheet, Text, View } from 'react-native';
+/**
+ * Trends tab — issue #44
+ *
+ * Three stacked cards backed by existing backend endpoints:
+ *   - Adherence streak  (GET /intake/streak)
+ *   - Weight trend      (GET /profile/weight-trend)
+ *   - Wellness score    (GET /wellness/score)
+ */
 
-import { colors, typography } from '../../utils/theme';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import StreakCard from '../../components/trends/StreakCard';
+import WeightCard from '../../components/trends/WeightCard';
+import WellnessCard from '../../components/trends/WellnessCard';
+import {
+  fetchStreak,
+  fetchWeightTrend,
+  fetchWellnessScore,
+  type IntakeStreak,
+  type WeightTrendEntry,
+  type WellnessScore,
+} from '../../services/trends';
+import { useAuthStore } from '../../stores/auth';
+import { colors, spacing, typography } from '../../utils/theme';
+
+interface TrendsState {
+  streak: IntakeStreak | null;
+  weight: WeightTrendEntry[];
+  wellness: WellnessScore | null;
+  loading: boolean;
+  refreshing: boolean;
+  error: string | null;
+}
+
+const initialState: TrendsState = {
+  streak: null,
+  weight: [],
+  wellness: null,
+  loading: true,
+  refreshing: false,
+  error: null,
+};
 
 export default function TrendsScreen() {
+  const token = useAuthStore((s) => s.token);
+  const [state, setState] = useState<TrendsState>(initialState);
+
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (!token) {
+        setState((s) => ({ ...s, loading: false, error: 'Sign in to see your trends.' }));
+        return;
+      }
+
+      setState((s) => ({
+        ...s,
+        loading: !isRefresh,
+        refreshing: isRefresh,
+        error: null,
+      }));
+
+      // Resolve each card independently — one endpoint failing shouldn't blank the screen.
+      const [streakRes, weightRes, wellnessRes] = await Promise.allSettled([
+        fetchStreak(token),
+        fetchWeightTrend(token),
+        fetchWellnessScore(token),
+      ]);
+
+      setState({
+        streak: streakRes.status === 'fulfilled' ? streakRes.value : null,
+        weight: weightRes.status === 'fulfilled' ? weightRes.value : [],
+        wellness: wellnessRes.status === 'fulfilled' ? wellnessRes.value : null,
+        loading: false,
+        refreshing: false,
+        error:
+          streakRes.status === 'rejected' &&
+          weightRes.status === 'rejected' &&
+          wellnessRes.status === 'rejected'
+            ? 'Could not load trends. Pull to refresh.'
+            : null,
+      });
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    void load(false);
+  }, [load]);
+
+  if (state.loading) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={styles.loadingText}>Loading trends…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (state.error) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>{state.error}</Text>
+          <Pressable
+            style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => void load(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading trends"
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.icon}>△</Text>
-      <Text style={styles.title}>Trends</Text>
-      <Text style={styles.sub}>Coming soon — adherence charts and insights</Text>
-    </View>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={state.refreshing}
+            onRefresh={() => void load(true)}
+            tintColor={colors.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Trends</Text>
+          <Text style={styles.subtitle}>Your consistency, body, and overall score.</Text>
+        </View>
+
+        <StreakCard streak={state.streak} />
+        <WeightCard entries={state.weight} />
+        <WellnessCard score={state.wellness} />
+
+        <View style={{ height: spacing.xxl }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
   },
-  icon: {
-    fontSize: 40,
-    color: colors.dim,
-    marginBottom: 8,
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.screenPad,
+    paddingTop: spacing.lg,
+  },
+  header: {
+    marginBottom: spacing.lg,
+    gap: 4,
   },
   title: {
-    ...typography.sectionTitle,
+    ...typography.pageTitle,
     color: colors.text,
   },
-  sub: {
+  subtitle: {
     ...typography.bodySmall,
     color: colors.text2,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+    gap: spacing.md,
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.text2,
+    marginTop: spacing.sm,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.danger,
     textAlign: 'center',
-    maxWidth: 260,
+  },
+  retryBtn: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: 14,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  retryText: {
+    ...typography.bodyStrong,
+    color: colors.text,
   },
 });
