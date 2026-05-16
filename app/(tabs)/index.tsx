@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AISuggestionBanner } from '../../components/summary/AISuggestionBanner';
@@ -67,6 +67,7 @@ export default function HomeScreen() {
     'You most often skip B-complex at midday. Consider moving it to your morning block to improve adherence.',
   );
 
+  const router = useRouter();
   const lastLogAt = useRef<number>(0);
 
   const loadSupplements = useCallback(
@@ -187,10 +188,21 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Topbar: greeting + date */}
+        {/* Topbar: greeting + date + profile */}
         <View style={styles.topbar}>
-          <Text style={styles.dateLabel}>{formatDate()}</Text>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <View style={styles.topbarLeft}>
+            <Text style={styles.dateLabel}>{formatDate()}</Text>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+          </View>
+          <Pressable
+            onPress={() => router.push('/(tabs)/profile' as Parameters<typeof router.push>[0])}
+            style={({ pressed }) => [styles.profileBtn, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.profileBtnText}>⊙</Text>
+          </Pressable>
         </View>
 
         {/* Dose progress hero card */}
@@ -246,7 +258,23 @@ const styles = StyleSheet.create({
   topbar: {
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
   },
+  topbarLeft: { flex: 1 },
+  profileBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  profileBtnText: { fontSize: 18, color: colors.text2 },
   dateLabel: {
     fontSize: 13,
     lineHeight: 18,
