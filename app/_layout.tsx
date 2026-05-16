@@ -1,12 +1,16 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import * as ExpoNotifications from 'expo-notifications';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '../stores/auth';
 import { useOnboardingStore } from '../stores/onboarding';
+import { configureNotificationHandler } from '../services/notifications';
 import { colors } from '../utils/theme';
+
+configureNotificationHandler();
 
 function AuthGate() {
   const router = useRouter();
@@ -70,8 +74,25 @@ function AuthGate() {
 export default function RootLayout() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const onboardingHydrated = useOnboardingStore((s) => s.isHydrated);
+  const router = useRouter();
+  const notifResponseRef = useRef<ExpoNotifications.EventSubscription | null>(null);
 
   const bothHydrated = isHydrated && onboardingHydrated;
+
+  // Deep-link to Home when user taps a dose reminder notification.
+  useEffect(() => {
+    notifResponseRef.current = ExpoNotifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const screen = response.notification.request.content.data?.screen;
+        if (screen === 'home') {
+          router.push('/(tabs)' as Parameters<typeof router.push>[0]);
+        }
+      },
+    );
+    return () => {
+      notifResponseRef.current?.remove();
+    };
+  }, [router]);
 
   return (
     <SafeAreaProvider>

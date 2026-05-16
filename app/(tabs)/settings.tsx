@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,11 @@ import {
   type DigestDay,
   type UserSettings,
 } from '../../services/settings';
+import {
+  cancelAllReminders,
+  requestPermissions,
+  scheduleDailyReminders,
+} from '../../services/notifications';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
@@ -71,6 +77,25 @@ export default function SettingsScreen() {
     setSettings(next);
     try {
       await patchSettings(token, update);
+
+      // Sync local push notifications.
+      const remindersEnabled = next.remindersEnabled;
+      const times = next.reminderTimes;
+
+      if (remindersEnabled && times.length > 0) {
+        const status = await requestPermissions();
+        if (status === 'granted') {
+          await scheduleDailyReminders(times);
+        } else if (status === 'denied') {
+          Alert.alert(
+            'Notifications blocked',
+            'Enable notifications for Recallth in Settings to receive dose reminders.',
+          );
+        }
+      } else {
+        await cancelAllReminders();
+      }
+
       setSaveMsg('Saved');
       setTimeout(() => setSaveMsg(null), 2000);
     } catch {
