@@ -208,3 +208,25 @@ export async function getRestockAlerts(token: string): Promise<RestockAlert[]> {
   const res = await api.get<RestockAlertsResponse>('/cabinet/restock-alerts', { token });
   return res.data?.alerts ?? [];
 }
+
+// ─── Redundancy Check ─────────────────────────────────────────────────────────
+
+export type RedundancyRisk = 'low' | 'moderate' | 'high';
+
+export interface Redundancy {
+  items: string[];
+  nutrient: string;
+  risk: RedundancyRisk;
+  explanation: string;
+  recommendation: string;
+}
+
+interface RedundanciesResponse {
+  success: boolean;
+  data: { redundancies: Redundancy[] };
+}
+
+export async function getRedundancies(token: string): Promise<Redundancy[]> {
+  const res = await api.get<RedundanciesResponse>('/cabinet/redundancies', { token });
+  return res.data?.redundancies ?? [];
+}
