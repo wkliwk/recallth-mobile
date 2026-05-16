@@ -189,3 +189,22 @@ export async function getEvidenceScores(token: string): Promise<EvidenceScore[]>
   const res = await api.get<EvidenceScoresResponse>('/cabinet/evidence-scores', { token });
   return res.data?.scores ?? [];
 }
+
+// ─── Restock Alerts ───────────────────────────────────────────────────────────
+
+export interface RestockAlert {
+  id: string;
+  name: string;
+  daysSupplyRemaining: number;
+  quantityRemaining: number;
+}
+
+interface RestockAlertsResponse {
+  success: boolean;
+  data: { alerts: RestockAlert[] };
+}
+
+export async function getRestockAlerts(token: string): Promise<RestockAlert[]> {
+  const res = await api.get<RestockAlertsResponse>('/cabinet/restock-alerts', { token });
+  return res.data?.alerts ?? [];
+}
