@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.recallth.mobile"
+      "bundleIdentifier": "com.recallth.mobile",
+      "infoPlist": {
+        "NSUserNotificationUsageDescription": "Recallth sends daily reminders to help you stay on track with your supplement schedule."
+      }
     },
     "android": {
       "package": "com.recallth.mobile",
@@ -32,7 +35,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff",
+          "sounds": [],
+          "mode": "production"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
