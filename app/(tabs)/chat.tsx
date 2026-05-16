@@ -11,7 +11,7 @@
  * - New conversation button in header.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   Platform,
@@ -24,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatBubble } from '../../components/chat/ChatBubble';
 import { ChatComposer } from '../../components/chat/ChatComposer';
+import { ConversationHistorySheet } from '../../components/chat/ConversationHistorySheet';
 import { ExtractionToast } from '../../components/chat/ExtractionToast';
 import { QuickPromptChip } from '../../components/chat/QuickPromptChip';
 import { useAuthStore } from '../../stores/auth';
@@ -90,6 +91,7 @@ function DisclaimerStrip() {
 
 export default function ChatScreen() {
   const token = useAuthStore((s) => s.token);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const {
     messages,
     conversationId,
@@ -198,14 +200,26 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>AI Chat</Text>
-        <Pressable
-          style={({ pressed }) => [styles.newBtn, pressed && styles.newBtnPressed]}
-          onPress={handleNewConversation}
-          accessibilityRole="button"
-          accessibilityLabel="Start new conversation"
-        >
-          <Text style={styles.newBtnText}>+ New</Text>
-        </Pressable>
+        <View style={styles.headerBtns}>
+          {token !== null && (
+            <Pressable
+              style={({ pressed }) => [styles.historyBtn, pressed && styles.newBtnPressed]}
+              onPress={() => setHistoryOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="View conversation history"
+            >
+              <Text style={styles.historyBtnText}>History</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={({ pressed }) => [styles.newBtn, pressed && styles.newBtnPressed]}
+            onPress={handleNewConversation}
+            accessibilityRole="button"
+            accessibilityLabel="Start new conversation"
+          >
+            <Text style={styles.newBtnText}>+ New</Text>
+          </Pressable>
+        </View>
       </View>
 
       <DisclaimerStrip />
@@ -234,6 +248,19 @@ export default function ChatScreen() {
 
       {/* Composer */}
       <ChatComposer onSend={handleSend} isLoading={isLoading} />
+
+      {token !== null && (
+        <ConversationHistorySheet
+          visible={historyOpen}
+          token={token}
+          activeConversationId={conversationId}
+          onSelect={(id) => {
+            setHistoryOpen(false);
+            void loadConversation(id, token);
+          }}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -260,6 +287,24 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...typography.sectionTitle,
     color: colors.text,
+  },
+  headerBtns: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  historyBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  historyBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text2,
   },
   newBtn: {
     paddingHorizontal: spacing.md,
