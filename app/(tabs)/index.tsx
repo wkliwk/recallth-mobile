@@ -16,7 +16,7 @@ import {
 } from '../../components/summary/mockData';
 import { listCabinetItems, type CabinetItem } from '../../services/cabinet';
 import { logIntakeToday } from '../../services/intake';
-import { logDose, unlogDose } from '../../services/schedule';
+import { getTodayDoseLogs, logDose, unlogDose } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
@@ -81,14 +81,29 @@ export default function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const [supplementsRes, briefRes] = await Promise.allSettled([
+      const [supplementsRes, briefRes, doseLogsRes] = await Promise.allSettled([
         listCabinetItems(token),
         fetchDailyBrief(token),
+        getTodayDoseLogs(token),
       ]);
 
       if (supplementsRes.status === 'fulfilled') {
         const entries = supplementsRes.value.map(cabinetToEntry);
-        setSupplements(entries.length > 0 ? entries : MOCK_SUPPLEMENTS);
+        const base = entries.length > 0 ? entries : MOCK_SUPPLEMENTS;
+
+        // Restore taken state from today's dose logs.
+        if (doseLogsRes.status === 'fulfilled' && doseLogsRes.value.length > 0) {
+          const logsBySuppId = new Map<string, string>();
+          for (const log of doseLogsRes.value) {
+            logsBySuppId.set(log.supplementId, log._id);
+          }
+          setSupplements(base.map((s) => {
+            const logId = logsBySuppId.get(s.id);
+            return logId ? { ...s, taken: true, doseLogId: logId } : s;
+          }));
+        } else {
+          setSupplements(base);
+        }
       } else {
         setSupplements(MOCK_SUPPLEMENTS);
       }

@@ -30,3 +30,17 @@ export async function logDose(
 export async function unlogDose(token: string, logId: string): Promise<void> {
   await api.delete(`/schedule/log-dose/${logId}`, { token });
 }
+
+interface DoseLogsResponse {
+  success: boolean;
+  data: DoseLogEntry[];
+}
+
+export async function getTodayDoseLogs(token: string): Promise<DoseLogEntry[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const res = await api.get<DoseLogsResponse>(
+    `/schedule/dose-logs?from=${today}&to=${today}`,
+    { token },
+  );
+  return Array.isArray(res.data) ? res.data : [];
+}
