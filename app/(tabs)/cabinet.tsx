@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -222,6 +223,21 @@ export default function CabinetScreen() {
       ]);
       const card = apiItemToCard(newItem, interactions, evidenceScores);
       setState((s) => ({ ...s, items: [card, ...s.items] }));
+
+      // Alert if the newly added item has any interactions
+      const newItemConflicts = interactions.filter(
+        (ix) => ix.item1 === newItem._id || ix.item2 === newItem._id,
+      );
+      if (newItemConflicts.length > 0) {
+        const details = newItemConflicts
+          .map((ix) => `• [${ix.severity}] ${ix.description}`)
+          .join('\n');
+        Alert.alert(
+          '⚠ Interaction Detected',
+          `${newItem.name} may interact with supplements already in your cabinet:\n\n${details}`,
+          [{ text: 'OK' }],
+        );
+      }
     },
     [token],
   );
