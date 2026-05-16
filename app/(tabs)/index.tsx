@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +12,8 @@ import {
   type SupplementEntry,
   type TimeBlock,
 } from '../../components/summary/mockData';
+import { logIntakeToday } from '../../services/intake';
+import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -35,15 +37,42 @@ function formatDate(): string {
 
 export default function HomeScreen() {
   const [supplements, setSupplements] = useState<SupplementEntry[]>(MOCK_SUPPLEMENTS);
+  const token = useAuthStore((s) => s.token);
 
   const taken = supplements.filter((s) => s.taken).length;
   const total = supplements.length;
 
-  const toggleTaken = (id: string) => {
-    setSupplements((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, taken: !s.taken } : s)),
-    );
-  };
+  // Coalesce rapid taps within 500ms to a single backend call.
+  const lastLogAt = useRef<number>(0);
+
+  const toggleTaken = useCallback(
+    (id: string) => {
+      // Optimistic flip — capture the new state for this row.
+      let becameTaken = false;
+      setSupplements((prev) =>
+        prev.map((s) => {
+          if (s.id !== id) return s;
+          becameTaken = !s.taken;
+          return { ...s, taken: becameTaken };
+        }),
+      );
+
+      // Only POST when transitioning false → true, and only if signed in.
+      if (!becameTaken || !token) return;
+
+      const now = Date.now();
+      if (now - lastLogAt.current < 500) return;
+      lastLogAt.current = now;
+
+      void logIntakeToday(token).catch(() => {
+        // Revert this row's optimistic flip; in-flight cache already cleared.
+        setSupplements((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, taken: !becameTaken } : s)),
+        );
+      });
+    },
+    [token],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
