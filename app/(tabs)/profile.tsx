@@ -45,6 +45,7 @@ import {
 } from '../../services/profile';
 import { useAuthStore } from '../../stores/auth';
 import { listBloodwork, type BloodworkEntry } from '../../services/bloodwork';
+import { listExtractions } from '../../services/extractionReview';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -182,6 +183,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const [bloodworkEntries, setBloodworkEntries] = useState<BloodworkEntry[]>([]);
+  const [pendingExtractionCount, setPendingExtractionCount] = useState(0);
 
   // Auto-reset success feedback after 2s
   const successTimers = useRef<Record<SectionKey, ReturnType<typeof setTimeout> | null>>({
@@ -196,12 +198,14 @@ export default function ProfileScreen() {
       if (!token) return;
       dispatch({ type: isRefresh ? 'REFRESH_START' : 'LOAD_START' });
       try {
-        const [profile, weightLog, bloodwork] = await Promise.all([
+        const [profile, weightLog, bloodwork, extractions] = await Promise.all([
           fetchProfile(token),
           fetchWeightLog(token, 30),
           listBloodwork(token).catch(() => [] as BloodworkEntry[]),
+          listExtractions(token).catch(() => []),
         ]);
         setBloodworkEntries(bloodwork);
+        setPendingExtractionCount(extractions.filter((e) => e.status === 'pending').length);
         dispatch({ type: 'LOAD_SUCCESS', profile, weightLog });
       } catch (err) {
         const message =
@@ -550,7 +554,14 @@ export default function ProfileScreen() {
           accessibilityRole="button"
           accessibilityLabel="Review AI extractions"
         >
-          <Text style={styles.extractionReviewText}>Review AI Extractions →</Text>
+          <View style={styles.extractionReviewRow}>
+            <Text style={styles.extractionReviewText}>Review AI Extractions →</Text>
+            {pendingExtractionCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{pendingExtractionCount}</Text>
+              </View>
+            )}
+          </View>
         </Pressable>
 
         {/* History link */}
@@ -630,10 +641,29 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
+  extractionReviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   extractionReviewText: {
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
+  },
+  badge: {
+    backgroundColor: colors.danger,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
   },
   historyLink: {
     marginTop: spacing.sm,
