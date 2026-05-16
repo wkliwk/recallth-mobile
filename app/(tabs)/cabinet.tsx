@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { CabinetCard } from '../../components/cabinet/CabinetCard';
 import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
+import { SupplementDetailSheet } from '../../components/cabinet/SupplementDetailSheet';
 import type { CabinetMockItem } from '../../components/cabinet/CabinetCard';
 import {
   createCabinetItem,
@@ -141,6 +142,7 @@ export default function CabinetScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [editingItem, setEditingItem] = useState<CabinetItem | null>(null);
+  const [detailItem, setDetailItem] = useState<CabinetItem | null>(null);
   const [restockDismissed, setRestockDismissed] = useState(false);
 
   const load = useCallback(
@@ -277,6 +279,21 @@ export default function CabinetScreen() {
     [token, load],
   );
 
+  const handleDetailUpdated = useCallback(
+    (updated: CabinetItem) => {
+      setState((s) => ({
+        ...s,
+        items: s.items.map((x) =>
+          x._id === updated._id
+            ? { ...x, _source: updated, dose: updated.dosage ?? x.dose }
+            : x,
+        ),
+      }));
+      setDetailItem(updated);
+    },
+    [],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return state.items;
@@ -404,6 +421,7 @@ export default function CabinetScreen() {
                     onDelete={() => handleDelete(left._id)}
                     onEdit={left._source ? () => setEditingItem(left._source!) : undefined}
                     onUpdateStock={left._source ? (delta) => handleUpdateStock(left._id, delta) : undefined}
+                    onViewDetail={left._source ? () => setDetailItem(left._source!) : undefined}
                   />
                 </View>
                 <View style={styles.gridCell}>
@@ -415,6 +433,7 @@ export default function CabinetScreen() {
                       onDelete={() => handleDelete(right._id)}
                       onEdit={right._source ? () => setEditingItem(right._source!) : undefined}
                       onUpdateStock={right._source ? (delta) => handleUpdateStock(right._id, delta) : undefined}
+                      onViewDetail={right._source ? () => setDetailItem(right._source!) : undefined}
                     />
                   )}
                 </View>
@@ -437,6 +456,21 @@ export default function CabinetScreen() {
         onSave={handleUpdate}
         item={editingItem}
       />
+      {token !== null && (
+        <SupplementDetailSheet
+          visible={detailItem !== null}
+          item={detailItem}
+          token={token}
+          onClose={() => setDetailItem(null)}
+          onUpdated={handleDetailUpdated}
+          onStockChange={detailItem ? (_, delta) => handleUpdateStock(detailItem._id, delta) : undefined}
+          currentStock={
+            detailItem
+              ? state.items.find((x) => x._id === detailItem._id)?.stock
+              : undefined
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
