@@ -44,3 +44,15 @@ export async function getTodayDoseLogs(token: string): Promise<DoseLogEntry[]> {
   );
   return Array.isArray(res.data) ? res.data : [];
 }
+
+export async function getDoseLogsRange(
+  token: string,
+  from: string,
+  to: string,
+): Promise<DoseLogEntry[]> {
+  const res = await api.get<DoseLogsResponse>(
+    `/schedule/dose-logs?from=${from}&to=${to}`,
+    { token },
+  );
+  return Array.isArray(res.data) ? res.data : [];
+}
