@@ -7,6 +7,12 @@ import { EvidenceBar } from './EvidenceBar';
 export type EvidenceLevel = 'High' | 'Moderate' | 'Limited';
 export type SupplementStatus = 'ok' | 'conflict';
 
+export interface ResearchNotes {
+  summary: string;
+  commonDosage: string;
+  cautions: string;
+}
+
 export interface CabinetMockItem {
   name: string;
   dose: string;
@@ -17,6 +23,7 @@ export interface CabinetMockItem {
   stock?: number;
   conflictNote?: string;
   startDate?: string;
+  researchNotes?: ResearchNotes;
 }
 
 interface CabinetCardProps {
@@ -93,6 +100,20 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit }: Ca
           {item.status === 'conflict' && item.conflictNote !== undefined && (
             <View style={styles.conflictNote}>
               <Text style={styles.conflictNoteText}>⚠ {item.conflictNote}</Text>
+            </View>
+          )}
+
+          {/* Research notes */}
+          {item.researchNotes !== undefined && (
+            <View style={styles.researchSection}>
+              <Text style={styles.researchLabel}>Research</Text>
+              <Text style={styles.researchText}>{item.researchNotes.summary}</Text>
+              {item.researchNotes.commonDosage.length > 0 && (
+                <Text style={styles.researchMeta}>Typical dose: {item.researchNotes.commonDosage}</Text>
+              )}
+              {item.researchNotes.cautions.length > 0 && (
+                <Text style={styles.researchCautions}>⚠ {item.researchNotes.cautions}</Text>
+              )}
             </View>
           )}
 
@@ -251,6 +272,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.warning,
     lineHeight: 18,
+  },
+  researchSection: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.bg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  researchLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.text3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
+  },
+  researchText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
+  },
+  researchMeta: {
+    fontSize: 12,
+    color: colors.text2,
+    marginTop: spacing.xs,
+    lineHeight: 17,
+  },
+  researchCautions: {
+    fontSize: 12,
+    color: colors.warning,
+    marginTop: spacing.xs,
+    lineHeight: 17,
   },
   actions: {
     flexDirection: 'row',

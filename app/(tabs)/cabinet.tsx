@@ -84,6 +84,7 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[], evidenceS
     stock: item.daysSupplyRemaining,
     conflictNote,
     startDate: item.startDate,
+    researchNotes: item.researchNotes,
     _source: item,
   };
 }
