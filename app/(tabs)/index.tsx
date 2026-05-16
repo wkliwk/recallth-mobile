@@ -3,6 +3,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AISuggestionBanner } from '../../components/summary/AISuggestionBanner';
+import { fetchDailyBrief } from '../../services/insights';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
 import { ScheduleSection } from '../../components/summary/ScheduleSection';
 import {
@@ -60,6 +61,9 @@ export default function HomeScreen() {
   const [supplements, setSupplements] = useState<SupplementEntry[]>(MOCK_SUPPLEMENTS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(
+    'You most often skip B-complex at midday. Consider moving it to your morning block to improve adherence.',
+  );
 
   const lastLogAt = useRef<number>(0);
 
@@ -74,16 +78,24 @@ export default function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      try {
-        const items = await listCabinetItems(token);
-        const entries = items.map(cabinetToEntry);
+      const [supplementsRes, briefRes] = await Promise.allSettled([
+        listCabinetItems(token),
+        fetchDailyBrief(token),
+      ]);
+
+      if (supplementsRes.status === 'fulfilled') {
+        const entries = supplementsRes.value.map(cabinetToEntry);
         setSupplements(entries.length > 0 ? entries : MOCK_SUPPLEMENTS);
-      } catch {
+      } else {
         setSupplements(MOCK_SUPPLEMENTS);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
       }
+
+      if (briefRes.status === 'fulfilled') {
+        setAiSuggestion(briefRes.value);
+      }
+
+      setLoading(false);
+      setRefreshing(false);
     },
     [token],
   );
@@ -171,7 +183,7 @@ export default function HomeScreen() {
         </View>
 
         {/* AI suggestion banner */}
-        <AISuggestionBanner suggestion="You most often skip B-complex at midday. Consider moving it to your morning block to improve adherence." />
+        {aiSuggestion !== null && <AISuggestionBanner suggestion={aiSuggestion} />}
 
         <Text style={styles.disclaimer}>
           Not medical advice. Always consult your doctor.
