@@ -26,6 +26,7 @@ export async function requestPermissions(): Promise<'granted' | 'denied' | 'unde
 
 /**
  * Schedule one repeating daily notification per HH:MM string.
+ * Also schedules the weekly Sunday summary.
  * Cancels all existing notifications first.
  */
 export async function scheduleDailyReminders(times: string[]): Promise<void> {
@@ -52,6 +53,27 @@ export async function scheduleDailyReminders(times: string[]): Promise<void> {
       },
     });
   }
+
+  await scheduleWeeklySummary();
+}
+
+// Schedule a repeating Sunday 09:00 adherence summary notification.
+export async function scheduleWeeklySummary(): Promise<void> {
+  await ExpoNotifications.scheduleNotificationAsync({
+    content: {
+      title: 'Recallth',
+      body: 'Check in on your weekly supplement progress 💊',
+      data: { screen: 'trends' },
+      sound: true,
+    },
+    trigger: {
+      type: ExpoNotifications.SchedulableTriggerInputTypes.CALENDAR,
+      weekday: 1, // Sunday (1=Sunday on iOS/Android)
+      hour: 9,
+      minute: 0,
+      repeats: true,
+    },
+  });
 }
 
 export async function cancelAllReminders(): Promise<void> {

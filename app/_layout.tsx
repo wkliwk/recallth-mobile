@@ -86,6 +86,8 @@ export default function RootLayout() {
         const screen = response.notification.request.content.data?.screen;
         if (screen === 'home') {
           router.push('/(tabs)' as Parameters<typeof router.push>[0]);
+        } else if (screen === 'trends') {
+          router.push('/(tabs)/trends' as Parameters<typeof router.push>[0]);
         }
       },
     );
