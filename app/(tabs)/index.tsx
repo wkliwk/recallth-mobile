@@ -16,6 +16,7 @@ import {
 } from '../../components/summary/mockData';
 import { listCabinetItems, type CabinetItem } from '../../services/cabinet';
 import { logIntakeToday } from '../../services/intake';
+import { logDose, unlogDose } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
@@ -120,28 +121,46 @@ export default function HomeScreen() {
 
   const toggleTaken = useCallback(
     (id: string) => {
-      let becameTaken = false;
+      // Find the supplement before mutating state.
+      const target = supplements.find((s) => s.id === id);
+      if (!target) return;
+
+      const becameTaken = !target.taken;
+
+      // Optimistic update.
       setSupplements((prev) =>
-        prev.map((s) => {
-          if (s.id !== id) return s;
-          becameTaken = !s.taken;
-          return { ...s, taken: becameTaken };
-        }),
+        prev.map((s) => (s.id === id ? { ...s, taken: becameTaken, doseLogId: becameTaken ? s.doseLogId : undefined } : s)),
       );
 
-      if (!becameTaken || !token) return;
+      if (!token) return;
 
-      const now = Date.now();
-      if (now - lastLogAt.current < 500) return;
-      lastLogAt.current = now;
+      if (becameTaken) {
+        // Log the specific dose + call streak endpoint on first mark of the day.
+        void logDose(token, id, target.name, target.timeBlock).then((log) => {
+          setSupplements((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, doseLogId: log._id } : s)),
+          );
+        }).catch(() => {
+          setSupplements((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, taken: false, doseLogId: undefined } : s)),
+          );
+        });
 
-      void logIntakeToday(token).catch(() => {
-        setSupplements((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, taken: !becameTaken } : s)),
-        );
-      });
+        const now = Date.now();
+        if (now - lastLogAt.current >= 500) {
+          lastLogAt.current = now;
+          void logIntakeToday(token).catch(() => {/* streak failure is non-critical */});
+        }
+      } else if (target.doseLogId) {
+        // Undo the dose log.
+        void unlogDose(token, target.doseLogId).catch(() => {
+          setSupplements((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, taken: true } : s)),
+          );
+        });
+      }
     },
-    [token],
+    [token, supplements],
   );
 
   if (loading) {
