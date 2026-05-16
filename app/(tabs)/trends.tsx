@@ -90,7 +90,7 @@ export default function TrendsScreen() {
 
       // Resolve each card independently — one endpoint failing shouldn't blank the screen.
       const today = new Date().toISOString().slice(0, 10);
-      const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const weekAgo = new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
       const [streakRes, weightRes, wellnessRes, redundanciesRes, weekLogsRes, cabinetRes, journalRes, journalInsightsRes] = await Promise.allSettled([
         fetchStreak(token),
