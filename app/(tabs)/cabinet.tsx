@@ -139,7 +139,7 @@ export default function CabinetScreen() {
   const [restockDismissed, setRestockDismissed] = useState(false);
 
   const load = useCallback(
-    async (isRefresh = false) => {
+    async (isRefresh = false, isSilent = false) => {
       if (!token) {
         setState({
           items: MOCK_DATA.map((m, i) => ({ ...m, _id: `mock-${i}` })),
@@ -152,7 +152,7 @@ export default function CabinetScreen() {
         return;
       }
 
-      setState((s) => ({ ...s, loading: !isRefresh, refreshing: isRefresh, error: null }));
+      setState((s) => ({ ...s, loading: !isRefresh && !isSilent, refreshing: isRefresh, error: null }));
 
       const [itemsRes, interactionsRes, evidenceRes, restockRes] = await Promise.allSettled([
         listAllCabinetItems(token),
@@ -201,7 +201,7 @@ export default function CabinetScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!cabinetInitDone.current) return;
-      void load(false);
+      void load(false, true);
     }, [load]),
   );
 

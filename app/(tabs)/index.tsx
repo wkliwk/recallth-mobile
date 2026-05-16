@@ -71,7 +71,7 @@ export default function HomeScreen() {
   const lastLogAt = useRef<number>(0);
 
   const loadSupplements = useCallback(
-    async (isRefresh = false) => {
+    async (isRefresh = false, isSilent = false) => {
       if (!token) {
         setSupplements(MOCK_SUPPLEMENTS);
         setLoading(false);
@@ -79,7 +79,7 @@ export default function HomeScreen() {
       }
 
       if (isRefresh) setRefreshing(true);
-      else setLoading(true);
+      else if (!isSilent) setLoading(true);
 
       const [supplementsRes, briefRes, doseLogsRes] = await Promise.allSettled([
         listCabinetItems(token),
@@ -128,7 +128,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!initialLoadDone.current) return;
-      void loadSupplements(false);
+      void loadSupplements(false, true);
     }, [loadSupplements]),
   );
 
