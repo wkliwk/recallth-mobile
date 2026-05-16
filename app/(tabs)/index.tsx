@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AISuggestionBanner } from '../../components/summary/AISuggestionBanner';
 import { DailyCheckInCard } from '../../components/summary/DailyCheckInCard';
+import { InteractionWarningBanner } from '../../components/summary/InteractionWarningBanner';
 import { fetchDailyBrief } from '../../services/insights';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
@@ -16,7 +17,7 @@ import {
   type SupplementEntry,
   type TimeBlock,
 } from '../../components/summary/mockData';
-import { listCabinetItems, type CabinetItem } from '../../services/cabinet';
+import { getInteractions, listCabinetItems, type CabinetItem } from '../../services/cabinet';
 import { logIntakeToday } from '../../services/intake';
 import { getTodayDoseLogs, logDose, unlogDose } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
@@ -72,6 +73,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const lastLogAt = useRef<number>(0);
   const [todayJournal, setTodayJournal] = useState<JournalEntry | null>(null);
+  const [interactionCount, setInteractionCount] = useState(0);
 
   const loadSupplements = useCallback(
     async (isRefresh = false, isSilent = false) => {
@@ -84,11 +86,12 @@ export default function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else if (!isSilent) setLoading(true);
 
-      const [supplementsRes, briefRes, doseLogsRes, journalRes] = await Promise.allSettled([
+      const [supplementsRes, briefRes, doseLogsRes, journalRes, interactionsRes] = await Promise.allSettled([
         listCabinetItems(token),
         fetchDailyBrief(token),
         getTodayDoseLogs(token),
         getTodayJournal(token),
+        getInteractions(token),
       ]);
 
       if (supplementsRes.status === 'fulfilled') {
@@ -118,6 +121,10 @@ export default function HomeScreen() {
 
       if (journalRes.status === 'fulfilled') {
         setTodayJournal(journalRes.value);
+      }
+
+      if (interactionsRes.status === 'fulfilled') {
+        setInteractionCount(interactionsRes.value.length);
       }
 
       setLoading(false);
@@ -230,6 +237,14 @@ export default function HomeScreen() {
 
         {/* Dose progress hero card */}
         <DoseProgressCard taken={taken} total={total} />
+
+        {/* Interaction warnings */}
+        {interactionCount > 0 && (
+          <InteractionWarningBanner
+            count={interactionCount}
+            onPress={() => router.push('/(tabs)/cabinet' as Parameters<typeof router.push>[0])}
+          />
+        )}
 
         {/* Time-block schedule card */}
         <View style={styles.scheduleCard}>
