@@ -230,3 +230,30 @@ export async function getRedundancies(token: string): Promise<Redundancy[]> {
   const res = await api.get<RedundanciesResponse>('/cabinet/redundancies', { token });
   return res.data?.redundancies ?? [];
 }
+
+// ─── Deep Research ────────────────────────────────────────────────────────────
+
+export interface DeepResearch {
+  name: string;
+  summary: string;
+  keyStudiesCount: number;
+  dosageRange: string;
+  safetyNotes: string;
+  sources: string[];
+  generatedAt: string;
+  cached: boolean;
+}
+
+interface DeepResearchResponse {
+  success: boolean;
+  data: DeepResearch | null;
+  generating?: boolean;
+}
+
+export async function getSupplementResearch(
+  id: string,
+  token: string,
+): Promise<{ research: DeepResearch | null; generating: boolean }> {
+  const res = await api.get<DeepResearchResponse>(`/cabinet/${id}/research`, { token });
+  return { research: res.data ?? null, generating: res.generating ?? false };
+}
