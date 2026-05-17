@@ -20,6 +20,8 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Recallth sends daily reminders to help you stay on track with your supplement schedule.",
+        "NSPhotoLibraryUsageDescription": "Recallth accesses your photo library so you can scan supplement bottle labels.",
+        "NSCameraUsageDescription": "Recallth uses your camera to photograph supplement bottle labels.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -54,6 +56,13 @@
         "expo-camera",
         {
           "cameraPermission": "Recallth uses your camera to scan supplement barcodes."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Recallth accesses your photo library so you can scan supplement bottle labels.",
+          "cameraPermission": "Recallth uses your camera to photograph supplement bottle labels."
         }
       ]
     ],

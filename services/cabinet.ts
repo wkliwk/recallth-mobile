@@ -157,6 +157,38 @@ export async function getInteractions(token: string): Promise<Interaction[]> {
   return res.data?.interactions ?? [];
 }
 
+// ─── Label Scan (image → fields) ─────────────────────────────────────────────
+
+export interface LabelScanResult {
+  name: string;
+  brand: string | null;
+  type: SupplementType;
+  dosage: string | null;
+  ingredients: string | null;
+}
+
+interface LabelScanResponse {
+  success: boolean;
+  data: LabelScanResult;
+}
+
+/**
+ * Sends a base64-encoded image to POST /cabinet/scan and returns extracted fields.
+ * The image should be pre-resized to ≤1024px on the client to keep latency low.
+ */
+export async function extractSupplementFromImage(
+  token: string,
+  imageBase64: string,
+  mimeType: string = 'image/jpeg',
+): Promise<LabelScanResult> {
+  const res = await api.post<LabelScanResponse>(
+    '/cabinet/scan',
+    { imageBase64, mimeType },
+    { token },
+  );
+  return res.data;
+}
+
 // ─── AI Lookup ────────────────────────────────────────────────────────────────
 
 export interface AiSuggestion {
