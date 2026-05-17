@@ -1,6 +1,8 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { listCabinetItems, getInteractions, type CabinetItem } from './cabinet';
+import { getDoseLogsRange } from './schedule';
 import { getMonthlySummary } from './insights';
 import { buildReportHtml } from '../utils/reportTemplate';
 import { badgeById, type EarnedBadge } from '../utils/badges';
@@ -39,6 +41,49 @@ ${topBadge ? `<div class="badge-icon">${topBadge.icon}</div><div class="badge-la
     dialogTitle: 'Share your Recallth progress',
     UTI: 'com.adobe.pdf',
   });
+}
+
+function escapeCsvField(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+export async function exportDoseCsv(token: string): Promise<'no_logs' | 'ok'> {
+  const today = new Date().toISOString().slice(0, 10);
+  const logs = await getDoseLogsRange(token, '2020-01-01', today);
+  if (logs.length === 0) return 'no_logs';
+
+  const header = 'date,supplement_name,slot,taken_at,notes,backfill\n';
+  const rows = logs
+    .slice()
+    .sort((a, b) => new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime())
+    .map((log) => {
+      const date = log.takenAt.slice(0, 10);
+      return [
+        escapeCsvField(date),
+        escapeCsvField(log.supplementName),
+        escapeCsvField(log.slot),
+        escapeCsvField(log.takenAt),
+        escapeCsvField(log.notes ?? ''),
+        log.backfill ? 'true' : 'false',
+      ].join(',');
+    })
+    .join('\n');
+
+  const csv = header + rows;
+  const fileName = `recallth-dose-logs-${today}.csv`;
+  const fileUri = `${FileSystem.cacheDirectory ?? ''}${fileName}`;
+  await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+
+  await Sharing.shareAsync(fileUri, {
+    mimeType: 'text/csv',
+    dialogTitle: 'Export Dose Logs',
+    UTI: 'public.comma-separated-values-text',
+  });
+
+  return 'ok';
 }
 
 export async function generateAndShareReport(token: string, userName: string): Promise<void> {
