@@ -1,17 +1,17 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 type DoseProgressCardProps = {
   taken: number;
   total: number;
 };
 
-/**
- * Hero card showing today's dose fraction and a horizontal progress bar.
- * Background: warm cream (colors.cardSolid) on white surface.
- */
 export function DoseProgressCard({ taken, total }: DoseProgressCardProps) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const progress = total > 0 ? taken / total : 0;
   const allDone = taken === total && total > 0;
 
@@ -46,12 +46,13 @@ export function DoseProgressCard({ taken, total }: DoseProgressCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: colors.cardSolid,
+    backgroundColor: c.cardSolid,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.xl,
     marginBottom: 14,
     shadowColor: '#000',
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '600',
-    color: colors.primary,
+    color: c.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: spacing.sm,
@@ -79,37 +80,37 @@ const styles = StyleSheet.create({
     lineHeight: 56,
     fontWeight: '700',
     letterSpacing: -1.5,
-    color: colors.text,
+    color: c.text,
   },
   totalCount: {
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '400',
-    color: colors.text2,
+    color: c.text2,
   },
   progressTrack: {
     height: 8,
     borderRadius: radius.full,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     overflow: 'hidden',
     marginBottom: spacing.sm,
   },
   progressFill: {
     height: '100%',
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   progressFillDone: {
-    backgroundColor: colors.ok,
+    backgroundColor: c.ok,
   },
   statusText: {
     fontSize: 12,
     lineHeight: 16,
-    color: colors.text2,
+    color: c.text2,
     marginTop: spacing.xs,
   },
   statusTextDone: {
-    color: colors.ok,
+    color: c.ok,
     fontWeight: '600',
   },
-});
+});};

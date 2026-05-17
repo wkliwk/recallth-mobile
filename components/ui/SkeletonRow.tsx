@@ -3,12 +3,15 @@
  * Simple static version (no animation dep needed for MVP).
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 export function SkeletonRow(): React.JSX.Element {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.row}>
       <View style={styles.icon} />
@@ -20,25 +23,26 @@ export function SkeletonRow(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.screenPad,
     paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     marginHorizontal: spacing.screenPad,
     marginBottom: spacing.sm,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     gap: spacing.md,
   },
   icon: {
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.cardSolid,
+    backgroundColor: c.cardSolid,
   },
   content: {
     flex: 1,
@@ -48,12 +52,12 @@ const styles = StyleSheet.create({
     height: 14,
     width: '70%',
     borderRadius: radius.sm,
-    backgroundColor: colors.cardSolid,
+    backgroundColor: c.cardSolid,
   },
   subtitleBar: {
     height: 12,
     width: '45%',
     borderRadius: radius.sm,
-    backgroundColor: colors.cardSolid,
+    backgroundColor: c.cardSolid,
   },
-});
+});}

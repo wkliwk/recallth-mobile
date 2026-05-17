@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '../../utils/theme';
+import { ColorPalette, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 type EvidenceLevel = 'High' | 'Moderate' | 'Limited';
 
@@ -9,14 +10,16 @@ interface EvidenceBarProps {
   pct: number;
 }
 
-function barColor(level: EvidenceLevel): string {
-  if (level === 'High') return colors.ok;
-  if (level === 'Moderate') return colors.primary;
-  return colors.warning;
+function barColor(level: EvidenceLevel, c: ColorPalette): string {
+  if (level === 'High') return c.ok;
+  if (level === 'Moderate') return c.primary;
+  return c.warning;
 }
 
 export function EvidenceBar({ level, pct }: EvidenceBarProps) {
-  const color = barColor(level);
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const color = barColor(level, c);
   const clampedPct = Math.min(100, Math.max(0, pct));
 
   return (
@@ -31,7 +34,8 @@ export function EvidenceBar({ level, pct }: EvidenceBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -41,7 +45,7 @@ const styles = StyleSheet.create({
   track: {
     flex: 1,
     height: 5,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -52,8 +56,8 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '500',
-    color: colors.text2,
+    color: c.text2,
     minWidth: 56,
     textAlign: 'right',
   },
-});
+});}

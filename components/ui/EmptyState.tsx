@@ -3,10 +3,11 @@
  * Renders an illustration (emoji), heading, and optional CTA.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   illustration?: string;
@@ -23,6 +24,8 @@ export function EmptyState({
   ctaLabel,
   onCta,
 }: Props): React.JSX.Element {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.container}>
       <Text style={styles.illustration}>{illustration}</Text>
@@ -42,7 +45,8 @@ export function EmptyState({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
@@ -56,17 +60,17 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.sectionTitle,
-    color: colors.text,
+    color: c.text,
     textAlign: 'center',
   },
   subtitle: {
     ...typography.body,
-    color: colors.text2,
+    color: c.text2,
     textAlign: 'center',
   },
   cta: {
     marginTop: spacing.md,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
@@ -76,6 +80,6 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     ...typography.cta,
-    color: colors.surface,
+    color: c.surface,
   },
-});
+});}

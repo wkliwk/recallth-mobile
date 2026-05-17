@@ -5,10 +5,11 @@
  * into the composer's send handler. Used on Home hero and Chat empty state.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,8 @@ export const QuickPromptChip = React.memo(function QuickPromptChip({
   label,
   onPress,
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable
       style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
@@ -37,22 +40,23 @@ export const QuickPromptChip = React.memo(function QuickPromptChip({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   chip: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
     borderWidth: 1,
-    borderColor: colors.primaryMid,
+    borderColor: c.primaryMid,
     borderRadius: radius.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   chipPressed: {
     opacity: 0.7,
-    backgroundColor: colors.primaryMid,
+    backgroundColor: c.primaryMid,
   },
   label: {
     ...typography.bodySmall,
-    color: colors.primary,
+    color: c.primary,
     fontWeight: '500',
   },
-});
+});}
