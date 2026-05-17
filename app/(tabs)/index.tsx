@@ -17,6 +17,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { BlockEffectNudgeBanner } from '../../components/home/BlockEffectNudgeBanner';
 import { RecoveryBanner } from '../../components/home/RecoveryBanner';
 import { RecoverySheet } from '../../components/home/RecoverySheet';
+import { StackInteractionBanner, type StackWarning } from '../../components/home/StackInteractionBanner';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { UndoToast } from '../../components/ui/UndoToast';
 import {
@@ -121,6 +122,7 @@ export default function HomeScreen() {
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
   const [showRecoverySheet, setShowRecoverySheet] = useState(false);
   const [batchUndo, setBatchUndo] = useState<{ ids: string[]; logIds: string[]; count: number } | null>(null);
+  const [stackWarning, setStackWarning] = useState<StackWarning | null>(null);
   const [effectNudgeInfo, setEffectNudgeInfo] = useState<{
     supplementId: string;
     supplementName: string;
@@ -251,7 +253,39 @@ export default function HomeScreen() {
       }
 
       if (interactionsRes.status === 'fulfilled') {
-        setInteractionCount(interactionsRes.value.length);
+        const allInteractions = interactionsRes.value;
+        setInteractionCount(allInteractions.length);
+
+        // Detect stack interactions between supplements scheduled today
+        if (supplementsRes.status === 'fulfilled' && allInteractions.length > 0) {
+          const scheduledIds = new Set(
+            supplementsRes.value
+              .filter((item) => !(item.isPaused))
+              .map((item) => item._id),
+          );
+          const today = new Date().toISOString().slice(0, 10);
+          // Find first interaction where both supplements are in today's schedule
+          for (const ix of allInteractions) {
+            if (scheduledIds.has(ix.item1) && scheduledIds.has(ix.item2)) {
+              const dismissKey = `interaction_dismissed_${ix.item1}_${ix.item2}_${today}`;
+              const dismissed = await storage.getItem(dismissKey).catch(() => null);
+              if (!dismissed) {
+                const suppA = supplementsRes.value.find((x) => x._id === ix.item1);
+                const suppB = supplementsRes.value.find((x) => x._id === ix.item2);
+                if (suppA && suppB) {
+                  setStackWarning({
+                    nameA: suppA.name,
+                    nameB: suppB.name,
+                    description: ix.description,
+                    suppIdA: ix.item1,
+                    suppIdB: ix.item2,
+                  });
+                }
+              }
+              break; // only show highest-priority (first) interaction
+            }
+          }
+        }
       }
 
       if (restockRes.status === 'fulfilled') {
@@ -600,6 +634,14 @@ export default function HomeScreen() {
     });
   }, [batchUndo, token]);
 
+  const handleStackWarningDismiss = useCallback(async () => {
+    if (!stackWarning) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const dismissKey = `interaction_dismissed_${stackWarning.suppIdA}_${stackWarning.suppIdB}_${today}`;
+    await storage.setItem(dismissKey, 'true');
+    setStackWarning(null);
+  }, [stackWarning]);
+
   const handleTimingDismiss = useCallback(async (supplementId: string) => {
     setDismissedTimingSuggestions((prev) => [...prev, supplementId]);
     const dismissKey = 'recallth:timing-dismissed';
@@ -764,8 +806,17 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Interaction warnings */}
-        {interactionCount > 0 && (
+        {/* Stack-specific interaction warning */}
+        {stackWarning && (
+          <StackInteractionBanner
+            warning={stackWarning}
+            onPress={() => router.push('/(tabs)/cabinet' as Parameters<typeof router.push>[0])}
+            onDismiss={() => { void handleStackWarningDismiss(); }}
+          />
+        )}
+
+        {/* Generic cabinet interaction count (when no specific warning shown) */}
+        {!stackWarning && interactionCount > 0 && (
           <InteractionWarningBanner
             count={interactionCount}
             onPress={() => router.push('/(tabs)/cabinet' as Parameters<typeof router.push>[0])}
