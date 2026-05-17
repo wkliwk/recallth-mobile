@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -7,7 +7,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 export interface EffectRatings {
   energy?: number;
@@ -37,11 +38,13 @@ function StarRow({
   emoji,
   value,
   onChange,
+  styles,
 }: {
   label: string;
   emoji: string;
   value: number | undefined;
   onChange: (v: number) => void;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   return (
     <View style={styles.starRow}>
@@ -70,6 +73,9 @@ function StarRow({
 }
 
 function EffectRatingSheetInner({ visible, supplementName, onSubmit, onSkip }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [ratings, setRatings] = useState<EffectRatings>({});
 
   const handleChange = useCallback((key: keyof EffectRatings, value: number) => {
@@ -108,6 +114,7 @@ function EffectRatingSheetInner({ visible, supplementName, onSubmit, onSkip }: P
               emoji={emoji}
               value={ratings[key]}
               onChange={(v) => handleChange(key, v)}
+              styles={styles}
             />
           ))}
         </View>
@@ -138,78 +145,80 @@ function EffectRatingSheetInner({ visible, supplementName, onSubmit, onSkip }: P
 
 export const EffectRatingSheet = memo(EffectRatingSheetInner);
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: 34,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.text3,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
-  },
-  bold: { fontWeight: '700', color: colors.text2 },
-  categories: { gap: spacing.md },
-  starRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  starLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, width: 80 },
-  starEmoji: { fontSize: 16 },
-  starLabelText: { ...typography.bodySmall, color: colors.text, fontWeight: '500' },
-  stars: { flexDirection: 'row', gap: spacing.xs },
-  star: { fontSize: 26, color: colors.border },
-  starFilled: { color: '#f59e0b' },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xl,
-  },
-  skipBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  skipBtnText: { ...typography.body, color: colors.text3 },
-  submitBtn: {
-    flex: 2,
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-  },
-  submitBtnDisabled: { backgroundColor: colors.border },
-  submitBtnText: { ...typography.body, color: '#fff', fontWeight: '700' },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    sheet: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: 34,
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      backgroundColor: c.border,
+      borderRadius: 2,
+      alignSelf: 'center',
+      marginBottom: spacing.md,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      textAlign: 'center',
+    },
+    subtitle: {
+      ...typography.bodySmall,
+      color: c.text3,
+      textAlign: 'center',
+      marginTop: spacing.xs,
+      marginBottom: spacing.lg,
+    },
+    bold: { fontWeight: '700', color: c.text2 },
+    categories: { gap: spacing.md },
+    starRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    starLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, width: 80 },
+    starEmoji: { fontSize: 16 },
+    starLabelText: { ...typography.bodySmall, color: c.text, fontWeight: '500' },
+    stars: { flexDirection: 'row', gap: spacing.xs },
+    star: { fontSize: 26, color: c.border },
+    starFilled: { color: '#f59e0b' },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.xl,
+    },
+    skipBtn: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    skipBtnText: { ...typography.body, color: c.text3 },
+    submitBtn: {
+      flex: 2,
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderRadius: radius.lg,
+      backgroundColor: c.primary,
+    },
+    submitBtnDisabled: { backgroundColor: c.border },
+    submitBtnText: { ...typography.body, color: '#fff', fontWeight: '700' },
+  });
+}

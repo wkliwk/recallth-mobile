@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   Clipboard,
@@ -8,7 +8,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { type BadgeDef } from '../../utils/badges';
 
 interface Props {
@@ -53,7 +54,7 @@ function Confetti() {
           <Animated.View
             key={i}
             style={[
-              styles.confettiPiece,
+              confettiStyles.confettiPiece,
               { left, backgroundColor: color, transform: [{ translateY }, { rotate }] },
             ]}
           />
@@ -63,7 +64,20 @@ function Confetti() {
   );
 }
 
+const confettiStyles = StyleSheet.create({
+  confettiPiece: {
+    position: 'absolute',
+    top: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+  },
+});
+
 function BadgeCelebrationModalInner({ badge, onDismiss }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const handleCopyShare = useCallback(() => {
     if (badge?.shareText) {
       Clipboard.setString(badge.shareText);
@@ -110,77 +124,72 @@ function BadgeCelebrationModalInner({ badge, onDismiss }: Props) {
 
 export const BadgeCelebrationModal = memo(BadgeCelebrationModalInner);
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.screenPad,
-    overflow: 'hidden',
-  },
-  confettiPiece: {
-    position: 'absolute',
-    top: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xxl,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 12,
-    gap: spacing.md,
-  },
-  icon: {
-    fontSize: 60,
-    lineHeight: 68,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 14,
-    color: colors.text2,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  shareBtn: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.xs,
-  },
-  shareBtnText: {
-    fontSize: 13,
-    color: colors.text2,
-  },
-  dismissBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xxl,
-    width: '100%',
-    alignItems: 'center',
-  },
-  dismissBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.screenPad,
+      overflow: 'hidden',
+    },
+    card: {
+      width: '100%',
+      backgroundColor: c.surface,
+      borderRadius: radius.xxl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.xxl,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.18,
+      shadowRadius: 24,
+      elevation: 12,
+      gap: spacing.md,
+    },
+    icon: {
+      fontSize: 60,
+      lineHeight: 68,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: c.text,
+      letterSpacing: -0.5,
+      textAlign: 'center',
+    },
+    description: {
+      fontSize: 14,
+      color: c.text2,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    shareBtn: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      marginTop: spacing.xs,
+    },
+    shareBtnText: {
+      fontSize: 13,
+      color: c.text2,
+    },
+    dismissBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xxl,
+      width: '100%',
+      alignItems: 'center',
+    },
+    dismissBtnText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#fff',
+    },
+  });
+}

@@ -1,28 +1,32 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { type Redundancy, type RedundancyRisk } from '../../services/cabinet';
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import TrendsCard from './TrendsCard';
-
-function riskColor(risk: RedundancyRisk): string {
-  if (risk === 'high') return colors.danger;
-  if (risk === 'moderate') return colors.warning;
-  return colors.text2;
-}
-
-function riskBg(risk: RedundancyRisk): string {
-  if (risk === 'high') return colors.dangerLight;
-  if (risk === 'moderate') return colors.warningLight;
-  return colors.surface;
-}
 
 interface Props {
   redundancies: Redundancy[];
 }
 
 export default function RedundancyCard({ redundancies }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   if (redundancies.length === 0) return null;
+
+  function riskColor(risk: RedundancyRisk): string {
+    if (risk === 'high') return c.danger;
+    if (risk === 'moderate') return c.warning;
+    return c.text2;
+  }
+
+  function riskBg(risk: RedundancyRisk): string {
+    if (risk === 'high') return c.dangerLight;
+    if (risk === 'moderate') return c.warningLight;
+    return c.surface;
+  }
 
   return (
     <TrendsCard label="Redundancy Check">
@@ -48,50 +52,52 @@ export default function RedundancyCard({ redundancies }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    paddingVertical: spacing.md,
-  },
-  rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  nutrient: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    flex: 1,
-  },
-  riskPill: {
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  riskText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  items: {
-    fontSize: 12,
-    color: colors.text2,
-    marginBottom: spacing.xs,
-  },
-  explanation: {
-    fontSize: 13,
-    color: colors.text,
-    lineHeight: 18,
-    marginBottom: spacing.xs,
-  },
-  recommendation: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '500',
-    lineHeight: 17,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: {
+      paddingVertical: spacing.md,
+    },
+    rowBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
+    nutrient: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: c.text,
+      flex: 1,
+    },
+    riskPill: {
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    riskText: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    items: {
+      fontSize: 12,
+      color: c.text2,
+      marginBottom: spacing.xs,
+    },
+    explanation: {
+      fontSize: 13,
+      color: c.text,
+      lineHeight: 18,
+      marginBottom: spacing.xs,
+    },
+    recommendation: {
+      fontSize: 12,
+      color: c.primary,
+      fontWeight: '500',
+      lineHeight: 17,
+    },
+  });
+}

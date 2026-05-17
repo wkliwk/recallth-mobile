@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,7 +8,8 @@ import {
   View,
 } from 'react-native';
 import { type JournalEntry, logJournal } from '../../services/journal';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   token: string | null;
@@ -27,6 +28,9 @@ const MOOD_OPTIONS: { value: number; emoji: string; label: string }[] = [
 const ENERGY_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
 
 export function DailyCheckInCard({ token, existing, onLogged }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [mood, setMood] = useState<number>(existing?.mood ?? 0);
   const [energy, setEnergy] = useState<number>(existing?.energy ?? 0);
   const [notes, setNotes] = useState(existing?.notes ?? '');
@@ -98,7 +102,7 @@ export function DailyCheckInCard({ token, existing, onLogged }: Props) {
       <TextInput
         style={styles.notesInput}
         placeholder="Any notes? (optional)"
-        placeholderTextColor={colors.text4}
+        placeholderTextColor={c.text4}
         value={notes}
         onChangeText={(t) => { setNotes(t); setSaved(false); }}
         maxLength={500}
@@ -127,120 +131,122 @@ export function DailyCheckInCard({ token, existing, onLogged }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xl,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: spacing.md,
-  },
-  rowLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.text3,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  moodRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginBottom: spacing.lg,
-  },
-  moodBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  moodBtnActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  moodEmoji: {
-    fontSize: 20,
-  },
-  moodLabel: {
-    fontSize: 9,
-    color: colors.text3,
-    marginTop: 2,
-  },
-  moodLabelActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  energyRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  energyBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  energyNum: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text2,
-  },
-  energyNumActive: {
-    color: '#fff',
-  },
-  energyHint: {
-    fontSize: 11,
-    color: colors.text3,
-    marginLeft: spacing.xs,
-    flex: 1,
-  },
-  notesInput: {
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 13,
-    color: colors.text,
-    marginBottom: spacing.md,
-    height: 40,
-  },
-  submitBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-  },
-  submitBtnDisabled: {
-    opacity: 0.5,
-  },
-  submitText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.xl,
+      marginBottom: 14,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    cardLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: spacing.md,
+    },
+    rowLabel: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: c.text3,
+      marginBottom: spacing.sm,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    moodRow: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      marginBottom: spacing.lg,
+    },
+    moodBtn: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    moodBtnActive: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary,
+    },
+    moodEmoji: {
+      fontSize: 20,
+    },
+    moodLabel: {
+      fontSize: 9,
+      color: c.text3,
+      marginTop: 2,
+    },
+    moodLabelActive: {
+      color: c.primary,
+      fontWeight: '600',
+    },
+    energyRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+    },
+    energyBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    energyNum: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text2,
+    },
+    energyNumActive: {
+      color: '#fff',
+    },
+    energyHint: {
+      fontSize: 11,
+      color: c.text3,
+      marginLeft: spacing.xs,
+      flex: 1,
+    },
+    notesInput: {
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 13,
+      color: c.text,
+      marginBottom: spacing.md,
+      height: 40,
+    },
+    submitBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.md,
+      paddingVertical: spacing.sm,
+      alignItems: 'center',
+    },
+    submitBtnDisabled: {
+      opacity: 0.5,
+    },
+    submitText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#fff',
+    },
+  });
+}

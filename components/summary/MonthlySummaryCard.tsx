@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -8,7 +8,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import type { MonthlySummary, SupplementAdherence } from '../../services/insights';
 
 interface Props {
@@ -21,28 +22,31 @@ function monthLabel(yearMonth: string): string {
   return new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 }
 
-function pctColor(pct: number): string {
-  if (pct >= 80) return colors.ok;
-  if (pct >= 50) return colors.warning;
+function pctColor(pct: number, c: ColorPalette): string {
+  if (pct >= 80) return c.ok;
+  if (pct >= 50) return c.warning;
   return '#ef4444';
 }
 
-function AdherenceRow({ item }: { item: SupplementAdherence }) {
+function AdherenceRow({ item, c }: { item: SupplementAdherence; c: ColorPalette }) {
+  const modalStyles = useMemo(() => makeModalStyles(c), [c]);
   const barWidth = Math.min(Math.max(item.pct, 0), 100);
+  const itemPctColor = pctColor(item.pct, c);
   return (
     <View style={modalStyles.adherenceRow}>
       <View style={modalStyles.adherenceLeft}>
         <Text style={modalStyles.adherenceName} numberOfLines={1}>{item.name}</Text>
         <View style={modalStyles.barTrack}>
-          <View style={[modalStyles.barFill, { width: `${barWidth}%` as `${number}%`, backgroundColor: pctColor(item.pct) }]} />
+          <View style={[modalStyles.barFill, { width: `${barWidth}%` as `${number}%`, backgroundColor: itemPctColor }]} />
         </View>
       </View>
-      <Text style={[modalStyles.adherencePct, { color: pctColor(item.pct) }]}>{item.pct}%</Text>
+      <Text style={[modalStyles.adherencePct, { color: itemPctColor }]}>{item.pct}%</Text>
     </View>
   );
 }
 
-function FullReportModal({ summary, visible, onClose }: { summary: MonthlySummary; visible: boolean; onClose: () => void }) {
+function FullReportModal({ summary, visible, onClose, c }: { summary: MonthlySummary; visible: boolean; onClose: () => void; c: ColorPalette }) {
+  const modalStyles = useMemo(() => makeModalStyles(c), [c]);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
@@ -58,7 +62,7 @@ function FullReportModal({ summary, visible, onClose }: { summary: MonthlySummar
         <ScrollView contentContainerStyle={modalStyles.body} showsVerticalScrollIndicator={false}>
           <Text style={modalStyles.sectionLabel}>Per-supplement adherence</Text>
           {summary.supplements.map((s) => (
-            <AdherenceRow key={s.name} item={s} />
+            <AdherenceRow key={s.name} item={s} c={c} />
           ))}
           <Text style={modalStyles.subNote}>{summary.logCount} doses logged across {summary.dayCount} days</Text>
         </ScrollView>
@@ -68,9 +72,13 @@ function FullReportModal({ summary, visible, onClose }: { summary: MonthlySummar
 }
 
 function MonthlySummaryCardInner({ summary, onDismiss }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [reportOpen, setReportOpen] = useState(false);
 
   const handleDismiss = useCallback(() => onDismiss(), [onDismiss]);
+
+  const overallPctColor = pctColor(summary.adherencePct, c);
 
   return (
     <>
@@ -89,7 +97,7 @@ function MonthlySummaryCardInner({ summary, onDismiss }: Props) {
 
         {/* Overall adherence */}
         <View style={styles.overallRow}>
-          <Text style={[styles.overallPct, { color: pctColor(summary.adherencePct) }]}>
+          <Text style={[styles.overallPct, { color: overallPctColor }]}>
             {summary.adherencePct}%
           </Text>
           <Text style={styles.overallLabel}>overall adherence</Text>
@@ -132,175 +140,179 @@ function MonthlySummaryCardInner({ summary, onDismiss }: Props) {
         </Pressable>
       </View>
 
-      <FullReportModal summary={summary} visible={reportOpen} onClose={() => setReportOpen(false)} />
+      <FullReportModal summary={summary} visible={reportOpen} onClose={() => setReportOpen(false)} c={c} />
     </>
   );
 }
 
 export const MonthlySummaryCard = memo(MonthlySummaryCardInner);
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginHorizontal: spacing.screenPad,
-    marginBottom: spacing.md,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardTitle: {
-    ...typography.bodyStrong,
-    color: colors.text,
-  },
-  dismissBtn: {
-    fontSize: 13,
-    color: colors.text3,
-  },
-  overallRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-  },
-  overallPct: {
-    fontSize: 36,
-    fontWeight: '800',
-    lineHeight: 40,
-  },
-  overallLabel: {
-    ...typography.body,
-    color: colors.text2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: '#f0fdf4',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-    padding: spacing.sm,
-  },
-  statPillWarn: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warningMid,
-  },
-  statPillIcon: { fontSize: 14 },
-  statPillLabel: {
-    ...typography.caption,
-    color: colors.ok,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  statPillLabelWarn: { color: colors.warning },
-  statPillName: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  insight: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    fontStyle: 'italic',
-    lineHeight: 20,
-  },
-  fullReportBtn: {
-    alignSelf: 'flex-start',
-  },
-  fullReportText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginHorizontal: spacing.screenPad,
+      marginBottom: spacing.md,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    cardTitle: {
+      ...typography.bodyStrong,
+      color: c.text,
+    },
+    dismissBtn: {
+      fontSize: 13,
+      color: c.text3,
+    },
+    overallRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: spacing.xs,
+    },
+    overallPct: {
+      fontSize: 36,
+      fontWeight: '800',
+      lineHeight: 40,
+    },
+    overallLabel: {
+      ...typography.body,
+      color: c.text2,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    statPill: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: '#f0fdf4',
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: '#bbf7d0',
+      padding: spacing.sm,
+    },
+    statPillWarn: {
+      backgroundColor: c.warningLight,
+      borderColor: c.warningMid,
+    },
+    statPillIcon: { fontSize: 14 },
+    statPillLabel: {
+      ...typography.caption,
+      color: c.ok,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
+    },
+    statPillLabelWarn: { color: c.warning },
+    statPillName: {
+      ...typography.bodySmall,
+      color: c.text,
+      fontWeight: '600',
+    },
+    insight: {
+      ...typography.bodySmall,
+      color: c.text2,
+      fontStyle: 'italic',
+      lineHeight: 20,
+    },
+    fullReportBtn: {
+      alignSelf: 'flex-start',
+    },
+    fullReportText: {
+      ...typography.bodySmall,
+      color: c.primary,
+      fontWeight: '600',
+    },
+  });
+}
 
-const modalStyles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    maxHeight: '70%',
-    paddingBottom: 32,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.bodyStrong,
-    color: colors.text,
-  },
-  closeBtn: {
-    fontSize: 16,
-    color: colors.text3,
-  },
-  body: {
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  sectionLabel: {
-    ...typography.caption,
-    color: colors.text3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  adherenceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  adherenceLeft: { flex: 1, gap: 4 },
-  adherenceName: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  barTrack: {
-    height: 6,
-    backgroundColor: colors.border,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: 6,
-    borderRadius: 3,
-  },
-  adherencePct: {
-    ...typography.caption,
-    fontWeight: '700',
-    width: 36,
-    textAlign: 'right',
-  },
-  subNote: {
-    ...typography.caption,
-    color: colors.text3,
-    marginTop: spacing.sm,
-  },
-});
+function makeModalStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    sheet: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      maxHeight: '70%',
+      paddingBottom: 32,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    headerTitle: {
+      ...typography.bodyStrong,
+      color: c.text,
+    },
+    closeBtn: {
+      fontSize: 16,
+      color: c.text3,
+    },
+    body: {
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    sectionLabel: {
+      ...typography.caption,
+      color: c.text3,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+    },
+    adherenceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    adherenceLeft: { flex: 1, gap: 4 },
+    adherenceName: {
+      ...typography.bodySmall,
+      color: c.text,
+      fontWeight: '500',
+    },
+    barTrack: {
+      height: 6,
+      backgroundColor: c.border,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    barFill: {
+      height: 6,
+      borderRadius: 3,
+    },
+    adherencePct: {
+      ...typography.caption,
+      fontWeight: '700',
+      width: 36,
+      textAlign: 'right',
+    },
+    subNote: {
+      ...typography.caption,
+      color: c.text3,
+      marginTop: spacing.sm,
+    },
+  });
+}

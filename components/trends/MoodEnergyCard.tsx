@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { type JournalEntry } from '../../services/journal';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import TrendsCard from './TrendsCard';
 
 interface Props {
@@ -39,6 +40,9 @@ function buildSlots(entries: JournalEntry[]): DaySlot[] {
 }
 
 export default function MoodEnergyCard({ entries }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const slots = useMemo(() => buildSlots(entries), [entries]);
   const hasData = entries.length > 0;
 
@@ -104,84 +108,86 @@ export default function MoodEnergyCard({ entries }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  avgEmoji: {
-    fontSize: 36,
-  },
-  avgInfo: {
-    gap: 2,
-  },
-  avgLabel: {
-    fontSize: 12,
-    color: colors.text3,
-  },
-  avgValue: {
-    ...typography.bodyStrong,
-    fontSize: 16,
-    color: colors.text,
-  },
-  grid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-  },
-  dayCol: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-  },
-  moodEmoji: {
-    fontSize: 18,
-    lineHeight: 22,
-  },
-  energyDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  energyDotEmpty: {
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  energyNum: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  dayLabel: {
-    ...typography.caption,
-    color: colors.text3,
-  },
-  dayLabelToday: {
-    color: colors.primaryBright,
-    fontWeight: '700',
-  },
-  legend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.md,
-    gap: spacing.xs,
-  },
-  legendEmoji: {
-    fontSize: 14,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginLeft: spacing.md,
-  },
-  legendText: {
-    fontSize: 11,
-    color: colors.text3,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    summaryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginBottom: spacing.lg,
+    },
+    avgEmoji: {
+      fontSize: 36,
+    },
+    avgInfo: {
+      gap: 2,
+    },
+    avgLabel: {
+      fontSize: 12,
+      color: c.text3,
+    },
+    avgValue: {
+      ...typography.bodyStrong,
+      fontSize: 16,
+      color: c.text,
+    },
+    grid: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+    },
+    dayCol: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 6,
+    },
+    moodEmoji: {
+      fontSize: 18,
+      lineHeight: 22,
+    },
+    energyDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    energyDotEmpty: {
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    energyNum: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    dayLabel: {
+      ...typography.caption,
+      color: c.text3,
+    },
+    dayLabelToday: {
+      color: c.primaryBright,
+      fontWeight: '700',
+    },
+    legend: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: spacing.md,
+      gap: spacing.xs,
+    },
+    legendEmoji: {
+      fontSize: 14,
+    },
+    legendDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginLeft: spacing.md,
+    },
+    legendText: {
+      fontSize: 11,
+      color: c.text3,
+    },
+  });
+}

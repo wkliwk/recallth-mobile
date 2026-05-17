@@ -7,7 +7,7 @@
  *   - Wellness score    (GET /wellness/score)
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -45,7 +45,8 @@ import {
   type WellnessScore,
 } from '../../services/trends';
 import { useAuthStore } from '../../stores/auth';
-import { colors, spacing, typography } from '../../utils/theme';
+import { ColorPalette, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface TrendsState {
   effects: SupplementEffectAvg[];
@@ -78,6 +79,9 @@ const initialState: TrendsState = {
 };
 
 export default function TrendsScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
   const [state, setState] = useState<TrendsState>(initialState);
@@ -165,7 +169,7 @@ export default function TrendsScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <ActivityIndicator color={c.primary} size="large" />
           <Text style={styles.loadingText}>Loading trends…</Text>
         </View>
       </SafeAreaView>
@@ -199,7 +203,7 @@ export default function TrendsScreen() {
           <RefreshControl
             refreshing={state.refreshing}
             onRefresh={() => void load(true)}
-            tintColor={colors.primary}
+            tintColor={c.primary}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -242,75 +246,77 @@ export default function TrendsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.screenPad,
-    paddingTop: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.lg,
-    gap: 4,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-  },
-  insightsBtn: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 4,
-  },
-  insightsBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  title: {
-    ...typography.pageTitle,
-    color: colors.text,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.text2,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xxl,
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.text2,
-    marginTop: spacing.sm,
-  },
-  errorText: {
-    ...typography.body,
-    color: colors.danger,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 14,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-  },
-  retryText: {
-    ...typography.bodyStrong,
-    color: colors.text,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: spacing.screenPad,
+      paddingTop: spacing.lg,
+    },
+    header: {
+      marginBottom: spacing.lg,
+      gap: 4,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+    },
+    insightsBtn: {
+      backgroundColor: c.primaryLight,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      marginBottom: 4,
+    },
+    insightsBtnText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.primary,
+    },
+    title: {
+      ...typography.pageTitle,
+      color: c.text,
+    },
+    subtitle: {
+      ...typography.bodySmall,
+      color: c.text2,
+    },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xxl,
+      gap: spacing.md,
+    },
+    loadingText: {
+      ...typography.body,
+      color: c.text2,
+      marginTop: spacing.sm,
+    },
+    errorText: {
+      ...typography.body,
+      color: c.danger,
+      textAlign: 'center',
+    },
+    retryBtn: {
+      marginTop: spacing.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+      borderRadius: 14,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.sm,
+    },
+    retryText: {
+      ...typography.bodyStrong,
+      color: c.text,
+    },
+  });
+}

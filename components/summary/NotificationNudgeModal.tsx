@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   visible: boolean;
@@ -9,6 +10,9 @@ interface Props {
 }
 
 export function NotificationNudgeModal({ visible, onSure, onNotNow }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   return (
     <Modal
       visible={visible}
@@ -45,50 +49,52 @@ export function NotificationNudgeModal({ visible, onSure, onNotNow }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.xxxl,
-    paddingHorizontal: spacing.screenPad,
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    padding: spacing.xl,
-    width: '100%',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  icon: { fontSize: 36 },
-  title: {
-    ...typography.pageTitle,
-    fontSize: 20,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  body: {
-    ...typography.body,
-    color: colors.text2,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  primaryBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 52,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  primaryBtnText: { ...typography.cta, color: '#fff' },
-  secondaryBtn: {
-    paddingVertical: spacing.sm,
-    width: '100%',
-    alignItems: 'center',
-  },
-  secondaryBtnText: { ...typography.body, color: colors.text3 },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      paddingBottom: spacing.xxxl,
+      paddingHorizontal: spacing.screenPad,
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xxl,
+      padding: spacing.xl,
+      width: '100%',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    icon: { fontSize: 36 },
+    title: {
+      ...typography.pageTitle,
+      fontSize: 20,
+      color: c.text,
+      textAlign: 'center',
+    },
+    body: {
+      ...typography.body,
+      color: c.text2,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    primaryBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 52,
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+    },
+    primaryBtnText: { ...typography.cta, color: '#fff' },
+    secondaryBtn: {
+      paddingVertical: spacing.sm,
+      width: '100%',
+      alignItems: 'center',
+    },
+    secondaryBtnText: { ...typography.body, color: c.text3 },
+  });
+}
