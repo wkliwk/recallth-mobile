@@ -24,6 +24,7 @@ import {
   cancelAllReminders,
   requestPermissions,
   scheduleDailyReminders,
+  scheduleWeeklySummaryNotification,
 } from '../../services/notifications';
 import { getItem, setItem } from '../../services/storage';
 import { deleteAccount } from '../../services/auth';
@@ -60,6 +61,7 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [missedNudgesEnabled, setMissedNudgesEnabled] = useState(true);
+  const [weeklySummaryEnabled, setWeeklySummaryEnabled] = useState(true);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerDate, setPickerDate] = useState<Date>(() => {
     const d = new Date();
@@ -70,14 +72,20 @@ export default function SettingsScreen() {
   const [restoring, setRestoring] = useState(false);
 
   const NUDGE_KEY = 'recallth:missed-nudges-enabled';
+  const WEEKLY_SUMMARY_KEY = 'recallth:weekly-summary-enabled';
 
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const [s, nudgeRaw] = await Promise.all([getSettings(token), getItem(NUDGE_KEY)]);
+      const [s, nudgeRaw, weeklySummaryRaw] = await Promise.all([
+        getSettings(token),
+        getItem(NUDGE_KEY),
+        getItem(WEEKLY_SUMMARY_KEY),
+      ]);
       setSettings(s);
       if (nudgeRaw !== null) setMissedNudgesEnabled(nudgeRaw !== 'false');
+      if (weeklySummaryRaw !== null) setWeeklySummaryEnabled(weeklySummaryRaw !== 'false');
     } catch {
       /* use defaults */
     } finally {
@@ -203,7 +211,7 @@ export default function SettingsScreen() {
       ) : (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Reminders section */}
-          <Text style={styles.sectionLabel}>Dose Reminders</Text>
+          <Text style={styles.sectionLabel}>Notifications</Text>
           <View style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Enable reminders</Text>
@@ -291,6 +299,27 @@ export default function SettingsScreen() {
                 )}
               </>
             )}
+
+            <View style={styles.divider} />
+            <View style={styles.row}>
+              <View style={styles.rowLabelGroup}>
+                <Text style={styles.rowLabel}>Weekly Summary</Text>
+                <Text style={styles.rowHint}>Push notification every Sunday at 7 PM</Text>
+              </View>
+              <Switch
+                value={weeklySummaryEnabled}
+                onValueChange={async (v) => {
+                  setWeeklySummaryEnabled(v);
+                  await setItem(WEEKLY_SUMMARY_KEY, String(v));
+                  if (token) {
+                    void scheduleWeeklySummaryNotification(token, v, true).catch(() => {});
+                  }
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#fff"
+                accessibilityLabel="Toggle weekly summary notification"
+              />
+            </View>
           </View>
 
           {/* Email digest section */}
@@ -467,6 +496,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   rowLabel: { fontSize: 15, color: colors.text },
+  rowLabelGroup: { flex: 1, gap: 2 },
+  rowHint: { fontSize: 12, color: colors.text3 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
   subLabel: {
     fontSize: 12,

@@ -23,6 +23,7 @@ import {
   requestPermissions,
   scheduleDailyReminders,
   scheduleSmartReminders,
+  scheduleWeeklySummaryNotification,
   type SupplementSchedule,
 } from '../../services/notifications';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
@@ -217,7 +218,11 @@ export default function HomeScreen() {
         }
         const status = await requestPermissions().catch(() => 'denied' as const);
         if (status === 'granted' && schedules.length > 0) {
-          void scheduleSmartReminders(schedules, nudgesEnabled).catch(() => {/* non-critical */});
+          const weeklySummaryRaw = await storage.getItem('recallth:weekly-summary-enabled');
+          const weeklySummaryEnabled = weeklySummaryRaw !== 'false';
+          void scheduleSmartReminders(schedules, nudgesEnabled)
+            .then(() => scheduleWeeklySummaryNotification(token, weeklySummaryEnabled, entries.length > 0))
+            .catch(() => {/* non-critical */});
         }
       } else {
         setSupplements([]);

@@ -12,6 +12,7 @@ import { seedProfile, seedSupplements } from '../../services/onboarding';
 import {
   requestPermissions,
   scheduleSmartReminders,
+  scheduleWeeklySummaryNotification,
   type SupplementSchedule,
 } from '../../services/notifications';
 import { useAuthStore } from '../../stores/auth';
@@ -62,6 +63,9 @@ export default function DoneScreen() {
             : [];
           if (schedules.length > 0) {
             await scheduleSmartReminders(schedules, true).catch(() => {/* non-critical */});
+            if (token) {
+              void scheduleWeeklySummaryNotification(token, true, cabinetItems.length > 0).catch(() => {});
+            }
           }
         }
       } finally {

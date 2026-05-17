@@ -1,8 +1,12 @@
 import * as ExpoNotifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import { getDoseLogsRange } from './schedule';
+import { getStreak } from './intake';
+
 export const SNOOZE_CATEGORY = 'DOSE_REMINDER_SNOOZE';
 export const NUDGE_ID_PREFIX = 'nudge-';
+export const WEEKLY_SUMMARY_ID = 'recallth-weekly-summary';
 
 // Configure foreground notification behavior once (call from root layout).
 export function configureNotificationHandler(): void {
@@ -172,25 +176,70 @@ export async function scheduleDailyReminders(times: string[]): Promise<void> {
   await scheduleWeeklySummary();
 }
 
-// Schedule a repeating Sunday 09:00 adherence summary notification.
-export async function scheduleWeeklySummary(): Promise<void> {
+// No-op kept for call-site compat; weekly summary is managed via scheduleWeeklySummaryNotification.
+async function scheduleWeeklySummary(): Promise<void> { /* no-op */ }
+
+export async function cancelAllReminders(): Promise<void> {
+  await ExpoNotifications.cancelAllScheduledNotificationsAsync();
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Schedule (or cancel) the weekly Sunday 7 PM adherence summary notification.
+ * Body is assembled from the last 7 days of dose log data.
+ * Call whenever the toggle changes in Settings and after smart reminders are scheduled on app load.
+ */
+export async function scheduleWeeklySummaryNotification(
+  token: string,
+  enabled: boolean,
+  hasCabinetItems: boolean,
+): Promise<void> {
+  await ExpoNotifications.cancelScheduledNotificationAsync(WEEKLY_SUMMARY_ID).catch(() => {});
+
+  if (!enabled || !hasCabinetItems) return;
+
+  const today = new Date();
+  const from = new Date(today);
+  from.setDate(today.getDate() - 6);
+  const fromStr = from.toISOString().slice(0, 10);
+  const toStr = today.toISOString().slice(0, 10);
+
+  const [doseLogs, streak] = await Promise.all([
+    getDoseLogsRange(token, fromStr, toStr).catch(() => []),
+    getStreak(token).catch(() => ({ currentStreak: 0, longestStreak: 0, lastLoggedDate: null })),
+  ]);
+
+  const loggedDays = new Set(doseLogs.map((l) => l.takenAt.slice(0, 10)));
+  const adherencePct = Math.round((loggedDays.size / 7) * 100);
+
+  const countsByDay = new Array<number>(7).fill(0);
+  for (const log of doseLogs) {
+    countsByDay[new Date(log.takenAt).getDay()]++;
+  }
+  const maxCount = Math.max(...countsByDay);
+  const bestDay = maxCount > 0 ? DAY_NAMES[countsByDay.indexOf(maxCount)] : null;
+
+  const parts: string[] = [
+    `${adherencePct}% adherence this week`,
+    `${streak.currentStreak}-day streak`,
+  ];
+  if (bestDay) parts.push(`Best day: ${bestDay}`);
+
   await ExpoNotifications.scheduleNotificationAsync({
+    identifier: WEEKLY_SUMMARY_ID,
     content: {
-      title: 'Recallth',
-      body: 'Check in on your weekly supplement progress 💊',
+      title: 'Your weekly supplement summary',
+      body: parts.join(' · '),
       data: { screen: 'trends' },
       sound: true,
     },
     trigger: {
       type: ExpoNotifications.SchedulableTriggerInputTypes.CALENDAR,
-      weekday: 1, // Sunday (1=Sunday on iOS/Android)
-      hour: 9,
+      weekday: 1,
+      hour: 19,
       minute: 0,
       repeats: true,
     },
   });
-}
-
-export async function cancelAllReminders(): Promise<void> {
-  await ExpoNotifications.cancelAllScheduledNotificationsAsync();
 }
