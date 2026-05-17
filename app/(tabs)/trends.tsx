@@ -21,6 +21,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AdherenceCard from '../../components/trends/AdherenceCard';
+import { AdherenceTrendChart } from '../../components/trends/AdherenceTrendChart';
 import JournalInsightsCard from '../../components/trends/JournalInsightsCard';
 import MoodEnergyCard from '../../components/trends/MoodEnergyCard';
 import RedundancyCard from '../../components/trends/RedundancyCard';
@@ -220,6 +221,7 @@ export default function TrendsScreen() {
           </View>
         </View>
 
+        <AdherenceTrendChart logs={state.weekLogs} scheduledPerDay={state.weekScheduled} />
         <StreakCard streak={state.streak} />
         <AdherenceCard logs={state.weekLogs} totalScheduled={state.weekScheduled} />
         <EffectsCard effects={state.effects} />
