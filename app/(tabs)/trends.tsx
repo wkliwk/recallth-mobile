@@ -25,6 +25,7 @@ import JournalInsightsCard from '../../components/trends/JournalInsightsCard';
 import MoodEnergyCard from '../../components/trends/MoodEnergyCard';
 import RedundancyCard from '../../components/trends/RedundancyCard';
 import EffectsCard from '../../components/trends/EffectsCard';
+import JournalHistoryCard from '../../components/trends/JournalHistoryCard';
 import StreakCard from '../../components/trends/StreakCard';
 import WeightCard from '../../components/trends/WeightCard';
 import WellnessCard from '../../components/trends/WellnessCard';
@@ -104,7 +105,7 @@ export default function TrendsScreen() {
         getRedundancies(token),
         getDoseLogsRange(token, weekAgo, today),
         listCabinetItems(token),
-        getJournalEntries(token, 7),
+        getJournalEntries(token, 14),
         fetchJournalInsights(token),
         fetchEffects(token, 30),
       ]);
@@ -218,6 +219,7 @@ export default function TrendsScreen() {
         <WeightCard entries={state.weight} />
         <WellnessCard score={state.wellness} />
         <RedundancyCard redundancies={state.redundancies} />
+        <JournalHistoryCard entries={state.journalEntries} />
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
