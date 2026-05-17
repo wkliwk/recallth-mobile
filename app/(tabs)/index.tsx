@@ -109,7 +109,10 @@ export default function HomeScreen() {
       ]);
 
       if (supplementsRes.status === 'fulfilled') {
-        const entries = supplementsRes.value.map(cabinetToEntry);
+        const now = new Date();
+        const entries = supplementsRes.value
+          .filter((item) => !(item.isPaused && item.pausedUntil && new Date(item.pausedUntil) > now))
+          .map(cabinetToEntry);
 
         // Restore taken state from today's dose logs.
         if (doseLogsRes.status === 'fulfilled' && doseLogsRes.value.length > 0) {

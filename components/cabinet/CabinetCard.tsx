@@ -35,6 +35,8 @@ export interface CabinetMockItem {
   conflictNote?: string;
   startDate?: string;
   researchNotes?: ResearchNotes;
+  isPaused?: boolean;
+  pausedUntil?: string;
 }
 
 interface CabinetCardProps {
@@ -150,7 +152,15 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
               </View>
             )}
           </View>
-          <Text style={styles.dose}>{item.dose} · {item.schedule}</Text>
+          {item.isPaused && item.pausedUntil ? (
+            <View style={styles.pausedPill}>
+              <Text style={styles.pausedPillText}>
+                Paused until {new Date(item.pausedUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.dose}>{item.dose} · {item.schedule}</Text>
+          )}
 
           {/* Evidence bar */}
           <EvidenceBar level={item.evidence} pct={item.pct} />
@@ -429,6 +439,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.warning,
+  },
+
+  pausedPill: {
+    backgroundColor: colors.infoLight,
+    borderRadius: radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  pausedPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.info,
   },
 
   // Expanded panel
