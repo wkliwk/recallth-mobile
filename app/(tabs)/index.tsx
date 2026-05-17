@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,8 @@ import { InteractionWarningBanner } from '../../components/summary/InteractionWa
 import { NotificationNudgeModal } from '../../components/summary/NotificationNudgeModal';
 import { RestockAlertBanner } from '../../components/summary/RestockAlertBanner';
 import { StreakMilestoneModal } from '../../components/summary/StreakMilestoneModal';
+import { TimingSuggestionCard } from '../../components/summary/TimingSuggestionCard';
+import { AddSheet } from '../../components/cabinet/AddSheet';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
 import { fetchDailyBrief } from '../../services/insights';
@@ -23,12 +25,13 @@ import {
   type SupplementEntry,
   type TimeBlock,
 } from '../../components/summary/mockData';
-import { getInteractions, getRestockAlerts, listCabinetItems, type CabinetItem } from '../../services/cabinet';
+import { getInteractions, getRestockAlerts, listCabinetItems, updateCabinetItem, type CabinetItem, type CreateCabinetItemInput } from '../../services/cabinet';
 import { logIntakeToday, getStreak } from '../../services/intake';
-import { getTodayDoseLogs, logDose, unlogDose } from '../../services/schedule';
+import { getTodayDoseLogs, getDoseLogsRange, logDose, unlogDose } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
+import { analyseTimingPatterns, type TimingSuggestion } from '../../utils/timingOptimiser';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,6 +89,10 @@ export default function HomeScreen() {
   const [showNotifNudge, setShowNotifNudge] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [missedDismissed, setMissedDismissed] = useState<string[]>([]);
+  const [timingSuggestions, setTimingSuggestions] = useState<TimingSuggestion[]>([]);
+  const [dismissedTimingSuggestions, setDismissedTimingSuggestions] = useState<string[]>([]);
+  const [cabinetItems, setCabinetItems] = useState<CabinetItem[]>([]);
+  const [pendingTimingEdit, setPendingTimingEdit] = useState<{ item: CabinetItem; suggestedTiming: string } | null>(null);
 
   const MILESTONES = [7, 30, 100];
 
@@ -100,7 +107,10 @@ export default function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else if (!isSilent) setLoading(true);
 
-      const [supplementsRes, briefRes, doseLogsRes, journalRes, interactionsRes, restockRes, streakRes] = await Promise.allSettled([
+      const today = new Date().toISOString().slice(0, 10);
+      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+      const [supplementsRes, briefRes, doseLogsRes, journalRes, interactionsRes, restockRes, streakRes, recentLogsRes] = await Promise.allSettled([
         listCabinetItems(token),
         fetchDailyBrief(token),
         getTodayDoseLogs(token),
@@ -108,9 +118,11 @@ export default function HomeScreen() {
         getInteractions(token),
         getRestockAlerts(token),
         getStreak(token),
+        getDoseLogsRange(token, fourteenDaysAgo, today),
       ]);
 
       if (supplementsRes.status === 'fulfilled') {
+        setCabinetItems(supplementsRes.value);
         const now = new Date();
         const entries = supplementsRes.value
           .filter((item) => !(item.isPaused && item.pausedUntil && new Date(item.pausedUntil) > now))
@@ -152,6 +164,33 @@ export default function HomeScreen() {
 
       if (streakRes.status === 'fulfilled') {
         setCurrentStreak(streakRes.value.currentStreak);
+      }
+
+      if (recentLogsRes.status === 'fulfilled' && supplementsRes.status === 'fulfilled') {
+        const pausedIds = new Set(
+          supplementsRes.value.filter((x) => x.isPaused).map((x) => x._id),
+        );
+        const filteredLogs = recentLogsRes.value.filter((l) => !pausedIds.has(l.supplementId));
+        const suggestions = analyseTimingPatterns(filteredLogs);
+        setTimingSuggestions(suggestions);
+
+        // Load persisted dismiss state
+        const dismissKey = 'recallth:timing-dismissed';
+        const raw = await storage.getItem(dismissKey);
+        if (raw) {
+          try {
+            const parsed: Array<{ id: string; dismissedAt: number }> = JSON.parse(raw);
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+            const stillDismissed = parsed
+              .filter((x) => Date.now() - x.dismissedAt < sevenDaysMs)
+              .map((x) => x.id);
+            setDismissedTimingSuggestions(stillDismissed);
+            // Rewrite storage without expired entries
+            await storage.setItem(dismissKey, JSON.stringify(parsed.filter((x) => Date.now() - x.dismissedAt < sevenDaysMs)));
+          } catch {
+            // ignore parse errors
+          }
+        }
       }
 
       setLoading(false);
@@ -266,6 +305,38 @@ export default function HomeScreen() {
     [token, supplements],
   );
 
+  const handleTimingDismiss = useCallback(async (supplementId: string) => {
+    setDismissedTimingSuggestions((prev) => [...prev, supplementId]);
+    const dismissKey = 'recallth:timing-dismissed';
+    const raw = await storage.getItem(dismissKey);
+    let existing: Array<{ id: string; dismissedAt: number }> = [];
+    if (raw) {
+      try { existing = JSON.parse(raw); } catch { /* ignore */ }
+    }
+    const updated = [...existing.filter((x) => x.id !== supplementId), { id: supplementId, dismissedAt: Date.now() }];
+    await storage.setItem(dismissKey, JSON.stringify(updated));
+  }, []);
+
+  const handleTimingUpdate = useCallback((suggestion: TimingSuggestion) => {
+    const item = cabinetItems.find((c) => c._id === suggestion.supplementId);
+    if (!item) return;
+    setPendingTimingEdit({ item, suggestedTiming: suggestion.label });
+  }, [cabinetItems]);
+
+  const handleTimingEditSave = useCallback(async (input: CreateCabinetItemInput) => {
+    if (!pendingTimingEdit || !token) return;
+    await updateCabinetItem(pendingTimingEdit.item._id, input, token);
+    // Dismiss the suggestion after update
+    void handleTimingDismiss(pendingTimingEdit.item._id);
+    setPendingTimingEdit(null);
+    void loadSupplements(false, true);
+  }, [pendingTimingEdit, token, handleTimingDismiss, loadSupplements]);
+
+  const visibleTimingSuggestions = useMemo(() =>
+    timingSuggestions.filter((s) => !dismissedTimingSuggestions.includes(s.supplementId)),
+    [timingSuggestions, dismissedTimingSuggestions],
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -349,6 +420,16 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Timing optimiser suggestions */}
+        {visibleTimingSuggestions.map((s) => (
+          <TimingSuggestionCard
+            key={s.supplementId}
+            suggestion={s}
+            onUpdate={handleTimingUpdate}
+            onDismiss={handleTimingDismiss}
+          />
+        ))}
+
         {/* Time-block schedule card */}
         <View style={styles.scheduleCard}>
           <View style={styles.scheduleCardHeader}>
@@ -409,6 +490,19 @@ export default function HomeScreen() {
           }
         }}
       />
+
+      {pendingTimingEdit && (
+        <AddSheet
+          visible
+          onClose={() => setPendingTimingEdit(null)}
+          onSave={handleTimingEditSave}
+          item={{
+            ...pendingTimingEdit.item,
+            timing: pendingTimingEdit.suggestedTiming,
+          }}
+          existingItems={cabinetItems}
+        />
+      )}
     </SafeAreaView>
   );
 }
