@@ -8,10 +8,10 @@ import { DailyCheckInCard } from '../../components/summary/DailyCheckInCard';
 import { InteractionWarningBanner } from '../../components/summary/InteractionWarningBanner';
 import { NotificationNudgeModal } from '../../components/summary/NotificationNudgeModal';
 import { RestockAlertBanner } from '../../components/summary/RestockAlertBanner';
-import { StreakMilestoneModal } from '../../components/summary/StreakMilestoneModal';
 import { TimingSuggestionCard } from '../../components/summary/TimingSuggestionCard';
 import { MonthlySummaryCard } from '../../components/summary/MonthlySummaryCard';
 import { EffectRatingSheet, type EffectRatings } from '../../components/summary/EffectRatingSheet';
+import { BadgeCelebrationModal } from '../../components/summary/BadgeCelebrationModal';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
@@ -35,6 +35,7 @@ import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { analyseTimingPatterns, type TimingSuggestion } from '../../utils/timingOptimiser';
+import { STREAK_MILESTONES, badgeById, streakBadgeId, type EarnedBadge } from '../../utils/badges';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -88,7 +89,6 @@ export default function HomeScreen() {
   const [interactionCount, setInteractionCount] = useState(0);
   const [restockNames, setRestockNames] = useState<string[]>([]);
   const userId = useAuthStore((s) => s.user?.userId ?? null);
-  const [milestoneDays, setMilestoneDays] = useState<number | null>(null);
   const [showNotifNudge, setShowNotifNudge] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [missedDismissed, setMissedDismissed] = useState<string[]>([]);
@@ -100,8 +100,9 @@ export default function HomeScreen() {
   const [monthlySummaryDismissed, setMonthlySummaryDismissed] = useState(false);
   const [effectPrompt, setEffectPrompt] = useState<{ doseLogId: string; supplementId: string; supplementName: string } | null>(null);
   const effectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingBadge, setPendingBadge] = useState<string | null>(null);
 
-  const MILESTONES = [7, 30, 100];
+  const MILESTONES = [...STREAK_MILESTONES];
 
   const loadSupplements = useCallback(
     async (isRefresh = false, isSilent = false) => {
@@ -130,6 +131,17 @@ export default function HomeScreen() {
 
       if (supplementsRes.status === 'fulfilled') {
         setCabinetItems(supplementsRes.value);
+        // Award Stack Starter badge if not already earned
+        if (supplementsRes.value.length > 0) {
+          const badgeRaw = await storage.getItem('recallth:earned_badges');
+          let earned: EarnedBadge[] = [];
+          try { if (badgeRaw) earned = JSON.parse(badgeRaw); } catch { /* ignore */ }
+          if (!earned.some((b) => b.id === 'stack_starter')) {
+            const updated = [...earned, { id: 'stack_starter', earnedAt: new Date().toISOString() }];
+            await storage.setItem('recallth:earned_badges', JSON.stringify(updated));
+            setPendingBadge('stack_starter');
+          }
+        }
         const now = new Date();
         const entries = supplementsRes.value
           .filter((item) => !(item.isPaused && item.pausedUntil && new Date(item.pausedUntil) > now))
@@ -291,12 +303,25 @@ export default function HomeScreen() {
           lastLogAt.current = now;
           void logIntakeToday(token).then(async (result) => {
             const streak = result.currentStreak;
-            if (!userId || !MILESTONES.includes(streak)) return;
-            const key = `recallth:streak-milestone:${userId}:${streak}`;
-            const already = await storage.getItem(key);
-            if (!already) {
-              await storage.setItem(key, 'true');
-              setMilestoneDays(streak);
+            if (!userId) return;
+            // Check for newly earned streak badges
+            const badgeRaw = await storage.getItem('recallth:earned_badges');
+            let earned: EarnedBadge[] = [];
+            try { if (badgeRaw) earned = JSON.parse(badgeRaw); } catch { /* ignore */ }
+            const earnedIds = new Set(earned.map((b) => b.id));
+
+            const newBadges: EarnedBadge[] = [];
+            for (const m of MILESTONES) {
+              const badgeId = streakBadgeId(m);
+              if (streak >= m && !earnedIds.has(badgeId)) {
+                newBadges.push({ id: badgeId, earnedAt: new Date().toISOString() });
+              }
+            }
+            if (newBadges.length > 0) {
+              const updated = [...earned, ...newBadges];
+              await storage.setItem('recallth:earned_badges', JSON.stringify(updated));
+              // Show the highest milestone first
+              setPendingBadge(newBadges[newBadges.length - 1].id);
             }
           }).catch(() => {/* streak failure is non-critical */});
         }
@@ -533,12 +558,10 @@ export default function HomeScreen() {
         </Text>
       </ScrollView>
 
-      {milestoneDays !== null && (
-        <StreakMilestoneModal
-          days={milestoneDays}
-          onDismiss={() => setMilestoneDays(null)}
-        />
-      )}
+      <BadgeCelebrationModal
+        badge={pendingBadge ? (badgeById(pendingBadge) ?? null) : null}
+        onDismiss={() => setPendingBadge(null)}
+      />
 
       <NotificationNudgeModal
         visible={showNotifNudge}

@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AccordionSection from '../../components/profile/AccordionSection';
+import AchievementsSection from '../../components/profile/AchievementsSection';
 import { BloodworkSection } from '../../components/profile/BloodworkSection';
 import CompletenessBar from '../../components/profile/CompletenessBar';
 import ProfileField from '../../components/profile/ProfileField';
@@ -46,7 +47,9 @@ import {
 import { useAuthStore } from '../../stores/auth';
 import { listBloodwork, type BloodworkEntry } from '../../services/bloodwork';
 import { listExtractions } from '../../services/extractionReview';
+import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
+import { type EarnedBadge } from '../../utils/badges';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -184,6 +187,7 @@ export default function ProfileScreen() {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const [bloodworkEntries, setBloodworkEntries] = useState<BloodworkEntry[]>([]);
   const [pendingExtractionCount, setPendingExtractionCount] = useState(0);
+  const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
 
   // Auto-reset success feedback after 2s
   const successTimers = useRef<Record<SectionKey, ReturnType<typeof setTimeout> | null>>({
@@ -207,6 +211,11 @@ export default function ProfileScreen() {
         setBloodworkEntries(bloodwork);
         setPendingExtractionCount(extractions.filter((e) => e.status === 'pending').length);
         dispatch({ type: 'LOAD_SUCCESS', profile, weightLog });
+        // Load earned badges from storage
+        const badgeRaw = await storage.getItem('recallth:earned_badges');
+        if (badgeRaw) {
+          try { setEarnedBadges(JSON.parse(badgeRaw)); } catch { /* ignore */ }
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to load profile';
@@ -563,6 +572,9 @@ export default function ProfileScreen() {
             )}
           </View>
         </Pressable>
+
+        {/* Achievements */}
+        <AchievementsSection earned={earnedBadges} />
 
         {/* History link */}
         <Pressable
