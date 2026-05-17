@@ -27,6 +27,7 @@ import {
 } from '../../services/notifications';
 import { getItem, setItem } from '../../services/storage';
 import { deleteAccount } from '../../services/auth';
+import { backupData, restoreData } from '../../services/backup';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
@@ -65,6 +66,8 @@ export default function SettingsScreen() {
     d.setHours(9, 0, 0, 0);
     return d;
   });
+  const [backingUp, setBackingUp] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   const NUDGE_KEY = 'recallth:missed-nudges-enabled';
 
@@ -119,6 +122,38 @@ export default function SettingsScreen() {
       setSaving(false);
     }
   }, [token, settings]);
+
+  const handleBackup = useCallback(async () => {
+    if (!token) return;
+    setBackingUp(true);
+    try {
+      await backupData(token);
+    } catch {
+      Alert.alert('Backup failed', 'Could not create backup. Please try again.');
+    } finally {
+      setBackingUp(false);
+    }
+  }, [token]);
+
+  const handleRestore = useCallback(async () => {
+    if (!token) return;
+    setRestoring(true);
+    try {
+      const result = await restoreData(token);
+      if (result === 'ok') {
+        Alert.alert('Restore complete', 'Your data has been restored. Supplements and dose logs have been added.');
+      } else if (result === 'invalid') {
+        Alert.alert(
+          'Invalid backup',
+          "This file doesn't look like a Recallth backup — no data was changed.",
+        );
+      }
+    } catch {
+      Alert.alert('Restore failed', 'Could not restore from backup. Please try again.');
+    } finally {
+      setRestoring(false);
+    }
+  }, [token]);
 
   const onPickerChange = (event: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === 'android') {
@@ -322,6 +357,32 @@ export default function SettingsScreen() {
               accessibilityLabel="Terms of Service"
             >
               <Text style={styles.rowLabel}>Terms of Service</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </View>
+
+          {/* Data section */}
+          <Text style={styles.sectionLabel}>Data</Text>
+          <View style={styles.card}>
+            <Pressable
+              onPress={() => void handleBackup()}
+              disabled={backingUp}
+              style={({ pressed }) => [styles.row, (pressed || backingUp) && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Back up data"
+            >
+              <Text style={styles.rowLabel}>{backingUp ? 'Creating backup…' : 'Back up data'}</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <View style={styles.divider} />
+            <Pressable
+              onPress={() => void handleRestore()}
+              disabled={restoring}
+              style={({ pressed }) => [styles.row, (pressed || restoring) && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Restore from backup"
+            >
+              <Text style={styles.rowLabel}>{restoring ? 'Restoring…' : 'Restore from backup'}</Text>
               <Text style={styles.chevron}>›</Text>
             </Pressable>
           </View>
