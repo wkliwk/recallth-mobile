@@ -39,7 +39,7 @@ import {
   type TimeBlock,
 } from '../../components/summary/mockData';
 import { getInteractions, getRestockAlerts, listCabinetItems, updateCabinetItem, type CabinetItem, type CreateCabinetItemInput } from '../../services/cabinet';
-import { logIntakeToday, getStreak } from '../../services/intake';
+import { logIntakeToday, getStreak, applyStreakFreeze } from '../../services/intake';
 import { getTodayDoseLogs, getDoseLogsRange, logDose, unlogDose } from '../../services/schedule';
 import { fetchDailyBrief, getMonthlySummary, type MonthlySummary } from '../../services/insights';
 import { saveEffect } from '../../services/trends';
@@ -103,6 +103,7 @@ export default function HomeScreen() {
   const userId = useAuthStore((s) => s.user?.userId ?? null);
   const [showNotifNudge, setShowNotifNudge] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [freezeTokens, setFreezeTokens] = useState(0);
   const [missedDismissed, setMissedDismissed] = useState<string[]>([]);
   const [timingSuggestions, setTimingSuggestions] = useState<TimingSuggestion[]>([]);
   const [dismissedTimingSuggestions, setDismissedTimingSuggestions] = useState<string[]>([]);
@@ -247,18 +248,28 @@ export default function HomeScreen() {
 
       if (streakRes.status === 'fulfilled') {
         setCurrentStreak(streakRes.value.currentStreak);
+        setFreezeTokens(streakRes.value.freezeTokens ?? 0);
       }
 
-      // Recovery banner: show if user missed exactly yesterday (last logged 2 days ago)
-      if (
+      // Auto-apply freeze if yesterday was missed and user has a token
+      const missedYesterday =
         !isRefresh &&
         yesterdayLogsRes.status === 'fulfilled' &&
         yesterdayLogsRes.value.length === 0 &&
         supplementsRes.status === 'fulfilled' &&
         supplementsRes.value.length > 0 &&
         streakRes.status === 'fulfilled' &&
-        streakRes.value.lastLoggedDate === dayBeforeYesterday
-      ) {
+        streakRes.value.lastLoggedDate === dayBeforeYesterday;
+
+      if (missedYesterday && token && (streakRes.status === 'fulfilled') && (streakRes.value.freezeTokens ?? 0) > 0) {
+        applyStreakFreeze(token).then((result) => {
+          setCurrentStreak(result.streak);
+          setFreezeTokens(result.tokensLeft);
+        }).catch(() => {
+          // Freeze failed — show normal recovery banner as fallback
+          setShowRecoveryBanner(true);
+        });
+      } else if (missedYesterday) {
         setShowRecoveryBanner(true);
       }
 
@@ -405,6 +416,8 @@ export default function HomeScreen() {
           lastLogAt.current = now;
           void logIntakeToday(token).then(async (result) => {
             const streak = result.currentStreak;
+            setCurrentStreak(streak);
+            if (result.freezeTokens !== undefined) setFreezeTokens(result.freezeTokens);
             if (!userId) return;
             const badgeRaw = await storage.getItem('recallth:earned_badges');
             let earned: EarnedBadge[] = [];
@@ -621,6 +634,7 @@ export default function HomeScreen() {
       try {
         const newStreak = await getStreak(token);
         setCurrentStreak(newStreak.currentStreak);
+        if (newStreak.freezeTokens !== undefined) setFreezeTokens(newStreak.freezeTokens);
       } catch {
         // non-critical
       }
@@ -729,10 +743,22 @@ export default function HomeScreen() {
           <View style={styles.streakBadge}>
             <Text style={styles.streakEmoji}>🔥</Text>
             <Text style={styles.streakText}>{currentStreak} day streak</Text>
+            {freezeTokens > 0 && (
+              <View style={styles.freezeBadge}>
+                <Text style={styles.freezeIcon}>🛡</Text>
+                <Text style={styles.freezeCount}>{freezeTokens}</Text>
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.streakBadge}>
             <Text style={styles.streakText}>Start your streak today</Text>
+            {freezeTokens > 0 && (
+              <View style={styles.freezeBadge}>
+                <Text style={styles.freezeIcon}>🛡</Text>
+                <Text style={styles.freezeCount}>{freezeTokens}</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -974,6 +1000,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.text2,
+  },
+  freezeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.full,
+  },
+  freezeIcon: {
+    fontSize: 11,
+  },
+  freezeCount: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
   },
 
   disclaimer: {
