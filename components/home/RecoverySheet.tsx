@@ -46,7 +46,7 @@ function RecoverySheetInner({ items, yesterdayLabel, onConfirm, onCancel }: Prop
       onRequestClose={onCancel}
       statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={onCancel} />
+      <Pressable style={styles.backdrop} onPress={onCancel} accessibilityRole="button" accessibilityLabel="Dismiss" />
       <View style={styles.sheet}>
         <View style={styles.handle} />
         <Text style={styles.title}>Recover yesterday's doses</Text>

@@ -192,7 +192,7 @@ export default function ChatScreen() {
 
   // ── Error banner ─────────────────────────────────────────────────────────────
   const ErrorBanner = error ? (
-    <Pressable style={styles.errorBanner} onPress={clearError} accessibilityRole="alert">
+    <Pressable style={styles.errorBanner} onPress={clearError} accessibilityRole="button" accessibilityLabel="Dismiss error">
       <Text style={styles.errorText}>{error} — tap to dismiss</Text>
     </Pressable>
   ) : null;

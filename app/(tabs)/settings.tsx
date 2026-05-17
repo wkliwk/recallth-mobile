@@ -283,6 +283,7 @@ export default function SettingsScreen() {
                           onPress={() => setPickerVisible(false)}
                           style={({ pressed }) => [styles.pickerCancelBtn, pressed && { opacity: 0.7 }]}
                           accessibilityRole="button"
+                          accessibilityLabel="Cancel adding reminder time"
                         >
                           <Text style={styles.pickerCancelText}>Cancel</Text>
                         </Pressable>
@@ -290,6 +291,7 @@ export default function SettingsScreen() {
                           onPress={confirmIOSPicker}
                           style={({ pressed }) => [styles.pickerConfirmBtn, pressed && { opacity: 0.8 }]}
                           accessibilityRole="button"
+                          accessibilityLabel="Add reminder time"
                         >
                           <Text style={styles.pickerConfirmText}>Add</Text>
                         </Pressable>
