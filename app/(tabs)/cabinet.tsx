@@ -518,12 +518,14 @@ export default function CabinetScreen() {
         onClose={() => { setShowAddSheet(false); setPrefillRec(null); }}
         onSave={handleAdd}
         prefill={prefillRec ?? undefined}
+        existingItems={state.items}
       />
       <AddSheet
         visible={editingItem !== null}
         onClose={() => setEditingItem(null)}
         onSave={handleUpdate}
         item={editingItem}
+        existingItems={state.items}
       />
       {token !== null && (
         <SupplementDetailSheet

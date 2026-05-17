@@ -10,7 +10,7 @@
  * Uses KeyboardAvoidingView so inputs don't get hidden by the keyboard.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -31,6 +31,7 @@ import { AiSuggestion, CabinetItem, CreateCabinetItemInput, SupplementStatus, Su
 import { type Recommendation } from '../../services/recommendations';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
+import { findInteractions } from '../../utils/interactions';
 import { BarcodeScannerSheet } from './BarcodeScannerSheet';
 
 type Props = {
@@ -39,6 +40,7 @@ type Props = {
   onSave: (input: CreateCabinetItemInput) => Promise<void>;
   item?: CabinetItem | null;
   prefill?: Recommendation;
+  existingItems?: { name: string }[];
 };
 
 type TypeOption = { value: SupplementType; label: string; icon: string };
@@ -66,7 +68,7 @@ function getRandomSuggestions(count: number): string[] {
   return shuffled.slice(0, count);
 }
 
-export function AddSheet({ visible, onClose, onSave, item, prefill }: Props) {
+export function AddSheet({ visible, onClose, onSave, item, prefill, existingItems = [] }: Props) {
   const isEdit = Boolean(item);
   const token = useAuthStore((s) => s.token);
 
@@ -87,6 +89,16 @@ export function AddSheet({ visible, onClose, onSave, item, prefill }: Props) {
   const nameInputRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
   const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Exclude the item being edited from the existing names list so we don't warn against itself.
+  const otherNames = useMemo(() => {
+    const editingName = item?.name?.toLowerCase();
+    return existingItems
+      .map((e) => e.name)
+      .filter((n) => n.toLowerCase() !== editingName);
+  }, [existingItems, item?.name]);
+
+  const interactions = useMemo(() => findInteractions(name, otherNames), [name, otherNames]);
 
   // Populate form when editing.
   useEffect(() => {
@@ -419,6 +431,20 @@ export function AddSheet({ visible, onClose, onSave, item, prefill }: Props) {
               />
             </View>
 
+            {/* Interaction warnings */}
+            {interactions.length > 0 && (
+              <View style={styles.interactionBanner}>
+                <Text style={styles.interactionTitle}>⚠ Potential interaction{interactions.length > 1 ? 's' : ''} noted</Text>
+                {interactions.map((ix) => (
+                  <View key={ix.withName} style={styles.interactionItem}>
+                    <Text style={styles.interactionWith}>With {ix.withName}</Text>
+                    <Text style={styles.interactionMsg}>{ix.message}</Text>
+                  </View>
+                ))}
+                <Text style={styles.interactionNote}>This is informational only — you can still save this supplement.</Text>
+              </View>
+            )}
+
             {/* Status selector */}
             <View style={styles.field}>
               <Text style={styles.label}>Status</Text>
@@ -733,5 +759,38 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     ...typography.body,
     color: colors.text3,
+  },
+  interactionBanner: {
+    backgroundColor: colors.warningLight,
+    borderWidth: 1,
+    borderColor: colors.warningMid,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  interactionTitle: {
+    ...typography.bodyStrong,
+    color: colors.warning,
+  },
+  interactionItem: {
+    gap: 2,
+  },
+  interactionWith: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  interactionMsg: {
+    ...typography.bodySmall,
+    color: colors.text2,
+  },
+  interactionNote: {
+    ...typography.caption,
+    color: colors.text3,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
   },
 });
