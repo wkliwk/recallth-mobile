@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { logSideEffect } from '../../services/sideEffects';
 import { useAuthStore } from '../../stores/auth';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   visible: boolean;
@@ -33,6 +34,9 @@ const RATING_LABELS: Record<number, string> = {
 
 export function SideEffectSheet({ visible, cabinetItemId, supplementName, onClose }: Props) {
   const token = useAuthStore((s) => s.token);
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [symptom, setSymptom] = useState('');
   const [rating, setRating] = useState<number>(3);
   const [saving, setSaving] = useState(false);
@@ -103,7 +107,7 @@ export function SideEffectSheet({ visible, cabinetItemId, supplementName, onClos
           <TextInput
             style={styles.input}
             placeholder="e.g. Nausea, headache, stomach upset…"
-            placeholderTextColor={colors.text4}
+            placeholderTextColor={c.text4}
             value={symptom}
             onChangeText={(t) => { setSymptom(t); setError(null); }}
             multiline
@@ -164,139 +168,141 @@ export function SideEffectSheet({ visible, cabinetItemId, supplementName, onClos
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
-    paddingTop: spacing.md,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: spacing.lg,
-  },
-  title: {
-    ...typography.pageTitle,
-    fontSize: 18,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: colors.text2,
-    marginBottom: spacing.xl,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  input: {
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-    minHeight: 80,
-    marginBottom: spacing.xl,
-  },
-  severityRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-  severityBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  severityBtnActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  severityNum: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text2,
-  },
-  severityNumActive: {
-    color: colors.primary,
-  },
-  severityLabel: {
-    fontSize: 10,
-    color: colors.text3,
-    marginTop: 2,
-  },
-  severityLabelActive: {
-    color: colors.primary,
-  },
-  errorText: {
-    fontSize: 13,
-    color: colors.danger,
-    marginBottom: spacing.md,
-  },
-  successText: {
-    fontSize: 13,
-    color: colors.ok,
-    marginBottom: spacing.md,
-    fontWeight: '600',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  cancelText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text2,
-  },
-  submitBtn: {
-    flex: 2,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    alignItems: 'center',
-  },
-  submitBtnDisabled: {
-    opacity: 0.6,
-  },
-  submitText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xxxl,
+      paddingTop: spacing.md,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.border,
+      alignSelf: 'center',
+      marginBottom: spacing.lg,
+    },
+    title: {
+      ...typography.pageTitle,
+      fontSize: 18,
+      color: c.text,
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: c.text2,
+      marginBottom: spacing.xl,
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.text3,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: spacing.sm,
+    },
+    input: {
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      fontSize: 14,
+      color: c.text,
+      lineHeight: 20,
+      minHeight: 80,
+      marginBottom: spacing.xl,
+    },
+    severityRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.xl,
+    },
+    severityBtn: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    severityBtnActive: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary,
+    },
+    severityNum: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.text2,
+    },
+    severityNumActive: {
+      color: c.primary,
+    },
+    severityLabel: {
+      fontSize: 10,
+      color: c.text3,
+      marginTop: 2,
+    },
+    severityLabelActive: {
+      color: c.primary,
+    },
+    errorText: {
+      fontSize: 13,
+      color: c.danger,
+      marginBottom: spacing.md,
+    },
+    successText: {
+      fontSize: 13,
+      color: c.ok,
+      marginBottom: spacing.md,
+      fontWeight: '600',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    cancelBtn: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+    },
+    cancelText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text2,
+    },
+    submitBtn: {
+      flex: 2,
+      paddingVertical: spacing.md,
+      backgroundColor: c.primary,
+      borderRadius: radius.md,
+      alignItems: 'center',
+    },
+    submitBtnDisabled: {
+      opacity: 0.6,
+    },
+    submitText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#fff',
+    },
+  });
+}

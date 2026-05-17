@@ -1,6 +1,7 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { type Recommendation } from '../../services/recommendations';
 
 interface Props {
@@ -19,6 +20,9 @@ function RecommendationCard({
   onDismiss: (name: string) => void;
   onSelect: (rec: Recommendation) => void;
 }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
@@ -48,6 +52,9 @@ function RecommendationCard({
 }
 
 function RecommendationsBannerInner({ recommendations, dismissed, onDismiss, onSelect }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const visible = recommendations.filter((r) => !dismissed.includes(r.name));
   if (visible.length === 0) return null;
 
@@ -74,62 +81,64 @@ function RecommendationsBannerInner({ recommendations, dismissed, onDismiss, onS
 
 export const RecommendationsBanner = memo(RecommendationsBannerInner);
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.text2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  scroll: {
-    gap: spacing.md,
-    paddingRight: spacing.sm,
-  },
-  card: {
-    width: 200,
-    backgroundColor: colors.aiLight,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.aiMid,
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  cardName: {
-    ...typography.bodyStrong,
-    color: colors.text,
-    flex: 1,
-  },
-  dismissBtn: {
-    paddingLeft: spacing.xs,
-  },
-  dismissText: {
-    fontSize: 12,
-    color: colors.text3,
-  },
-  cardMeta: {
-    ...typography.caption,
-    color: colors.text3,
-  },
-  cardBenefit: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    lineHeight: 18,
-  },
-  cardCta: {
-    ...typography.caption,
-    color: colors.ai,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 14,
+    },
+    sectionTitle: {
+      ...typography.bodySmall,
+      fontWeight: '700',
+      color: c.text2,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: spacing.sm,
+    },
+    scroll: {
+      gap: spacing.md,
+      paddingRight: spacing.sm,
+    },
+    card: {
+      width: 200,
+      backgroundColor: c.aiLight,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.aiMid,
+      padding: spacing.lg,
+      gap: spacing.xs,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    cardName: {
+      ...typography.bodyStrong,
+      color: c.text,
+      flex: 1,
+    },
+    dismissBtn: {
+      paddingLeft: spacing.xs,
+    },
+    dismissText: {
+      fontSize: 12,
+      color: c.text3,
+    },
+    cardMeta: {
+      ...typography.caption,
+      color: c.text3,
+    },
+    cardBenefit: {
+      ...typography.bodySmall,
+      color: c.text2,
+      lineHeight: 18,
+    },
+    cardCta: {
+      ...typography.caption,
+      color: c.ai,
+      fontWeight: '700',
+      marginTop: spacing.xs,
+    },
+  });
+}

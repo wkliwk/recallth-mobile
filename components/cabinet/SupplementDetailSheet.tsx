@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,7 +11,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { updateCabinetItem, pauseCabinetItem, unpauseCabinetItem, type CabinetItem } from '../../services/cabinet';
 import { getSideEffects, type SideEffectEntry } from '../../services/sideEffects';
 import { getDoseLogsRange, type DoseLogEntry } from '../../services/schedule';
@@ -55,6 +56,9 @@ export function SupplementDetailSheet({
   currentStock,
   otherItemNames = [],
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [draft, setDraft] = useState<EditDraft>({ dosage: '', timing: '', frequency: '', notes: '', purpose: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -241,7 +245,7 @@ export function SupplementDetailSheet({
                 accessibilityLabel="Save changes"
               >
                 {saving
-                  ? <ActivityIndicator size="small" color={colors.primary} />
+                  ? <ActivityIndicator size="small" color={c.primary} />
                   : <Text style={styles.saveBtnText}>Save</Text>}
               </Pressable>
             ) : (
@@ -277,7 +281,7 @@ export function SupplementDetailSheet({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Dose History (last 30 days)</Text>
                 {doseLogsLoading ? (
-                  <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
+                  <ActivityIndicator color={c.primary} style={{ marginTop: spacing.lg }} />
                 ) : doseLogs.length === 0 ? (
                   <Text style={styles.emptyHistory}>No doses logged yet. Start logging from the Home screen.</Text>
                 ) : (
@@ -373,7 +377,7 @@ export function SupplementDetailSheet({
                       accessibilityRole="button"
                       accessibilityLabel="Add 30 days"
                     >
-                      <Text style={[styles.stockBtnText, { color: colors.primary }]}>+30d</Text>
+                      <Text style={[styles.stockBtnText, { color: c.primary }]}>+30d</Text>
                     </Pressable>
                   </View>
                 )}
@@ -450,7 +454,7 @@ export function SupplementDetailSheet({
                   >
                     <Text style={[
                       styles.applyTimingBtnText,
-                      draft.timing.toLowerCase() === optimalBlock.slotLabel.toLowerCase() && { color: colors.text2 },
+                      draft.timing.toLowerCase() === optimalBlock.slotLabel.toLowerCase() && { color: c.text2 },
                     ]}>
                       {draft.timing.toLowerCase() === optimalBlock.slotLabel.toLowerCase()
                         ? '✓ Applied'
@@ -537,6 +541,9 @@ function DetailField({
   onChangeText: (t: string) => void;
   multiline?: boolean;
 }) {
+  const c = useThemeColors();
+  const fieldStyles = useMemo(() => makeFieldStyles(c), [c]);
+
   return (
     <View style={fieldStyles.wrap}>
       <Text style={fieldStyles.label}>{label}</Text>
@@ -545,7 +552,7 @@ function DetailField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.text4}
+        placeholderTextColor={c.text4}
         multiline={multiline}
         autoCapitalize="none"
         autoCorrect={false}
@@ -555,312 +562,316 @@ function DetailField({
   );
 }
 
-const fieldStyles = StyleSheet.create({
-  wrap: { marginBottom: spacing.md },
-  label: {
-    ...typography.caption,
-    color: colors.text2,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 14,
-    color: colors.text,
-    minHeight: 40,
-  },
-  inputMultiline: {
-    minHeight: 72,
-    textAlignVertical: 'top',
-  },
-});
+function makeFieldStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    wrap: { marginBottom: spacing.md },
+    label: {
+      ...typography.caption,
+      color: c.text2,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+      marginBottom: spacing.xs,
+    },
+    input: {
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 14,
+      color: c.text,
+      minHeight: 40,
+    },
+    inputMultiline: {
+      minHeight: 72,
+      textAlignVertical: 'top',
+    },
+  });
+}
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.surface },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  headerTitle: {
-    ...typography.bodyStrong,
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 16,
-  },
-  closeBtn: {
-    width: 36,
-    alignItems: 'flex-start',
-  },
-  closeBtnText: { fontSize: 16, color: colors.text3, fontWeight: '600' },
-  saveBtn: {
-    width: 48,
-    alignItems: 'flex-end',
-  },
-  saveBtnText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  scroll: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.xl,
-  },
-  section: {
-    backgroundColor: colors.bg,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    ...typography.caption,
-    color: colors.text2,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.md,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.danger,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  pauseRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  pauseChip: {
-    backgroundColor: colors.infoLight,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.info,
-  },
-  pauseChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.info,
-  },
-  pausedBanner: {
-    backgroundColor: colors.infoLight,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  pausedBannerText: {
-    fontSize: 13,
-    color: colors.info,
-    fontWeight: '500',
-  },
-  resumeBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.info,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  resumeBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  stockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stockValue: { gap: 2 },
-  stockNumber: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    lineHeight: 34,
-  },
-  stockSub: { ...typography.caption, color: colors.text3 },
-  stockBtns: { flexDirection: 'row', gap: spacing.sm },
-  stockBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  stockBtnAdd: {
-    borderColor: colors.primary + '40',
-    backgroundColor: colors.primaryLight,
-  },
-  stockBtnText: {
-    ...typography.bodySmall,
-    fontWeight: '600',
-    color: colors.text2,
-  },
-  logBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.primary + '40',
-    backgroundColor: colors.primaryLight,
-  },
-  logBtnText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  emptyText: { ...typography.bodySmall, color: colors.text3, fontStyle: 'italic' },
-  tabRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.screenPad,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  tabBtnActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary + '40',
-  },
-  tabBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text2,
-  },
-  tabBtnTextActive: {
-    color: colors.primary,
-  },
-  emptyHistory: {
-    ...typography.bodySmall,
-    color: colors.text3,
-    textAlign: 'center',
-    marginTop: spacing.xl,
-    fontStyle: 'italic',
-  },
-  doseLogRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  doseLogTick: {
-    fontSize: 16,
-    color: colors.ok ?? '#2d9d5a',
-    fontWeight: '700',
-    width: 20,
-    textAlign: 'center',
-  },
-  doseLogInfo: { flex: 1 },
-  doseLogDate: { ...typography.bodySmall, fontWeight: '600', color: colors.text },
-  doseLogTime: { ...typography.caption, color: colors.text3, marginTop: 1 },
-  doseLogSlot: { ...typography.caption, color: colors.text3 },
-  seRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  seRating: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.full,
-    backgroundColor: colors.warningLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  seRatingText: { fontSize: 13, fontWeight: '700', color: colors.warning },
-  seInfo: { flex: 1 },
-  seSymptom: { ...typography.bodySmall, fontWeight: '600', color: colors.text },
-  seMeta: { ...typography.caption, color: colors.text3, marginTop: 2 },
-  interactionCard: {
-    backgroundColor: colors.warningLight,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.warning + '50',
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    gap: spacing.xs,
-  },
-  interactionWith: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.warning,
-  },
-  interactionMsg: {
-    ...typography.caption,
-    color: colors.text2,
-    lineHeight: 16,
-  },
-  bestTimeDesc: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    lineHeight: 20,
-    marginBottom: spacing.md,
-  },
-  bestTimeEmpty: {
-    ...typography.bodySmall,
-    color: colors.text3,
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
-  bold: {
-    fontWeight: '700',
-    color: colors.text,
-  },
-  applyTimingBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    alignSelf: 'flex-start',
-  },
-  applyTimingBtnApplied: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  applyTimingBtnText: {
-    ...typography.bodySmall,
-    color: colors.surface,
-    fontWeight: '700',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.surface },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      backgroundColor: c.surface,
+    },
+    headerTitle: {
+      ...typography.bodyStrong,
+      color: c.text,
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 16,
+    },
+    closeBtn: {
+      width: 36,
+      alignItems: 'flex-start',
+    },
+    closeBtnText: { fontSize: 16, color: c.text3, fontWeight: '600' },
+    saveBtn: {
+      width: 48,
+      alignItems: 'flex-end',
+    },
+    saveBtnText: {
+      ...typography.bodySmall,
+      color: c.primary,
+      fontWeight: '700',
+    },
+    scroll: { flex: 1 },
+    scrollContent: {
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.xl,
+    },
+    section: {
+      backgroundColor: c.bg,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    sectionTitle: {
+      ...typography.caption,
+      color: c.text2,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: spacing.md,
+    },
+    sectionTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    errorText: {
+      fontSize: 12,
+      color: c.danger,
+      marginBottom: spacing.md,
+      textAlign: 'center',
+    },
+    pauseRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      flexWrap: 'wrap',
+    },
+    pauseChip: {
+      backgroundColor: c.infoLight,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.info,
+    },
+    pauseChipText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.info,
+    },
+    pausedBanner: {
+      backgroundColor: c.infoLight,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    pausedBannerText: {
+      fontSize: 13,
+      color: c.info,
+      fontWeight: '500',
+    },
+    resumeBtn: {
+      alignSelf: 'flex-start',
+      backgroundColor: c.info,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    resumeBtnText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#fff',
+    },
+    stockRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    stockValue: { gap: 2 },
+    stockNumber: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: c.text,
+      lineHeight: 34,
+    },
+    stockSub: { ...typography.caption, color: c.text3 },
+    stockBtns: { flexDirection: 'row', gap: spacing.sm },
+    stockBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+    },
+    stockBtnAdd: {
+      borderColor: c.primary + '40',
+      backgroundColor: c.primaryLight,
+    },
+    stockBtnText: {
+      ...typography.bodySmall,
+      fontWeight: '600',
+      color: c.text2,
+    },
+    logBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.primary + '40',
+      backgroundColor: c.primaryLight,
+    },
+    logBtnText: {
+      ...typography.caption,
+      color: c.primary,
+      fontWeight: '700',
+    },
+    emptyText: { ...typography.bodySmall, color: c.text3, fontStyle: 'italic' },
+    tabRow: {
+      flexDirection: 'row',
+      paddingHorizontal: spacing.screenPad,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      backgroundColor: c.surface,
+    },
+    tabBtn: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      alignItems: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    tabBtnActive: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary + '40',
+    },
+    tabBtnText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.text2,
+    },
+    tabBtnTextActive: {
+      color: c.primary,
+    },
+    emptyHistory: {
+      ...typography.bodySmall,
+      color: c.text3,
+      textAlign: 'center',
+      marginTop: spacing.xl,
+      fontStyle: 'italic',
+    },
+    doseLogRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      gap: spacing.md,
+    },
+    doseLogTick: {
+      fontSize: 16,
+      color: c.ok,
+      fontWeight: '700',
+      width: 20,
+      textAlign: 'center',
+    },
+    doseLogInfo: { flex: 1 },
+    doseLogDate: { ...typography.bodySmall, fontWeight: '600', color: c.text },
+    doseLogTime: { ...typography.caption, color: c.text3, marginTop: 1 },
+    doseLogSlot: { ...typography.caption, color: c.text3 },
+    seRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    seRating: {
+      width: 28,
+      height: 28,
+      borderRadius: radius.full,
+      backgroundColor: c.warningLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    seRatingText: { fontSize: 13, fontWeight: '700', color: c.warning },
+    seInfo: { flex: 1 },
+    seSymptom: { ...typography.bodySmall, fontWeight: '600', color: c.text },
+    seMeta: { ...typography.caption, color: c.text3, marginTop: 2 },
+    interactionCard: {
+      backgroundColor: c.warningLight,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.warning + '50',
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      gap: spacing.xs,
+    },
+    interactionWith: {
+      ...typography.bodySmall,
+      fontWeight: '700',
+      color: c.warning,
+    },
+    interactionMsg: {
+      ...typography.caption,
+      color: c.text2,
+      lineHeight: 16,
+    },
+    bestTimeDesc: {
+      ...typography.bodySmall,
+      color: c.text2,
+      lineHeight: 20,
+      marginBottom: spacing.md,
+    },
+    bestTimeEmpty: {
+      ...typography.bodySmall,
+      color: c.text3,
+      fontStyle: 'italic',
+      lineHeight: 18,
+    },
+    bold: {
+      fontWeight: '700',
+      color: c.text,
+    },
+    applyTimingBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      alignSelf: 'flex-start',
+    },
+    applyTimingBtnApplied: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    applyTimingBtnText: {
+      ...typography.bodySmall,
+      color: c.surface,
+      fontWeight: '700',
+    },
+  });
+}

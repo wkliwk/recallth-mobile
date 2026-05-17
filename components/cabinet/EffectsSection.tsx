@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { type EffectRating } from '../../utils/effectsStorage';
 
 const EMOJI_MAP: Record<number, string> = {
@@ -19,6 +20,9 @@ interface SparklineProps {
 }
 
 function Sparkline({ ratings }: SparklineProps) {
+  const c = useThemeColors();
+  const spark = useMemo(() => makeSparkStyles(c), [c]);
+
   const n = ratings.length;
   if (n < 2) return null;
 
@@ -37,7 +41,7 @@ function Sparkline({ ratings }: SparklineProps) {
               {
                 left: `${i * segmentWidth}%` as unknown as number,
                 top: `${yPct}%` as unknown as number,
-                backgroundColor: r.value >= 1 ? colors.ok : r.value <= -1 ? colors.danger : colors.dim,
+                backgroundColor: r.value >= 1 ? c.ok : r.value <= -1 ? c.danger : c.dim,
               },
             ]}
           >
@@ -58,6 +62,9 @@ interface Props {
 }
 
 export function EffectsSection({ ratings }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   if (ratings.length < 2) {
     return (
       <View style={styles.placeholder}>
@@ -85,52 +92,56 @@ export function EffectsSection({ ratings }: Props) {
   );
 }
 
-const spark = StyleSheet.create({
-  container: {
-    height: DOT_HEIGHT,
-    position: 'relative',
-    marginVertical: spacing.md,
-    marginHorizontal: spacing.sm,
-  },
-  dot: {
-    position: 'absolute',
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    marginLeft: -(DOT_SIZE / 2),
-    marginTop: -(DOT_SIZE / 2),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dotLabel: { fontSize: 14, position: 'absolute', top: -20 },
-  axisLabel: {
-    position: 'absolute',
-    right: 0,
-    fontSize: 9,
-    color: colors.text3,
-    fontWeight: '500',
-  },
-});
+function makeSparkStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      height: DOT_HEIGHT,
+      position: 'relative',
+      marginVertical: spacing.md,
+      marginHorizontal: spacing.sm,
+    },
+    dot: {
+      position: 'absolute',
+      width: DOT_SIZE,
+      height: DOT_SIZE,
+      borderRadius: DOT_SIZE / 2,
+      marginLeft: -(DOT_SIZE / 2),
+      marginTop: -(DOT_SIZE / 2),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dotLabel: { fontSize: 14, position: 'absolute', top: -20 },
+    axisLabel: {
+      position: 'absolute',
+      right: 0,
+      fontSize: 9,
+      color: c.text3,
+      fontWeight: '500',
+    },
+  });
+}
 
-const styles = StyleSheet.create({
-  placeholder: {
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  placeholderText: {
-    ...typography.bodySmall,
-    color: colors.text3,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  latestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  latestEmoji: { fontSize: 28 },
-  latestLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
-  latestNote: { ...typography.bodySmall, color: colors.text2, marginTop: 2 },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    placeholder: {
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    placeholderText: {
+      ...typography.bodySmall,
+      color: c.text3,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    latestRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    latestEmoji: { fontSize: 28 },
+    latestLabel: { fontSize: 13, fontWeight: '600', color: c.text },
+    latestNote: { ...typography.bodySmall, color: c.text2, marginTop: 2 },
+  });
+}

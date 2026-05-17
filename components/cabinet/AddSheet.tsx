@@ -38,7 +38,8 @@ import { AiSuggestion, CabinetItem, CreateCabinetItemInput, LabelScanResult, Sup
 import { type Recommendation } from '../../services/recommendations';
 import { FuzzyMatch, fuzzySearchSupplements } from '../../services/supplementAliases';
 import { useAuthStore } from '../../stores/auth';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { findInteractions } from '../../utils/interactions';
 import { BarcodeScannerSheet } from './BarcodeScannerSheet';
 
@@ -80,6 +81,8 @@ function getRandomSuggestions(count: number): string[] {
 export function AddSheet({ visible, onClose, onSave, item, prefill, existingItems = [], initialReminderTime }: Props) {
   const isEdit = Boolean(item);
   const token = useAuthStore((s) => s.token);
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const [name, setName] = useState('');
   const [type, setType] = useState<SupplementType>('supplement');
@@ -377,7 +380,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
                   ref={nameInputRef}
                   style={[styles.input, styles.nameInput]}
                   placeholder="e.g. Vitamin D3, Omega-3, Magnesium"
-                  placeholderTextColor={colors.text3}
+                  placeholderTextColor={c.text3}
                   value={name}
                   onChangeText={handleNameChange}
                   onFocus={handleNameFocus}
@@ -403,7 +406,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
                   accessibilityLabel="Scan supplement label"
                 >
                   {labelScanning
-                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    ? <ActivityIndicator size="small" color={c.primary} />
                     : <Text style={styles.scanBtnIcon}>📷</Text>
                   }
                 </Pressable>
@@ -428,7 +431,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
                       ))}
                       {lookingUp && (
                         <View style={styles.lookupRow}>
-                          <ActivityIndicator size="small" color={colors.primary} />
+                          <ActivityIndicator size="small" color={c.primary} />
                         </View>
                       )}
                       {aiSuggestions.length > 0 && (
@@ -451,7 +454,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
                     </>
                   ) : lookingUp ? (
                     <View style={styles.lookupRow}>
-                      <ActivityIndicator size="small" color={colors.primary} />
+                      <ActivityIndicator size="small" color={c.primary} />
                       <Text style={styles.suggestionLabel}>Searching supplements…</Text>
                     </View>
                   ) : aiSuggestions.length > 0 ? (
@@ -520,7 +523,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 1000mg, 2 capsules"
-                placeholderTextColor={colors.text3}
+                placeholderTextColor={c.text3}
                 value={dosage}
                 onChangeText={setDosage}
                 maxLength={100}
@@ -534,7 +537,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
               <TextInput
                 style={styles.input}
                 placeholder="e.g. Once daily, Twice daily"
-                placeholderTextColor={colors.text3}
+                placeholderTextColor={c.text3}
                 value={frequency}
                 onChangeText={setFrequency}
                 maxLength={100}
@@ -548,7 +551,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
               <TextInput
                 style={styles.input}
                 placeholder="e.g. With breakfast, Before bed"
-                placeholderTextColor={colors.text3}
+                placeholderTextColor={c.text3}
                 value={timing}
                 onChangeText={setTiming}
                 maxLength={100}
@@ -575,7 +578,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
                   }}
                   style={styles.reminderRow}
                   accessibilityRole="button"
-                  accessibilityLabel={reminderTime ? `Reminder set for ${formatReminderTime(`${reminderTime.getHours()}:${reminderTime.getMinutes()}`)}. Tap to change.` : 'Set a daily reminder'}
+                  accessibilityLabel={reminderTime ? `Reminder set for ${formatReminderTime(`${reminderTime.getHours()}:${reminderTime.getMinutes()}`)}, tap to change.` : 'Set a daily reminder'}
                 >
                   <Text style={[styles.reminderText, !reminderTime && styles.reminderPlaceholder]}>
                     {reminderTime
@@ -610,7 +613,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
               <TextInput
                 style={styles.input}
                 placeholder="e.g. better sleep, immune support, post-workout"
-                placeholderTextColor={colors.text3}
+                placeholderTextColor={c.text3}
                 value={purpose}
                 onChangeText={setPurpose}
                 maxLength={100}
@@ -704,322 +707,324 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.40)',
-  },
-  keyboardView: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 16,
-    elevation: 16,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.text4,
-    alignSelf: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.sectionTitle,
-    color: colors.text,
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: colors.text3,
-  },
-  body: {
-    flexGrow: 0,
-  },
-  bodyContent: {
-    padding: spacing.xl,
-    gap: spacing.xl,
-  },
-  field: {
-    gap: spacing.sm,
-  },
-  label: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    fontWeight: '600',
-  },
-  required: {
-    color: colors.danger,
-  },
-  optional: {
-    color: colors.text4,
-    fontWeight: '400',
-  },
-  input: {
-    backgroundColor: colors.bg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    ...typography.body,
-    color: colors.text,
-    minHeight: 48,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'center',
-  },
-  nameInput: {
-    flex: 1,
-  },
-  scanBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.lg,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scanBtnIcon: {
-    fontSize: 22,
-    color: colors.text2,
-  },
-  scanLabelBtn: {
-    marginLeft: spacing.xs,
-  },
-  suggestions: {
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  suggestionLabel: {
-    ...typography.caption,
-    color: colors.text3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    backgroundColor: colors.aiLight,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderWidth: 1,
-    borderColor: colors.aiMid,
-  },
-  chipPressed: {
-    opacity: 0.75,
-  },
-  chipText: {
-    ...typography.bodySmall,
-    color: colors.ai,
-  },
-  lookupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  aiChip: {
-    backgroundColor: colors.aiLight,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.aiMid,
-  },
-  aiChipName: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  aiChipDetail: {
-    ...typography.caption,
-    color: colors.text3,
-    marginTop: 2,
-  },
-  typeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  typeChip: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
-  },
-  typeChipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-  },
-  typeIcon: {
-    fontSize: 20,
-  },
-  typeLabel: {
-    ...typography.caption,
-    color: colors.text3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  typeLabelSelected: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  statusRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statusChip: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
-  },
-  statusChipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-  },
-  statusChipLabel: {
-    ...typography.bodySmall,
-    color: colors.text3,
-    fontWeight: '600',
-  },
-  statusChipLabelSelected: {
-    color: colors.primary,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  saveButtonPressed: {
-    opacity: 0.85,
-  },
-  saveButtonText: {
-    ...typography.cta,
-    color: '#FFFFFF',
-  },
-  cancelButton: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  cancelButtonPressed: {
-    opacity: 0.7,
-  },
-  cancelButtonText: {
-    ...typography.body,
-    color: colors.text3,
-  },
-  reminderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.bg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: 48,
-  },
-  reminderText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  reminderPlaceholder: {
-    color: colors.text3,
-  },
-  reminderClear: {
-    fontSize: 14,
-    color: colors.text3,
-    fontWeight: '600',
-  },
-  permDeniedBanner: {
-    backgroundColor: colors.warningLight,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  permDeniedText: {
-    ...typography.bodySmall,
-    color: colors.text2,
-  },
-  permDeniedLink: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  interactionBanner: {
-    backgroundColor: colors.warningLight,
-    borderWidth: 1,
-    borderColor: colors.warningMid,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  interactionTitle: {
-    ...typography.bodyStrong,
-    color: colors.warning,
-  },
-  interactionItem: {
-    gap: 2,
-  },
-  interactionWith: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  interactionMsg: {
-    ...typography.bodySmall,
-    color: colors.text2,
-  },
-  interactionNote: {
-    ...typography.caption,
-    color: colors.text3,
-    fontStyle: 'italic',
-    marginTop: spacing.xs,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.40)',
+    },
+    keyboardView: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      maxHeight: '90%',
+      paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.10,
+      shadowRadius: 16,
+      elevation: 16,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: c.text4,
+      alignSelf: 'center',
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    headerTitle: {
+      ...typography.sectionTitle,
+      color: c.text,
+    },
+    closeButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeButtonText: {
+      fontSize: 16,
+      color: c.text3,
+    },
+    body: {
+      flexGrow: 0,
+    },
+    bodyContent: {
+      padding: spacing.xl,
+      gap: spacing.xl,
+    },
+    field: {
+      gap: spacing.sm,
+    },
+    label: {
+      ...typography.bodySmall,
+      color: c.text2,
+      fontWeight: '600',
+    },
+    required: {
+      color: c.danger,
+    },
+    optional: {
+      color: c.text4,
+      fontWeight: '400',
+    },
+    input: {
+      backgroundColor: c.bg,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      ...typography.body,
+      color: c.text,
+      minHeight: 48,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'center',
+    },
+    nameInput: {
+      flex: 1,
+    },
+    scanBtn: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.lg,
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scanBtnIcon: {
+      fontSize: 22,
+      color: c.text2,
+    },
+    scanLabelBtn: {
+      marginLeft: spacing.xs,
+    },
+    suggestions: {
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    suggestionLabel: {
+      ...typography.caption,
+      color: c.text3,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      backgroundColor: c.aiLight,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs + 2,
+      borderWidth: 1,
+      borderColor: c.aiMid,
+    },
+    chipPressed: {
+      opacity: 0.75,
+    },
+    chipText: {
+      ...typography.bodySmall,
+      color: c.ai,
+    },
+    lookupRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    aiChip: {
+      backgroundColor: c.aiLight,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.aiMid,
+    },
+    aiChipName: {
+      ...typography.bodySmall,
+      color: c.text,
+      fontWeight: '600',
+    },
+    aiChipDetail: {
+      ...typography.caption,
+      color: c.text3,
+      marginTop: 2,
+    },
+    typeRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    typeChip: {
+      flex: 1,
+      alignItems: 'center',
+      gap: spacing.xs,
+      padding: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.bg,
+    },
+    typeChipSelected: {
+      borderColor: c.primary,
+      backgroundColor: c.primaryLight,
+    },
+    typeIcon: {
+      fontSize: 20,
+    },
+    typeLabel: {
+      ...typography.caption,
+      color: c.text3,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    typeLabelSelected: {
+      color: c.primary,
+      fontWeight: '700',
+    },
+    statusRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    statusChip: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.bg,
+    },
+    statusChipSelected: {
+      borderColor: c.primary,
+      backgroundColor: c.primaryLight,
+    },
+    statusChipLabel: {
+      ...typography.bodySmall,
+      color: c.text3,
+      fontWeight: '600',
+    },
+    statusChipLabelSelected: {
+      color: c.primary,
+    },
+    saveButton: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+    },
+    saveButtonPressed: {
+      opacity: 0.85,
+    },
+    saveButtonText: {
+      ...typography.cta,
+      color: '#FFFFFF',
+    },
+    cancelButton: {
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+    },
+    cancelButtonPressed: {
+      opacity: 0.7,
+    },
+    cancelButtonText: {
+      ...typography.body,
+      color: c.text3,
+    },
+    reminderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.bg,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: 48,
+    },
+    reminderText: {
+      ...typography.body,
+      color: c.text,
+    },
+    reminderPlaceholder: {
+      color: c.text3,
+    },
+    reminderClear: {
+      fontSize: 14,
+      color: c.text3,
+      fontWeight: '600',
+    },
+    permDeniedBanner: {
+      backgroundColor: c.warningLight,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    permDeniedText: {
+      ...typography.bodySmall,
+      color: c.text2,
+    },
+    permDeniedLink: {
+      ...typography.bodySmall,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    interactionBanner: {
+      backgroundColor: c.warningLight,
+      borderWidth: 1,
+      borderColor: c.warningMid,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    interactionTitle: {
+      ...typography.bodyStrong,
+      color: c.warning,
+    },
+    interactionItem: {
+      gap: 2,
+    },
+    interactionWith: {
+      ...typography.caption,
+      fontWeight: '700',
+      color: c.text,
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
+    },
+    interactionMsg: {
+      ...typography.bodySmall,
+      color: c.text2,
+    },
+    interactionNote: {
+      ...typography.caption,
+      color: c.text3,
+      fontStyle: 'italic',
+      marginTop: spacing.xs,
+    },
+  });
+}

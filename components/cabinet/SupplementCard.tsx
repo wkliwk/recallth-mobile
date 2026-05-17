@@ -12,11 +12,12 @@
  *   - Type tile icons with category colors.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CabinetItem, deriveStatus } from '../../services/cabinet';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { SeverityBadge, SeverityLevel } from '../ui/SeverityBadge';
 
 type Props = {
@@ -27,14 +28,13 @@ type Props = {
   testID?: string;
 };
 
-const TYPE_ICONS: Record<string, { icon: string; bg: string }> = {
-  vitamin: { icon: '☀', bg: colors.warningLight },
-  supplement: { icon: '🌿', bg: colors.aiLight },
-  medication: { icon: '💊', bg: colors.infoLight },
-};
-
-function getTypeConfig(type: string) {
-  return TYPE_ICONS[type] ?? { icon: '●', bg: colors.cardSolid };
+function getTypeConfig(type: string, c: ColorPalette): { icon: string; bg: string } {
+  const TYPE_ICONS: Record<string, { icon: string; bg: string }> = {
+    vitamin: { icon: '☀', bg: c.warningLight },
+    supplement: { icon: '🌿', bg: c.aiLight },
+    medication: { icon: '💊', bg: c.infoLight },
+  };
+  return TYPE_ICONS[type] ?? { icon: '●', bg: c.cardSolid };
 }
 
 export const SupplementCard = React.memo(function SupplementCard({
@@ -44,8 +44,11 @@ export const SupplementCard = React.memo(function SupplementCard({
   onDelete,
   testID,
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const hasWarning = Boolean(interactionSeverity);
-  const typeConfig = getTypeConfig(item.type);
+  const typeConfig = getTypeConfig(item.type, c);
   const status = deriveStatus(item);
 
   const scheduleText = [item.frequency, item.timing].filter(Boolean).join(' · ');
@@ -134,97 +137,99 @@ export const SupplementCard = React.memo(function SupplementCard({
   );
 });
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    marginBottom: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  cardWarning: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warningMid,
-  },
-  cardPressed: {
-    opacity: 0.85,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  iconTile: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconText: {
-    fontSize: 20,
-  },
-  content: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  name: {
-    ...typography.bodyStrong,
-    color: colors.text,
-    flexShrink: 1,
-  },
-  statusPill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    borderWidth: 1,
-  },
-  pausedPill: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warningMid,
-  },
-  stoppedPill: {
-    backgroundColor: colors.cardSolid,
-    borderColor: colors.borderStrong,
-  },
-  statusText: {
-    ...typography.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  pausedText: {
-    color: colors.warning,
-  },
-  stoppedText: {
-    color: colors.text3,
-  },
-  dose: {
-    ...typography.bodySmall,
-    color: colors.text2,
-  },
-  schedule: {
-    ...typography.bodySmall,
-    color: colors.text3,
-  },
-  badgeRow: {
-    marginTop: spacing.xs,
-  },
-  chevron: {
-    fontSize: 20,
-    color: colors.text4,
-    alignSelf: 'center',
-    paddingLeft: spacing.xs,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+      marginBottom: spacing.sm,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04,
+      shadowRadius: 3,
+      elevation: 1,
+    },
+    cardWarning: {
+      backgroundColor: c.warningLight,
+      borderColor: c.warningMid,
+    },
+    cardPressed: {
+      opacity: 0.85,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+    },
+    iconTile: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconText: {
+      fontSize: 20,
+    },
+    content: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      flexWrap: 'wrap',
+    },
+    name: {
+      ...typography.bodyStrong,
+      color: c.text,
+      flexShrink: 1,
+    },
+    statusPill: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.full,
+      borderWidth: 1,
+    },
+    pausedPill: {
+      backgroundColor: c.warningLight,
+      borderColor: c.warningMid,
+    },
+    stoppedPill: {
+      backgroundColor: c.cardSolid,
+      borderColor: c.borderStrong,
+    },
+    statusText: {
+      ...typography.caption,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    pausedText: {
+      color: c.warning,
+    },
+    stoppedText: {
+      color: c.text3,
+    },
+    dose: {
+      ...typography.bodySmall,
+      color: c.text2,
+    },
+    schedule: {
+      ...typography.bodySmall,
+      color: c.text3,
+    },
+    badgeRow: {
+      marginTop: spacing.xs,
+    },
+    chevron: {
+      fontSize: 20,
+      color: c.text4,
+      alignSelf: 'center',
+      paddingLeft: spacing.xs,
+    },
+  });
+}
