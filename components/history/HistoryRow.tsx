@@ -8,7 +8,7 @@
  */
 
 import React, { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AnyHistoryEntry,
@@ -22,6 +22,7 @@ import { colors, radius, spacing, typography } from '../../utils/theme';
 interface Props {
   item: AnyHistoryEntry;
   onPressChatItem?: (conversationId: string) => void;
+  onDeleteDose?: (logId: string) => void;
 }
 
 function formatTime(iso: string): string {
@@ -106,10 +107,28 @@ function ProfileRow({ item }: { item: ProfileChangeEntry }): React.JSX.Element {
   );
 }
 
-function DoseRow({ item }: { item: DoseEntry }): React.JSX.Element {
+function DoseRow({ item, onDelete }: { item: DoseEntry; onDelete?: () => void }): React.JSX.Element {
   const slotLabel = item.data.slot.charAt(0).toUpperCase() + item.data.slot.slice(1);
+
+  const handleLongPress = () => {
+    Alert.alert(
+      'Remove dose log?',
+      'This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: onDelete },
+      ],
+    );
+  };
+
   return (
-    <View style={styles.row}>
+    <Pressable
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      onLongPress={handleLongPress}
+      accessibilityRole="none"
+      accessibilityLabel={`${item.data.supplementName} dose log. Long press to delete.`}
+      accessibilityHint="Long press to remove this dose log"
+    >
       <View style={[styles.iconWrap, styles.iconDose]}>
         <Text style={styles.iconText}>💊</Text>
       </View>
@@ -127,13 +146,13 @@ function DoseRow({ item }: { item: DoseEntry }): React.JSX.Element {
             <Text style={styles.time}>{formatTime(item.timestamp)}</Text>
           </View>
         </View>
-        <Text style={styles.meta}>{slotLabel} dose logged</Text>
+        <Text style={styles.meta}>{slotLabel} dose logged · hold to delete</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
-function HistoryRowInner({ item, onPressChatItem }: Props): React.JSX.Element {
+function HistoryRowInner({ item, onPressChatItem, onDeleteDose }: Props): React.JSX.Element {
   if (item.type === 'conversation') {
     return <ConversationRow item={item} onPress={onPressChatItem} />;
   }
@@ -141,7 +160,13 @@ function HistoryRowInner({ item, onPressChatItem }: Props): React.JSX.Element {
     return <CabinetRow item={item} />;
   }
   if (item.type === 'dose') {
-    return <DoseRow item={item} />;
+    const logId = item.data._id;
+    return (
+      <DoseRow
+        item={item}
+        onDelete={logId && onDeleteDose ? () => onDeleteDose(logId) : undefined}
+      />
+    );
   }
   return <ProfileRow item={item} />;
 }
