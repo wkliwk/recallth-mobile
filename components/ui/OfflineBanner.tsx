@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../../utils/theme';
+import { ColorPalette, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   visible: boolean;
 }
 
 export function OfflineBanner({ visible }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   if (!visible) return null;
   return (
     <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
@@ -15,17 +19,19 @@ export function OfflineBanner({ visible }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    backgroundColor: colors.text3,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-  },
-  text: {
-    ...typography.caption,
-    color: '#fff',
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    banner: {
+      backgroundColor: c.text3,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+    },
+    text: {
+      ...typography.caption,
+      color: '#fff',
+      fontWeight: '600',
+      letterSpacing: 0.2,
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -7,7 +7,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import type { SupplementEntry } from '../summary/mockData';
 
 interface Props {
@@ -18,6 +19,9 @@ interface Props {
 }
 
 function RecoverySheetInner({ items, yesterdayLabel, onConfirm, onCancel }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(items.map((i) => i.id)),
   );
@@ -108,121 +112,123 @@ function RecoverySheetInner({ items, yesterdayLabel, onConfirm, onCancel }: Prop
 
 export const RecoverySheet = memo(RecoverySheetInner);
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
-    padding: spacing.xl,
-    paddingBottom: spacing.xxxl,
-    maxHeight: '75%',
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.3,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    marginBottom: spacing.md,
-  },
-  list: {
-    flexGrow: 0,
-  },
-  listContent: {
-    gap: spacing.xs,
-    paddingBottom: spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.bg,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  checkboxOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  checkmark: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  itemName: {
-    ...typography.bodyStrong,
-    color: colors.text,
-  },
-  itemDose: {
-    ...typography.caption,
-    color: colors.text3,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  cancelText: {
-    ...typography.bodyStrong,
-    color: colors.text2,
-    fontSize: 15,
-  },
-  confirmBtn: {
-    flex: 2,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-  },
-  confirmBtnDisabled: {
-    opacity: 0.4,
-  },
-  confirmText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    sheet: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xxl,
+      borderTopRightRadius: radius.xxl,
+      padding: spacing.xl,
+      paddingBottom: spacing.xxxl,
+      maxHeight: '75%',
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.border,
+      alignSelf: 'center',
+      marginBottom: spacing.md,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      letterSpacing: -0.3,
+      marginBottom: spacing.xs,
+    },
+    subtitle: {
+      ...typography.bodySmall,
+      color: c.text2,
+      marginBottom: spacing.md,
+    },
+    list: {
+      flexGrow: 0,
+    },
+    listContent: {
+      gap: spacing.xs,
+      paddingBottom: spacing.md,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: c.bg,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    checkboxOn: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    checkmark: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    itemInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    itemName: {
+      ...typography.bodyStrong,
+      color: c.text,
+    },
+    itemDose: {
+      ...typography.caption,
+      color: c.text3,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    cancelBtn: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+    },
+    cancelText: {
+      ...typography.bodyStrong,
+      color: c.text2,
+      fontSize: 15,
+    },
+    confirmBtn: {
+      flex: 2,
+      paddingVertical: spacing.md,
+      borderRadius: radius.lg,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+    },
+    confirmBtnDisabled: {
+      opacity: 0.4,
+    },
+    confirmText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#fff',
+    },
+  });
+}

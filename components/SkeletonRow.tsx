@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
-import { colors, radius, spacing } from '../utils/theme';
+import { ColorPalette, radius, spacing } from '../utils/theme';
+import { useThemeColors } from '../utils/useTheme';
 
 type SkeletonRowProps = {
   /** Row variant. Default renders a conversation-list skeleton. */
@@ -13,6 +14,9 @@ type SkeletonRowProps = {
  * list row or stat tile so the layout doesn't shift on load.
  */
 export function SkeletonRow({ variant = 'conversation' }: SkeletonRowProps) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -54,56 +58,58 @@ export function SkeletonRow({ variant = 'conversation' }: SkeletonRowProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md - 2,
-    paddingVertical: spacing.sm,
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    backgroundColor: colors.cardSolid,
-  },
-  lines: {
-    flex: 1,
-    gap: 6,
-  },
-  lineTitle: {
-    height: 14,
-    borderRadius: radius.sm,
-    backgroundColor: colors.cardSolid,
-    width: '72%',
-  },
-  lineSub: {
-    height: 11,
-    borderRadius: radius.sm,
-    backgroundColor: colors.cardSolid,
-    width: '45%',
-  },
-  // Stat variant
-  statTile: {
-    flex: 1,
-    height: 72,
-    borderRadius: radius.xl,
-    backgroundColor: colors.cardSolid,
-    padding: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  statValue: {
-    height: 24,
-    width: 32,
-    borderRadius: radius.sm,
-    backgroundColor: colors.border,
-  },
-  statLabel: {
-    height: 10,
-    width: 40,
-    borderRadius: radius.sm,
-    backgroundColor: colors.border,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md - 2,
+      paddingVertical: spacing.sm,
+    },
+    avatar: {
+      width: 34,
+      height: 34,
+      borderRadius: 11,
+      backgroundColor: c.cardSolid,
+    },
+    lines: {
+      flex: 1,
+      gap: 6,
+    },
+    lineTitle: {
+      height: 14,
+      borderRadius: radius.sm,
+      backgroundColor: c.cardSolid,
+      width: '72%',
+    },
+    lineSub: {
+      height: 11,
+      borderRadius: radius.sm,
+      backgroundColor: c.cardSolid,
+      width: '45%',
+    },
+    // Stat variant
+    statTile: {
+      flex: 1,
+      height: 72,
+      borderRadius: radius.xl,
+      backgroundColor: c.cardSolid,
+      padding: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    statValue: {
+      height: 24,
+      width: 32,
+      borderRadius: radius.sm,
+      backgroundColor: c.border,
+    },
+    statLabel: {
+      height: 10,
+      width: 40,
+      borderRadius: radius.sm,
+      backgroundColor: c.border,
+    },
+  });
+}

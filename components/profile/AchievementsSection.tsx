@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { BADGE_DEFS, type EarnedBadge } from '../../utils/badges';
 
 interface Props {
@@ -14,6 +15,8 @@ function formatDate(iso: string): string {
 }
 
 function BadgeItem({ def, earnedBadge }: { def: typeof BADGE_DEFS[0]; earnedBadge?: EarnedBadge }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const isEarned = Boolean(earnedBadge);
   return (
     <View style={[styles.badge, !isEarned && styles.badgeGrey]}>
@@ -32,6 +35,9 @@ function BadgeItem({ def, earnedBadge }: { def: typeof BADGE_DEFS[0]; earnedBadg
 }
 
 export default function AchievementsSection({ earned, streak = 0, onShare }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const earnedMap = new Map(earned.map((b) => [b.id, b]));
   const showShare = (streak > 0 || earned.length > 0) && Boolean(onShare);
 
@@ -57,76 +63,78 @@ export default function AchievementsSection({ earned, streak = 0, onShare }: Pro
   );
 }
 
-const styles = StyleSheet.create({
-  section: {
-    marginHorizontal: spacing.screenPad,
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    ...typography.bodyStrong,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  badge: {
-    width: '30%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm,
-    alignItems: 'center',
-    gap: 3,
-    minHeight: 90,
-    justifyContent: 'center',
-  },
-  badgeGrey: {
-    backgroundColor: colors.bg,
-    borderColor: colors.border,
-  },
-  badgeIcon: {
-    fontSize: 28,
-  },
-  badgeIconGrey: {
-    opacity: 0.25,
-  },
-  badgeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
-  badgeLabelGrey: {
-    color: colors.text3,
-  },
-  earnedDate: {
-    fontSize: 9,
-    color: colors.text3,
-    textAlign: 'center',
-  },
-  lockedText: {
-    fontSize: 9,
-    color: colors.text3,
-    fontStyle: 'italic',
-  },
-  shareBtn: {
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-  },
-  shareBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text2,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    section: {
+      marginHorizontal: spacing.screenPad,
+      marginBottom: spacing.lg,
+    },
+    sectionTitle: {
+      ...typography.bodyStrong,
+      color: c.text,
+      marginBottom: spacing.md,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    badge: {
+      width: '30%',
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.sm,
+      alignItems: 'center',
+      gap: 3,
+      minHeight: 90,
+      justifyContent: 'center',
+    },
+    badgeGrey: {
+      backgroundColor: c.bg,
+      borderColor: c.border,
+    },
+    badgeIcon: {
+      fontSize: 28,
+    },
+    badgeIconGrey: {
+      opacity: 0.25,
+    },
+    badgeLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: c.text,
+      textAlign: 'center',
+      lineHeight: 14,
+    },
+    badgeLabelGrey: {
+      color: c.text3,
+    },
+    earnedDate: {
+      fontSize: 9,
+      color: c.text3,
+      textAlign: 'center',
+    },
+    lockedText: {
+      fontSize: 9,
+      color: c.text3,
+      fontStyle: 'italic',
+    },
+    shareBtn: {
+      marginTop: spacing.md,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignSelf: 'center',
+      backgroundColor: c.surface,
+    },
+    shareBtnText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.text2,
+    },
+  });
+}
