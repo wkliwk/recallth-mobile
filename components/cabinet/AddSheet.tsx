@@ -36,6 +36,7 @@ import { formatReminderTime } from '../../utils/reminderTimes';
 
 import { AiSuggestion, CabinetItem, CreateCabinetItemInput, LabelScanResult, SupplementStatus, SupplementType, aiLookupSupplement, deriveStatus, extractSupplementFromImage, statusToFields } from '../../services/cabinet';
 import { type Recommendation } from '../../services/recommendations';
+import { FuzzyMatch, fuzzySearchSupplements } from '../../services/supplementAliases';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { findInteractions } from '../../utils/interactions';
@@ -90,6 +91,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
   const [saving, setSaving] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
   const [localSuggestions] = useState<string[]>(() => getRandomSuggestions(3));
+  const [fuzzySuggestions, setFuzzySuggestions] = useState<FuzzyMatch[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -152,6 +154,8 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
         setReminderTime(null);
       }
       setShowSuggestions(false);
+      setFuzzySuggestions([]);
+      setAiSuggestions([]);
 
       // Slide in.
       Animated.spring(slideAnim, {
@@ -258,15 +262,19 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
     if (lookupTimer.current) clearTimeout(lookupTimer.current);
 
     const q = text.trim();
-    if (q.length < 3) {
+    if (q.length < 2) {
       setShowSuggestions(q.length === 0 && !isEdit);
       setAiSuggestions([]);
+      setFuzzySuggestions([]);
       setLookingUp(false);
       return;
     }
 
+    const fuzzy = fuzzySearchSupplements(q, 5);
+    setFuzzySuggestions(fuzzy);
     setShowSuggestions(true);
-    if (!token) return;
+
+    if (!token || q.length < 3) return;
 
     setLookingUp(true);
     lookupTimer.current = setTimeout(() => {
@@ -297,12 +305,24 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
     if (s.timing) setTiming(s.timing);
     setShowSuggestions(false);
     setAiSuggestions([]);
+    setFuzzySuggestions([]);
   }, []);
 
   const applyLocalSuggestion = useCallback((suggestion: string) => {
     setName(suggestion);
     setShowSuggestions(false);
   }, []);
+
+  const applyFuzzyMatch = useCallback((match: FuzzyMatch) => {
+    setName(match.canonical);
+    setType(match.type);
+    if (!dosage) {
+      setDosage(`${match.typicalDose} ${match.doseUnit}`);
+    }
+    setFuzzySuggestions([]);
+    setAiSuggestions([]);
+    setShowSuggestions(false);
+  }, [dosage]);
 
   return (
     <Modal
@@ -391,7 +411,45 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
 
               {showSuggestions && (
                 <View style={styles.suggestions}>
-                  {lookingUp ? (
+                  {fuzzySuggestions.length > 0 ? (
+                    <>
+                      <Text style={styles.suggestionLabel}>Suggestions</Text>
+                      {fuzzySuggestions.map((m) => (
+                        <Pressable
+                          key={m.canonical}
+                          onPress={() => applyFuzzyMatch(m)}
+                          style={({ pressed }) => [styles.aiChip, pressed && styles.chipPressed]}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Select ${m.canonical}`}
+                        >
+                          <Text style={styles.aiChipName}>{m.canonical}</Text>
+                          <Text style={styles.aiChipDetail}>{m.typicalDose} {m.doseUnit}</Text>
+                        </Pressable>
+                      ))}
+                      {lookingUp && (
+                        <View style={styles.lookupRow}>
+                          <ActivityIndicator size="small" color={colors.primary} />
+                        </View>
+                      )}
+                      {aiSuggestions.length > 0 && (
+                        <>
+                          <Text style={[styles.suggestionLabel, { marginTop: spacing.xs }]}>Also from AI</Text>
+                          {aiSuggestions.map((s) => (
+                            <Pressable
+                              key={s.name}
+                              onPress={() => applyAiSuggestion(s)}
+                              style={({ pressed }) => [styles.aiChip, pressed && styles.chipPressed]}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Select ${s.name}`}
+                            >
+                              <Text style={styles.aiChipName}>{s.name}{s.brand ? ` · ${s.brand}` : ''}</Text>
+                              {s.dosage && <Text style={styles.aiChipDetail}>{s.dosage}{s.frequency ? ` · ${s.frequency}` : ''}</Text>}
+                            </Pressable>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  ) : lookingUp ? (
                     <View style={styles.lookupRow}>
                       <ActivityIndicator size="small" color={colors.primary} />
                       <Text style={styles.suggestionLabel}>Searching supplements…</Text>
