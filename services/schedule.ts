@@ -43,6 +43,22 @@ export async function unlogDose(token: string, logId: string): Promise<void> {
   await api.delete(`/schedule/log-dose/${logId}`, { token });
 }
 
+export interface EditDoseLogInput {
+  takenAt: string;
+  notes?: string;
+}
+
+export async function editDoseLog(
+  token: string,
+  logId: string,
+  input: EditDoseLogInput,
+): Promise<DoseLogEntry> {
+  const body: Record<string, unknown> = { takenAt: input.takenAt };
+  if (input.notes !== undefined) body.notes = input.notes.trim() || null;
+  const res = await api.patch<DoseLogResponse>(`/schedule/log-dose/${logId}`, body, { token });
+  return res.data;
+}
+
 interface DoseLogsResponse {
   success: boolean;
   data: DoseLogEntry[];

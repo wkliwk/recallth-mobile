@@ -23,7 +23,9 @@ interface Props {
   item: AnyHistoryEntry;
   onPressChatItem?: (conversationId: string) => void;
   onDeleteDose?: (logId: string) => void;
+  onEditDose?: (logId: string) => void;
   doseNotes?: Record<string, string>;
+  editedLogIds?: Set<string>;
 }
 
 function formatTime(iso: string): string {
@@ -108,7 +110,15 @@ function ProfileRow({ item }: { item: ProfileChangeEntry }): React.JSX.Element {
   );
 }
 
-function DoseRow({ item, onDelete, note }: { item: DoseEntry; onDelete?: () => void; note?: string }): React.JSX.Element {
+function DoseRow({
+  item, onDelete, onEdit, note, isEdited,
+}: {
+  item: DoseEntry;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  note?: string;
+  isEdited?: boolean;
+}): React.JSX.Element {
   const slotLabel = item.data.slot.charAt(0).toUpperCase() + item.data.slot.slice(1);
 
   const handleLongPress = () => {
@@ -125,10 +135,11 @@ function DoseRow({ item, onDelete, note }: { item: DoseEntry; onDelete?: () => v
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      onPress={onEdit}
       onLongPress={handleLongPress}
-      accessibilityRole="none"
-      accessibilityLabel={`${item.data.supplementName} dose log. Long press to delete.`}
-      accessibilityHint="Long press to remove this dose log"
+      accessibilityRole="button"
+      accessibilityLabel={`${item.data.supplementName} dose log. Tap to edit, long press to delete.`}
+      accessibilityHint="Tap to edit time or notes. Long press to delete."
     >
       <View style={[styles.iconWrap, styles.iconDose]}>
         <Text style={styles.iconText}>💊</Text>
@@ -139,6 +150,11 @@ function DoseRow({ item, onDelete, note }: { item: DoseEntry; onDelete?: () => v
             {item.data.supplementName}
           </Text>
           <View style={styles.timeRow}>
+            {isEdited && (
+              <View style={styles.editedPill}>
+                <Text style={styles.editedPillText}>Edited</Text>
+              </View>
+            )}
             {item.data.backfill && (
               <View style={styles.backfillPill}>
                 <Text style={styles.backfillPillText}>Backfill</Text>
@@ -152,14 +168,14 @@ function DoseRow({ item, onDelete, note }: { item: DoseEntry; onDelete?: () => v
             <Text style={styles.time}>{formatTime(item.timestamp)}</Text>
           </View>
         </View>
-        <Text style={styles.meta}>{slotLabel} dose logged · hold to delete</Text>
+        <Text style={styles.meta}>{slotLabel} dose · tap to edit · hold to delete</Text>
         {note ? <Text style={styles.noteText}>{note}</Text> : null}
       </View>
     </Pressable>
   );
 }
 
-function HistoryRowInner({ item, onPressChatItem, onDeleteDose, doseNotes }: Props): React.JSX.Element {
+function HistoryRowInner({ item, onPressChatItem, onDeleteDose, onEditDose, doseNotes, editedLogIds }: Props): React.JSX.Element {
   if (item.type === 'conversation') {
     return <ConversationRow item={item} onPress={onPressChatItem} />;
   }
@@ -172,7 +188,9 @@ function HistoryRowInner({ item, onPressChatItem, onDeleteDose, doseNotes }: Pro
       <DoseRow
         item={item}
         onDelete={logId && onDeleteDose ? () => onDeleteDose(logId) : undefined}
+        onEdit={logId && onEditDose ? () => onEditDose(logId) : undefined}
         note={logId ? doseNotes?.[logId] : undefined}
+        isEdited={logId ? editedLogIds?.has(logId) : false}
       />
     );
   }
@@ -246,6 +264,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     flexShrink: 0,
+  },
+  editedPill: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  editedPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.primary,
   },
   latePill: {
     backgroundColor: colors.warningLight,
