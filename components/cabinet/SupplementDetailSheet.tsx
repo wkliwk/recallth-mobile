@@ -14,6 +14,7 @@ import {
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { updateCabinetItem, pauseCabinetItem, unpauseCabinetItem, type CabinetItem } from '../../services/cabinet';
 import { getSideEffects, type SideEffectEntry } from '../../services/sideEffects';
+import { getDoseLogsRange, type DoseLogEntry } from '../../services/schedule';
 import { SideEffectSheet } from './SideEffectSheet';
 
 const RATING_LABELS: Record<number, string> = {
@@ -54,7 +55,11 @@ export function SupplementDetailSheet({
   const [sideEffectSheetVisible, setSideEffectSheetVisible] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
   const [pauseError, setPauseError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
+  const [doseLogs, setDoseLogs] = useState<DoseLogEntry[]>([]);
+  const [doseLogsLoading, setDoseLogsLoading] = useState(false);
   const seLoadedRef = useRef(false);
+  const doseLogsLoadedRef = useRef<string | null>(null);
 
   // Reset draft when item changes
   useEffect(() => {
@@ -68,6 +73,9 @@ export function SupplementDetailSheet({
     });
     setSaveError(null);
     seLoadedRef.current = false;
+    doseLogsLoadedRef.current = null;
+    setActiveTab('details');
+    setDoseLogs([]);
   }, [item?._id]);
 
   // Load side effects when sheet opens
@@ -78,6 +86,20 @@ export function SupplementDetailSheet({
       .then(setSideEffects)
       .catch(() => {/* non-critical */});
   }, [visible, item, token]);
+
+  // Load dose logs when History tab is first activated
+  useEffect(() => {
+    if (activeTab !== 'history' || !item || item._id.startsWith('mock')) return;
+    if (doseLogsLoadedRef.current === item._id) return;
+    doseLogsLoadedRef.current = item._id;
+    setDoseLogsLoading(true);
+    const to = new Date().toISOString().slice(0, 10);
+    const from = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+    void getDoseLogsRange(token, from, to)
+      .then((logs) => setDoseLogs(logs.filter((l) => l.supplementId === item._id)))
+      .catch(() => setDoseLogs([]))
+      .finally(() => setDoseLogsLoading(false));
+  }, [activeTab, item, token]);
 
   const refreshSideEffects = useCallback(() => {
     if (!item || item._id.startsWith('mock')) return;
@@ -190,12 +212,56 @@ export function SupplementDetailSheet({
             )}
           </View>
 
+          {/* Tab toggle */}
+          <View style={styles.tabRow}>
+            {(['details', 'history'] as const).map((tab) => (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: activeTab === tab }}
+              >
+                <Text style={[styles.tabBtnText, activeTab === tab && styles.tabBtnTextActive]}>
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {activeTab === 'history' ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Dose History (last 30 days)</Text>
+                {doseLogsLoading ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
+                ) : doseLogs.length === 0 ? (
+                  <Text style={styles.emptyHistory}>No doses logged yet. Start logging from the Home screen.</Text>
+                ) : (
+                  doseLogs.slice().sort((a, b) => new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime()).map((log) => {
+                    const d = new Date(log.takenAt);
+                    const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <View key={log._id} style={styles.doseLogRow}>
+                        <Text style={styles.doseLogTick}>✓</Text>
+                        <View style={styles.doseLogInfo}>
+                          <Text style={styles.doseLogDate}>{dateStr}</Text>
+                          <Text style={styles.doseLogTime}>{timeStr}{log.late ? ' · Late' : ''}</Text>
+                        </View>
+                        <Text style={styles.doseLogSlot}>{log.slot.charAt(0).toUpperCase() + log.slot.slice(1)}</Text>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            ) : (
+            <>
             {/* ── Fields ──────────────────────────────────── */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Details</Text>
@@ -338,6 +404,8 @@ export function SupplementDetailSheet({
             </View>
 
             <View style={{ height: spacing.xxxl }} />
+            </>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
@@ -566,6 +634,61 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   emptyText: { ...typography.bodySmall, color: colors.text3, fontStyle: 'italic' },
+  tabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.screenPad,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  tabBtnActive: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary + '40',
+  },
+  tabBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text2,
+  },
+  tabBtnTextActive: {
+    color: colors.primary,
+  },
+  emptyHistory: {
+    ...typography.bodySmall,
+    color: colors.text3,
+    textAlign: 'center',
+    marginTop: spacing.xl,
+    fontStyle: 'italic',
+  },
+  doseLogRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: spacing.md,
+  },
+  doseLogTick: {
+    fontSize: 16,
+    color: colors.ok ?? '#2d9d5a',
+    fontWeight: '700',
+    width: 20,
+    textAlign: 'center',
+  },
+  doseLogInfo: { flex: 1 },
+  doseLogDate: { ...typography.bodySmall, fontWeight: '600', color: colors.text },
+  doseLogTime: { ...typography.caption, color: colors.text3, marginTop: 1 },
+  doseLogSlot: { ...typography.caption, color: colors.text3 },
   seRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
