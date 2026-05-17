@@ -8,7 +8,8 @@
  */
 
 import { useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import Fuse from 'fuse.js';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +19,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -87,6 +89,39 @@ const EMPTY_MESSAGES: Record<FilterValue, { title: string; subtitle: string; ill
 
 const PAGE_SIZE = 20;
 
+// ─── Date presets ─────────────────────────────────────────────────────────
+
+type DatePreset = 'all' | 'today' | 'week' | 'month';
+
+const DATE_PRESETS: { label: string; value: DatePreset }[] = [
+  { label: 'All Time', value: 'all' },
+  { label: 'Today', value: 'today' },
+  { label: 'This Week', value: 'week' },
+  { label: 'This Month', value: 'month' },
+];
+
+function presetStartDate(preset: DatePreset): Date | null {
+  const now = new Date();
+  if (preset === 'today') {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  if (preset === 'week') {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 6);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  if (preset === 'month') {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 29);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  return null;
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────
 
 export default function HistoryScreen(): React.JSX.Element {
@@ -106,6 +141,17 @@ export default function HistoryScreen(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<DoseLogEntry | null>(null);
   const [editedLogIds, setEditedLogIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+
+  // Debounce search input 200ms
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 200);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery]);
 
   // Track whether initial load has completed
   const initialLoadDone = useRef(false);
@@ -196,17 +242,36 @@ export default function HistoryScreen(): React.JSX.Element {
   // ── Filter entries ───────────────────────────────────────────────────
 
   const filteredEntries = useMemo<AnyHistoryEntry[]>(() => {
-    if (activeFilter === 'dose') return doseEntries;
-    const base = activeFilter === 'all'
-      ? allEntries
-      : allEntries.filter((e) => e.type === activeFilter);
-    if (activeFilter === 'all') {
-      return [...base, ...doseEntries].sort(
+    // Step 1: type filter
+    let entries: AnyHistoryEntry[];
+    if (activeFilter === 'dose') {
+      entries = doseEntries;
+    } else if (activeFilter === 'all') {
+      entries = [...allEntries, ...doseEntries].sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       );
+    } else {
+      entries = allEntries.filter((e) => e.type === activeFilter);
     }
-    return base;
-  }, [allEntries, doseEntries, activeFilter]);
+
+    // Step 2: date preset filter
+    const cutoff = presetStartDate(datePreset);
+    if (cutoff) {
+      entries = entries.filter((e) => new Date(e.timestamp) >= cutoff);
+    }
+
+    // Step 3: fuzzy name search (over summary field)
+    if (debouncedSearch.trim().length > 0) {
+      const fuse = new Fuse(entries, {
+        keys: ['summary', 'data.supplementName'],
+        threshold: 0.4,
+        minMatchCharLength: 2,
+      });
+      entries = fuse.search(debouncedSearch.trim()).map((r) => r.item);
+    }
+
+    return entries;
+  }, [allEntries, doseEntries, activeFilter, datePreset, debouncedSearch]);
 
   // ── Build flat list ──────────────────────────────────────────────────
   // We interleave DateGroupHeader items as synthetic list entries so FlatList
@@ -260,6 +325,14 @@ export default function HistoryScreen(): React.JSX.Element {
     },
     [token, doseEntries],
   );
+
+  const hasActiveFilters = searchQuery.length > 0 || datePreset !== 'all';
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedSearch('');
+    setDatePreset('all');
+  }, []);
 
   const handleEditDose = useCallback(
     (logId: string) => {
@@ -333,8 +406,61 @@ export default function HistoryScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      {/* Filter chips row */}
+      {/* Search + filter header */}
       <View style={styles.filterBar}>
+        {/* Search input */}
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search supplements…"
+            placeholderTextColor={c.text3}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            accessibilityLabel="Search history by supplement name"
+            accessibilityRole="search"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable
+              style={styles.clearSearch}
+              onPress={() => { setSearchQuery(''); setDebouncedSearch(''); }}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.clearSearchText}>✕</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Date preset chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dateChipScroll}
+        >
+          {DATE_PRESETS.map((p) => (
+            <Pressable
+              key={p.value}
+              style={({ pressed }) => [
+                styles.dateChip,
+                datePreset === p.value && styles.dateChipActive,
+                pressed && styles.dateChipPressed,
+              ]}
+              onPress={() => setDatePreset(p.value)}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter by ${p.label}`}
+              accessibilityState={{ selected: datePreset === p.value }}
+            >
+              <Text style={[styles.dateChipText, datePreset === p.value && styles.dateChipTextActive]}>
+                {p.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        {/* Type filter chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -373,18 +499,34 @@ export default function HistoryScreen(): React.JSX.Element {
           </Pressable>
         </View>
       ) : filteredEntries.length === 0 ? (
-        /* Empty state */
-        <EmptyState
-          illustration={EMPTY_MESSAGES[activeFilter].illustration}
-          title={EMPTY_MESSAGES[activeFilter].title}
-          subtitle={EMPTY_MESSAGES[activeFilter].subtitle}
-          ctaLabel={activeFilter === 'all' || activeFilter === 'conversation' ? 'Start chatting' : undefined}
-          onCta={
-            activeFilter === 'all' || activeFilter === 'conversation'
-              ? () => router.push('/(tabs)/chat' as Parameters<typeof router.push>[0])
-              : undefined
-          }
-        />
+        /* Empty state — search/filter empty vs. no data */
+        hasActiveFilters ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.noResultsText}>🔍</Text>
+            <Text style={styles.noResultsTitle}>No logs found</Text>
+            <Text style={styles.noResultsSubtitle}>Try a different search or date range.</Text>
+            <Pressable
+              style={({ pressed }) => [styles.retryBtn, pressed && styles.retryPressed]}
+              onPress={handleClearFilters}
+              accessibilityRole="button"
+              accessibilityLabel="Clear all filters"
+            >
+              <Text style={styles.retryText}>Clear filters</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <EmptyState
+            illustration={EMPTY_MESSAGES[activeFilter].illustration}
+            title={EMPTY_MESSAGES[activeFilter].title}
+            subtitle={EMPTY_MESSAGES[activeFilter].subtitle}
+            ctaLabel={activeFilter === 'all' || activeFilter === 'conversation' ? 'Start chatting' : undefined}
+            onCta={
+              activeFilter === 'all' || activeFilter === 'conversation'
+                ? () => router.push('/(tabs)/chat' as Parameters<typeof router.push>[0])
+                : undefined
+            }
+          />
+        )
       ) : (
         /* Timeline list */
         <FlatList<ListItem>
@@ -422,8 +564,76 @@ function makeStyles(c: ColorPalette) {
     borderBottomWidth: 1,
     borderBottomColor: c.border,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.screenPad,
+    marginBottom: spacing.sm,
+    backgroundColor: c.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: c.border,
+    paddingHorizontal: spacing.md,
+    height: 40,
+  },
+  searchInput: {
+    flex: 1,
+    ...typography.body,
+    color: c.text,
+    height: '100%',
+  },
+  clearSearch: {
+    paddingLeft: spacing.sm,
+  },
+  clearSearchText: {
+    fontSize: 12,
+    color: c.text3,
+    fontWeight: '600',
+  },
+  dateChipScroll: {
+    paddingHorizontal: spacing.screenPad,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  dateChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+  },
+  dateChipActive: {
+    backgroundColor: c.primary,
+    borderColor: c.primary,
+  },
+  dateChipPressed: {
+    opacity: 0.7,
+  },
+  dateChipText: {
+    ...typography.caption,
+    color: c.text2,
+    fontWeight: '600',
+  },
+  dateChipTextActive: {
+    color: '#fff',
+  },
   filterScroll: {
     paddingHorizontal: spacing.screenPad,
+    gap: spacing.sm,
+  },
+  noResultsText: {
+    fontSize: 40,
+  },
+  noResultsTitle: {
+    ...typography.sectionTitle,
+    color: c.text,
+    textAlign: 'center',
+  },
+  noResultsSubtitle: {
+    ...typography.bodySmall,
+    color: c.text2,
+    textAlign: 'center',
   },
   listContent: {
     paddingTop: spacing.sm,
