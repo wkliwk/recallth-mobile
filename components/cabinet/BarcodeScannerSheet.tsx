@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -10,7 +10,8 @@ import {
   View,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { lookupBarcode, type BarcodeProduct } from '../../services/barcode';
 
 interface Props {
@@ -20,6 +21,9 @@ interface Props {
 }
 
 export function BarcodeScannerSheet({ visible, onClose, onResult }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
   const [looking, setLooking] = useState(false);
@@ -189,148 +193,150 @@ export function BarcodeScannerSheet({ visible, onClose, onResult }: Props) {
 const SCAN_WINDOW = 240;
 const CORNER = 24;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  camera: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'column',
-  },
-  topRegion: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  middleRow: {
-    flexDirection: 'row',
-    height: SCAN_WINDOW,
-  },
-  sideRegion: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  scanWindow: {
-    width: SCAN_WINDOW,
-    height: SCAN_WINDOW,
-  },
-  corner: {
-    position: 'absolute',
-    width: CORNER,
-    height: CORNER,
-    borderColor: '#fff',
-    borderWidth: 3,
-  },
-  cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
-  cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
-  cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
-  cornerBR: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
-  bottomRegion: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  hintText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  statusText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  notFoundBox: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    alignItems: 'center',
-    gap: spacing.sm,
-    maxWidth: 300,
-  },
-  notFoundTitle: {
-    ...typography.bodyStrong,
-    color: colors.text,
-  },
-  notFoundBody: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  retryBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    marginTop: spacing.xs,
-  },
-  retryBtnText: {
-    ...typography.bodySmall,
-    color: '#fff',
-    fontWeight: '700',
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 56 : 24,
-    right: spacing.xl,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  permissionBox: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.lg,
-  },
-  permTitle: {
-    ...typography.pageTitle,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  permBody: {
-    ...typography.body,
-    color: colors.text2,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  permBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 52,
-    paddingHorizontal: spacing.xxl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  permBtnText: {
-    ...typography.cta,
-    color: '#fff',
-  },
-  cancelBtn: {
-    paddingVertical: spacing.sm,
-  },
-  cancelBtnText: {
-    ...typography.body,
-    color: colors.text3,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#000',
+    },
+    camera: {
+      flex: 1,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      flexDirection: 'column',
+    },
+    topRegion: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    middleRow: {
+      flexDirection: 'row',
+      height: SCAN_WINDOW,
+    },
+    sideRegion: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    scanWindow: {
+      width: SCAN_WINDOW,
+      height: SCAN_WINDOW,
+    },
+    corner: {
+      position: 'absolute',
+      width: CORNER,
+      height: CORNER,
+      borderColor: '#fff',
+      borderWidth: 3,
+    },
+    cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
+    cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
+    cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
+    cornerBR: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
+    bottomRegion: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
+    },
+    hintText: {
+      color: 'rgba(255,255,255,0.7)',
+      fontSize: 14,
+      textAlign: 'center',
+    },
+    statusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    statusText: {
+      color: '#fff',
+      fontSize: 14,
+    },
+    notFoundBox: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      padding: spacing.xl,
+      alignItems: 'center',
+      gap: spacing.sm,
+      maxWidth: 300,
+    },
+    notFoundTitle: {
+      ...typography.bodyStrong,
+      color: c.text,
+    },
+    notFoundBody: {
+      ...typography.bodySmall,
+      color: c.text2,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    retryBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xl,
+      marginTop: spacing.xs,
+    },
+    retryBtnText: {
+      ...typography.bodySmall,
+      color: '#fff',
+      fontWeight: '700',
+    },
+    closeBtn: {
+      position: 'absolute',
+      top: Platform.OS === 'ios' ? 56 : 24,
+      right: spacing.xl,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeBtnText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    permissionBox: {
+      flex: 1,
+      backgroundColor: c.bg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
+      gap: spacing.lg,
+    },
+    permTitle: {
+      ...typography.pageTitle,
+      color: c.text,
+      textAlign: 'center',
+    },
+    permBody: {
+      ...typography.body,
+      color: c.text2,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    permBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 52,
+      paddingHorizontal: spacing.xxl,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    permBtnText: {
+      ...typography.cta,
+      color: '#fff',
+    },
+    cancelBtn: {
+      paddingVertical: spacing.sm,
+    },
+    cancelBtnText: {
+      ...typography.body,
+      color: c.text3,
+    },
+  });
+}
