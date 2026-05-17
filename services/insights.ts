@@ -41,3 +41,32 @@ export async function fetchJournalInsights(token: string): Promise<JournalInsigh
     insufficientData: d.insufficientData ?? false,
   };
 }
+
+export interface SupplementAdherence {
+  name: string;
+  logged: number;
+  scheduled: number;
+  pct: number;
+}
+
+export interface MonthlySummary {
+  month: string;
+  adherencePct: number;
+  dayCount: number;
+  logCount: number;
+  bestSupplement: SupplementAdherence | null;
+  worstSupplement: SupplementAdherence | null;
+  aiInsight: string | null;
+  supplements: SupplementAdherence[];
+}
+
+interface MonthlySummaryResponse {
+  success: boolean;
+  data: MonthlySummary | null;
+  error: string | null;
+}
+
+export async function getMonthlySummary(token: string, month: string): Promise<MonthlySummary | null> {
+  const res = await api.get<MonthlySummaryResponse>(`/insights/monthly-summary?month=${month}`, { token });
+  return res.data ?? null;
+}

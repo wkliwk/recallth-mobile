@@ -10,10 +10,10 @@ import { NotificationNudgeModal } from '../../components/summary/NotificationNud
 import { RestockAlertBanner } from '../../components/summary/RestockAlertBanner';
 import { StreakMilestoneModal } from '../../components/summary/StreakMilestoneModal';
 import { TimingSuggestionCard } from '../../components/summary/TimingSuggestionCard';
+import { MonthlySummaryCard } from '../../components/summary/MonthlySummaryCard';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
-import { fetchDailyBrief } from '../../services/insights';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
 import { MissedDoseChips } from '../../components/summary/MissedDoseChips';
@@ -28,6 +28,7 @@ import {
 import { getInteractions, getRestockAlerts, listCabinetItems, updateCabinetItem, type CabinetItem, type CreateCabinetItemInput } from '../../services/cabinet';
 import { logIntakeToday, getStreak } from '../../services/intake';
 import { getTodayDoseLogs, getDoseLogsRange, logDose, unlogDose } from '../../services/schedule';
+import { fetchDailyBrief, getMonthlySummary, type MonthlySummary } from '../../services/insights';
 import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
@@ -93,6 +94,8 @@ export default function HomeScreen() {
   const [dismissedTimingSuggestions, setDismissedTimingSuggestions] = useState<string[]>([]);
   const [cabinetItems, setCabinetItems] = useState<CabinetItem[]>([]);
   const [pendingTimingEdit, setPendingTimingEdit] = useState<{ item: CabinetItem; suggestedTiming: string } | null>(null);
+  const [monthlySummary, setMonthlySummary] = useState<MonthlySummary | null>(null);
+  const [monthlySummaryDismissed, setMonthlySummaryDismissed] = useState(false);
 
   const MILESTONES = [7, 30, 100];
 
@@ -190,6 +193,25 @@ export default function HomeScreen() {
           } catch {
             // ignore parse errors
           }
+        }
+      }
+
+      // Monthly summary: only load on the 1st of the month
+      const nowDate = new Date();
+      if (nowDate.getDate() === 1 || __DEV__) {
+        const prevMonth = new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, 1);
+        const monthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+        const dismissKey = `recallth:monthly-summary-dismissed:${monthStr}`;
+        const dismissed = await storage.getItem(dismissKey);
+        if (!dismissed) {
+          try {
+            const summary = await getMonthlySummary(token, monthStr);
+            setMonthlySummary(summary);
+          } catch {
+            // Non-critical — ignore failures
+          }
+        } else {
+          setMonthlySummaryDismissed(true);
         }
       }
 
@@ -337,6 +359,13 @@ export default function HomeScreen() {
     [timingSuggestions, dismissedTimingSuggestions],
   );
 
+  const handleMonthlySummaryDismiss = useCallback(async () => {
+    if (!monthlySummary) return;
+    setMonthlySummaryDismissed(true);
+    const dismissKey = `recallth:monthly-summary-dismissed:${monthlySummary.month}`;
+    await storage.setItem(dismissKey, 'true');
+  }, [monthlySummary]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -405,6 +434,14 @@ export default function HomeScreen() {
           <InteractionWarningBanner
             count={interactionCount}
             onPress={() => router.push('/(tabs)/cabinet' as Parameters<typeof router.push>[0])}
+          />
+        )}
+
+        {/* Monthly AI summary card */}
+        {monthlySummary && !monthlySummaryDismissed && (
+          <MonthlySummaryCard
+            summary={monthlySummary}
+            onDismiss={handleMonthlySummaryDismiss}
           />
         )}
 
