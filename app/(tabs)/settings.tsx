@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -30,7 +30,9 @@ import { getItem, setItem } from '../../services/storage';
 import { deleteAccount } from '../../services/auth';
 import { backupData, restoreData } from '../../services/backup';
 import { useAuthStore } from '../../stores/auth';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { AppearanceMode, useAppearanceStore } from '../../stores/appearance';
+import { ColorPalette, colors, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 const DIGEST_DAYS: DigestDay[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const DAY_LABELS: Record<DigestDay, string> = {
@@ -53,9 +55,13 @@ function formatHHMM(date: Date): string {
 }
 
 export default function SettingsScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
   const logout = useAuthStore((s) => s.logout);
+  const appearanceMode = useAppearanceStore((s) => s.mode);
+  const setAppearanceMode = useAppearanceStore((s) => s.setMode);
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -206,7 +212,7 @@ export default function SettingsScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <ActivityIndicator color={c.primary} size="large" />
         </View>
       ) : (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -218,7 +224,7 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.remindersEnabled}
                 onValueChange={(v) => { void save({ remindersEnabled: v }); }}
-                trackColor={{ false: colors.border, true: colors.primary }}
+                trackColor={{ false: c.border, true: c.primary }}
                 thumbColor="#fff"
               />
             </View>
@@ -234,7 +240,7 @@ export default function SettingsScreen() {
                       setMissedNudgesEnabled(v);
                       await setItem('recallth:missed-nudges-enabled', String(v));
                     }}
-                    trackColor={{ false: colors.border, true: colors.primary }}
+                    trackColor={{ false: c.border, true: c.primary }}
                     thumbColor="#fff"
                     accessibilityLabel="Toggle missed dose nudges"
                   />
@@ -317,7 +323,7 @@ export default function SettingsScreen() {
                     void scheduleWeeklySummaryNotification(token, v, true).catch(() => {});
                   }
                 }}
-                trackColor={{ false: colors.border, true: colors.primary }}
+                trackColor={{ false: c.border, true: c.primary }}
                 thumbColor="#fff"
                 accessibilityLabel="Toggle weekly summary notification"
               />
@@ -332,7 +338,7 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.emailDigestEnabled}
                 onValueChange={(v) => { void save({ emailDigestEnabled: v }); }}
-                trackColor={{ false: colors.border, true: colors.primary }}
+                trackColor={{ false: c.border, true: c.primary }}
                 thumbColor="#fff"
               />
             </View>
@@ -366,7 +372,27 @@ export default function SettingsScreen() {
               {saveMsg}
             </Text>
           )}
-          {saving && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />}
+          {saving && <ActivityIndicator color={c.primary} style={{ marginTop: spacing.sm }} />}
+
+          {/* Appearance section */}
+          <Text style={styles.sectionLabel}>Appearance</Text>
+          <View style={styles.card}>
+            {(['light', 'dark', 'system'] as AppearanceMode[]).map((option, idx, arr) => (
+              <React.Fragment key={option}>
+                <Pressable
+                  onPress={() => void setAppearanceMode(option)}
+                  style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: appearanceMode === option }}
+                  accessibilityLabel={option.charAt(0).toUpperCase() + option.slice(1)}
+                >
+                  <Text style={styles.rowLabel}>{option.charAt(0).toUpperCase() + option.slice(1)}</Text>
+                  {appearanceMode === option && <Text style={{ color: c.primary, fontSize: 18 }}>✓</Text>}
+                </Pressable>
+                {idx < arr.length - 1 && <View style={styles.divider} />}
+              </React.Fragment>
+            ))}
+          </View>
 
           {/* Account section */}
           <Text style={styles.sectionLabel}>Account</Text>
@@ -460,16 +486,17 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.bg },
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: c.bg },
   header: {
     paddingHorizontal: spacing.screenPad,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
   },
   backBtn: { marginBottom: spacing.md },
-  backBtnText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
-  title: { ...typography.pageTitle, color: colors.text },
+  backBtnText: { fontSize: 14, color: c.primary, fontWeight: '600' },
+  title: { ...typography.pageTitle, color: c.text },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   scrollContent: {
@@ -479,17 +506,17 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.text3,
+    color: c.text3,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.lg,
   },
   row: {
@@ -497,14 +524,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  rowLabel: { fontSize: 15, color: colors.text },
+  rowLabel: { fontSize: 15, color: c.text },
   rowLabelGroup: { flex: 1, gap: 2 },
-  rowHint: { fontSize: 12, color: colors.text3 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  rowHint: { fontSize: 12, color: c.text3 },
+  divider: { height: 1, backgroundColor: c.border, marginVertical: spacing.md },
   subLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: colors.text3,
+    color: c.text3,
     marginBottom: spacing.sm,
   },
   timeRow: {
@@ -513,19 +540,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.xs,
   },
-  timeText: { fontSize: 15, color: colors.text, fontFamily: 'monospace' },
+  timeText: { fontSize: 15, color: c.text, fontFamily: 'monospace' },
   removeTimeBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.dangerLight,
+    backgroundColor: c.dangerLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeTimeBtnText: { fontSize: 12, color: colors.danger, fontWeight: '700' },
+  removeTimeBtnText: { fontSize: 12, color: c.danger, fontWeight: '700' },
   addTimeBtn: {
     marginTop: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     alignItems: 'center',
@@ -543,9 +570,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  pickerCancelText: { fontSize: 14, color: colors.text3 },
+  pickerCancelText: { fontSize: 14, color: c.text3 },
   pickerConfirmBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
@@ -555,28 +582,29 @@ const styles = StyleSheet.create({
   dayBtn: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   dayBtnActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
+    backgroundColor: c.primaryLight,
+    borderColor: c.primary,
   },
-  dayBtnText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
-  dayBtnTextActive: { color: colors.primary, fontWeight: '700' },
+  dayBtnText: { fontSize: 13, color: c.text2, fontWeight: '500' },
+  dayBtnTextActive: { color: c.primary, fontWeight: '700' },
   saveMsg: { fontSize: 13, textAlign: 'center', marginTop: spacing.md, fontWeight: '600' },
-  saveMsgOk: { color: colors.ok },
-  saveMsgErr: { color: colors.danger },
-  chevron: { fontSize: 18, color: colors.text3 },
+  saveMsgOk: { color: c.ok },
+  saveMsgErr: { color: c.danger },
+  chevron: { fontSize: 18, color: c.text3 },
   deleteAccountBtn: {
     paddingVertical: spacing.sm,
     alignItems: 'center',
   },
   deleteAccountText: {
     fontSize: 15,
-    color: colors.danger,
+    color: c.danger,
     fontWeight: '600',
   },
 });
+}

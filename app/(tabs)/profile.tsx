@@ -10,7 +10,7 @@
  *     - Goals accordion
  */
 
-import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -50,7 +50,8 @@ import { listExtractions } from '../../services/extractionReview';
 import { exportDoseCsv, generateAndShareReport, shareProgressCard } from '../../services/exportReport';
 import { getStreak } from '../../services/intake';
 import * as storage from '../../services/storage';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, colors, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { type EarnedBadge } from '../../utils/badges';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -183,6 +184,8 @@ function sectionProvenance(section: unknown): Provenance {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -339,7 +342,7 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <ActivityIndicator color={c.primary} size="large" />
           <Text style={styles.loadingText}>Loading profile…</Text>
         </View>
       </SafeAreaView>
@@ -402,7 +405,7 @@ export default function ProfileScreen() {
           <RefreshControl
             refreshing={state.refreshing}
             onRefresh={() => void load(true)}
-            tintColor={colors.primary}
+            tintColor={c.primary}
           />
         }
         keyboardShouldPersistTaps="handled"
@@ -687,10 +690,11 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
   },
   scroll: {
     flex: 1,
@@ -708,26 +712,26 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...typography.body,
-    color: colors.text2,
+    color: c.text2,
     marginTop: spacing.sm,
   },
   errorText: {
     ...typography.body,
-    color: colors.danger,
+    color: c.danger,
     textAlign: 'center',
   },
   retryBtn: {
     marginTop: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: c.borderStrong,
     borderRadius: 14,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
   },
   retryText: {
     ...typography.bodyStrong,
-    color: colors.text,
+    color: c.text,
   },
   extractionReviewBtn: {
     marginTop: spacing.xl,
@@ -741,11 +745,11 @@ const styles = StyleSheet.create({
   },
   extractionReviewText: {
     ...typography.body,
-    color: colors.primary,
+    color: c.primary,
     fontWeight: '600',
   },
   badge: {
-    backgroundColor: colors.danger,
+    backgroundColor: c.danger,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -762,15 +766,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
   },
   exportBtnText: {
     ...typography.bodyStrong,
-    color: colors.text,
+    color: c.text,
     fontSize: 14,
   },
   exportCsvBtn: {
@@ -783,7 +787,7 @@ const styles = StyleSheet.create({
   },
   historyLinkText: {
     ...typography.body,
-    color: colors.primary,
+    color: c.primary,
     fontWeight: '600',
   },
   signOutBtn: {
@@ -791,15 +795,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
-    backgroundColor: colors.dangerLight,
+    backgroundColor: c.dangerLight,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.dangerMid,
+    borderColor: c.dangerMid,
     alignItems: 'center',
   },
   signOutText: {
     ...typography.bodyStrong,
-    color: colors.danger,
+    color: c.danger,
     fontSize: 15,
   },
   chartContainer: {
@@ -808,7 +812,8 @@ const styles = StyleSheet.create({
   },
   chartTitle: {
     ...typography.bodySmall,
-    color: colors.text2,
+    color: c.text2,
     fontWeight: '600',
   },
 });
+}
