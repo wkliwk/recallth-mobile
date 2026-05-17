@@ -3,7 +3,7 @@
  * Includes pre-defined chip suggestions + a free-text input.
  */
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,7 +17,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useOnboardingStore } from '../../stores/onboarding';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 const MAX_ITEMS = 3;
 
@@ -37,6 +38,9 @@ const SUGGESTIONS = [
 
 export default function Step2Screen() {
   const router = useRouter();
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const { cabinetItems, setCabinetItems } = useOnboardingStore((s) => ({
     cabinetItems: s.cabinetItems,
     setCabinetItems: s.setCabinetItems,
@@ -155,7 +159,7 @@ export default function Step2Screen() {
                   value={customInput}
                   onChangeText={setCustomInput}
                   placeholder="e.g. CoQ10"
-                  placeholderTextColor={colors.text3}
+                  placeholderTextColor={c.text3}
                   returnKeyType="done"
                   onSubmitEditing={onAddCustom}
                   accessibilityLabel="Custom supplement name"
@@ -211,6 +215,8 @@ function StepIndicator({
   current: number;
   total: number;
 }) {
+  const c = useThemeColors();
+  const indicatorStyles = useMemo(() => makeIndicatorStyles(c), [c]);
   return (
     <View style={indicatorStyles.row} accessibilityLabel={`Step ${current} of ${total}`}>
       {Array.from({ length: total }).map((_, i) => (
@@ -227,107 +233,111 @@ function StepIndicator({
   );
 }
 
-const indicatorStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 6 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.text4,
-  },
-  dotActive: { backgroundColor: colors.primary, width: 20 },
-  dotDone: { backgroundColor: colors.primaryMid },
-});
+function makeIndicatorStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: { flexDirection: 'row', gap: 6 },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.text4,
+    },
+    dotActive: { backgroundColor: c.primary, width: 20 },
+    dotDone: { backgroundColor: c.primaryMid },
+  });
+}
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xxxl,
-  },
-  skip: { ...typography.body, color: colors.text2 },
-  header: { marginBottom: spacing.xxl },
-  title: { ...typography.pageTitle, color: colors.text, marginBottom: spacing.sm },
-  subtitle: { ...typography.body, color: colors.text2 },
-  section: { marginBottom: spacing.xl },
-  sectionLabel: {
-    ...typography.caption,
-    color: colors.text3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: { ...typography.bodySmall, color: colors.text2 },
-  chipSelected: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.primaryLight,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  chipTextSelected: { ...typography.bodySmall, color: colors.primary, fontWeight: '600' },
-  chipRemove: { ...typography.bodySmall, color: colors.primary },
-  inputRow: { flexDirection: 'row', gap: spacing.sm },
-  input: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    fontSize: 15,
-    color: colors.text,
-    minHeight: 48,
-  },
-  addBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  addBtnDisabled: { opacity: 0.4 },
-  addBtnText: { ...typography.bodyStrong, color: colors.surface },
-  limitBanner: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primaryMid,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  limitText: { ...typography.bodySmall, color: colors.primary },
-  actions: { marginTop: spacing.sm },
-  cta: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaPressed: { opacity: 0.85 },
-  ctaText: { ...typography.cta, color: colors.surface },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxxl,
+    },
+    topRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.xxxl,
+    },
+    skip: { ...typography.body, color: c.text2 },
+    header: { marginBottom: spacing.xxl },
+    title: { ...typography.pageTitle, color: c.text, marginBottom: spacing.sm },
+    subtitle: { ...typography.body, color: c.text2 },
+    section: { marginBottom: spacing.xl },
+    sectionLabel: {
+      ...typography.caption,
+      color: c.text3,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: spacing.sm,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipText: { ...typography.bodySmall, color: c.text2 },
+    chipSelected: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.primaryLight,
+      borderWidth: 1,
+      borderColor: c.primary,
+    },
+    chipTextSelected: { ...typography.bodySmall, color: c.primary, fontWeight: '600' },
+    chipRemove: { ...typography.bodySmall, color: c.primary },
+    inputRow: { flexDirection: 'row', gap: spacing.sm },
+    input: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      fontSize: 15,
+      color: c.text,
+      minHeight: 48,
+    },
+    addBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 48,
+    },
+    addBtnDisabled: { opacity: 0.4 },
+    addBtnText: { ...typography.bodyStrong, color: c.surface },
+    limitBanner: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primaryMid,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    limitText: { ...typography.bodySmall, color: c.primary },
+    actions: { marginTop: spacing.sm },
+    cta: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ctaPressed: { opacity: 0.85 },
+    ctaText: { ...typography.cta, color: c.surface },
+  });
+}

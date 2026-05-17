@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,10 +12,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { forgotPassword } from '../../services/auth';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -83,7 +87,7 @@ export default function ForgotPasswordScreen() {
                 value={email}
                 onChangeText={(v) => { setEmail(v); setError(null); }}
                 placeholder="you@example.com"
-                placeholderTextColor={colors.text3}
+                placeholderTextColor={c.text3}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
@@ -103,7 +107,7 @@ export default function ForgotPasswordScreen() {
                 accessibilityLabel="Send reset link"
               >
                 {submitting
-                  ? <ActivityIndicator color={colors.surface} />
+                  ? <ActivityIndicator color={c.surface} />
                   : <Text style={styles.ctaText}>Send reset link</Text>}
               </Pressable>
             </>
@@ -114,58 +118,60 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-  container: {
-    flex: 1,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.lg,
-  },
-  backBtn: { marginBottom: spacing.xl },
-  backText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
-  title: { ...typography.pageTitle, color: colors.text, marginBottom: spacing.sm },
-  subtitle: { ...typography.body, color: colors.text2, marginBottom: spacing.xl },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    fontSize: 15,
-    color: colors.text,
-    minHeight: 48,
-    marginBottom: spacing.sm,
-  },
-  inputError: { borderColor: colors.danger },
-  errorText: { ...typography.bodySmall, color: colors.danger, marginBottom: spacing.sm },
-  cta: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  ctaText: { ...typography.cta, color: colors.surface },
-  successCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  successTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 17 },
-  successBody: { ...typography.body, color: colors.text2 },
-  doneBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  doneBtnText: { ...typography.bodyStrong, color: colors.surface },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    flex: { flex: 1 },
+    container: {
+      flex: 1,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.lg,
+    },
+    backBtn: { marginBottom: spacing.xl },
+    backText: { fontSize: 14, color: c.primary, fontWeight: '600' },
+    title: { ...typography.pageTitle, color: c.text, marginBottom: spacing.sm },
+    subtitle: { ...typography.body, color: c.text2, marginBottom: spacing.xl },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      fontSize: 15,
+      color: c.text,
+      minHeight: 48,
+      marginBottom: spacing.sm,
+    },
+    inputError: { borderColor: c.danger },
+    errorText: { ...typography.bodySmall, color: c.danger, marginBottom: spacing.sm },
+    cta: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+    },
+    ctaText: { ...typography.cta, color: c.surface },
+    successCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.xl,
+      gap: spacing.md,
+    },
+    successTitle: { ...typography.bodyStrong, color: c.text, fontSize: 17 },
+    successBody: { ...typography.body, color: c.text2 },
+    doneBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+    },
+    doneBtnText: { ...typography.bodyStrong, color: c.surface },
+  });
+}

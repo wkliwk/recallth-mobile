@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -9,11 +10,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useOnboardingStore } from '../../stores/onboarding';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const markSeen = useOnboardingStore((s) => s.markSeen);
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const onSkip = async () => {
     await markSeen();
@@ -110,80 +114,82 @@ const BULLETS = [
   },
 ];
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
-  },
-  skipRow: {
-    alignItems: 'flex-end',
-    marginBottom: spacing.xl,
-  },
-  skip: { ...typography.body, color: colors.text2 },
-  logoWrap: { alignItems: 'center', marginBottom: spacing.xxxl },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: colors.surface,
-  },
-  hero: { marginBottom: spacing.xxxl, alignItems: 'center' },
-  title: {
-    ...typography.pageTitle,
-    color: colors.text,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.text2,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  bullets: { gap: spacing.lg, marginBottom: spacing.xxxl },
-  bullet: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  bulletDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    marginTop: 7,
-  },
-  bulletContent: { flex: 1 },
-  bulletLabel: { ...typography.bodyStrong, color: colors.text },
-  bulletDesc: { ...typography.bodySmall, color: colors.text2, marginTop: 2 },
-  actions: { gap: spacing.md },
-  cta: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaPressed: { opacity: 0.85 },
-  ctaText: { ...typography.cta, color: colors.surface },
-  secondaryBtn: {
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  secondaryText: { ...typography.cta, color: colors.text2 },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxxl,
+    },
+    skipRow: {
+      alignItems: 'flex-end',
+      marginBottom: spacing.xl,
+    },
+    skip: { ...typography.body, color: c.text2 },
+    logoWrap: { alignItems: 'center', marginBottom: spacing.xxxl },
+    logo: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.xl,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoText: {
+      fontSize: 36,
+      fontWeight: '700',
+      color: c.surface,
+    },
+    hero: { marginBottom: spacing.xxxl, alignItems: 'center' },
+    title: {
+      ...typography.pageTitle,
+      color: c.text,
+      marginBottom: spacing.md,
+      textAlign: 'center',
+    },
+    subtitle: {
+      ...typography.body,
+      color: c.text2,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    bullets: { gap: spacing.lg, marginBottom: spacing.xxxl },
+    bullet: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+    },
+    bulletDot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.primary,
+      marginTop: 7,
+    },
+    bulletContent: { flex: 1 },
+    bulletLabel: { ...typography.bodyStrong, color: c.text },
+    bulletDesc: { ...typography.bodySmall, color: c.text2, marginTop: 2 },
+    actions: { gap: spacing.md },
+    cta: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ctaPressed: { opacity: 0.85 },
+    ctaText: { ...typography.cta, color: c.surface },
+    secondaryBtn: {
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+    },
+    secondaryText: { ...typography.cta, color: c.text2 },
+  });
+}

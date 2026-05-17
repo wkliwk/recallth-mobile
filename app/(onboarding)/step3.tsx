@@ -3,7 +3,7 @@
  * On completion: persists data to backend, marks onboarding seen, routes to tabs.
  */
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,7 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { seedProfile, seedSupplements } from '../../services/onboarding';
 import { Goal, useOnboardingStore } from '../../stores/onboarding';
 import { useAuthStore } from '../../stores/auth';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 type GoalOption = {
   label: string;
@@ -55,6 +56,9 @@ const GOAL_OPTIONS: GoalOption[] = [
 
 export default function Step3Screen() {
   const router = useRouter();
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const token = useAuthStore((s) => s.token);
   const { goal, setGoal, heightCm, weightKg, sex, age, cabinetItems, markSeen } =
     useOnboardingStore((s) => ({
@@ -205,7 +209,7 @@ export default function Step3Screen() {
             accessibilityLabel="Finish setup"
           >
             {saving ? (
-              <ActivityIndicator color={colors.surface} />
+              <ActivityIndicator color={c.surface} />
             ) : (
               <Text style={styles.ctaText}>Finish setup</Text>
             )}
@@ -223,6 +227,8 @@ function StepIndicator({
   current: number;
   total: number;
 }) {
+  const c = useThemeColors();
+  const indicatorStyles = useMemo(() => makeIndicatorStyles(c), [c]);
   return (
     <View style={indicatorStyles.row} accessibilityLabel={`Step ${current} of ${total}`}>
       {Array.from({ length: total }).map((_, i) => (
@@ -239,88 +245,92 @@ function StepIndicator({
   );
 }
 
-const indicatorStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 6 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.text4,
-  },
-  dotActive: { backgroundColor: colors.primary, width: 20 },
-  dotDone: { backgroundColor: colors.primaryMid },
-});
+function makeIndicatorStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: { flexDirection: 'row', gap: 6 },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.text4,
+    },
+    dotActive: { backgroundColor: c.primary, width: 20 },
+    dotDone: { backgroundColor: c.primaryMid },
+  });
+}
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xxxl,
-  },
-  skip: { ...typography.body, color: colors.text2 },
-  skipDisabled: { opacity: 0.4 },
-  header: { marginBottom: spacing.xxl },
-  title: { ...typography.pageTitle, color: colors.text, marginBottom: spacing.sm },
-  subtitle: { ...typography.body, color: colors.text2 },
-  goals: { gap: spacing.md, marginBottom: spacing.xxl },
-  goalCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-  },
-  goalCardSelected: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  goalRadio: {
-    width: 22,
-    height: 22,
-    borderRadius: radius.full,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  goalRadioSelected: { borderColor: colors.primary },
-  goalRadioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-  },
-  goalContent: { flex: 1 },
-  goalLabel: { ...typography.bodyStrong, color: colors.text },
-  goalLabelSelected: { color: colors.primary },
-  goalDesc: { ...typography.bodySmall, color: colors.text2, marginTop: 2 },
-  errorBanner: {
-    backgroundColor: colors.dangerLight,
-    borderColor: colors.dangerMid,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  errorText: { ...typography.bodySmall, color: colors.danger },
-  actions: { marginTop: spacing.sm },
-  cta: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaPressed: { opacity: 0.85 },
-  ctaDisabled: { opacity: 0.6 },
-  ctaText: { ...typography.cta, color: colors.surface },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxxl,
+    },
+    topRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.xxxl,
+    },
+    skip: { ...typography.body, color: c.text2 },
+    skipDisabled: { opacity: 0.4 },
+    header: { marginBottom: spacing.xxl },
+    title: { ...typography.pageTitle, color: c.text, marginBottom: spacing.sm },
+    subtitle: { ...typography.body, color: c.text2 },
+    goals: { gap: spacing.md, marginBottom: spacing.xxl },
+    goalCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+    },
+    goalCardSelected: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary,
+    },
+    goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    goalRadio: {
+      width: 22,
+      height: 22,
+      borderRadius: radius.full,
+      borderWidth: 2,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    goalRadioSelected: { borderColor: c.primary },
+    goalRadioInner: {
+      width: 10,
+      height: 10,
+      borderRadius: radius.full,
+      backgroundColor: c.primary,
+    },
+    goalContent: { flex: 1 },
+    goalLabel: { ...typography.bodyStrong, color: c.text },
+    goalLabelSelected: { color: c.primary },
+    goalDesc: { ...typography.bodySmall, color: c.text2, marginTop: 2 },
+    errorBanner: {
+      backgroundColor: c.dangerLight,
+      borderColor: c.dangerMid,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    errorText: { ...typography.bodySmall, color: c.danger },
+    actions: { marginTop: spacing.sm },
+    cta: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ctaPressed: { opacity: 0.85 },
+    ctaDisabled: { opacity: 0.6 },
+    ctaText: { ...typography.cta, color: c.surface },
+  });
+}

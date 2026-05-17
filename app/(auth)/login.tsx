@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,12 +14,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '../../stores/auth';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { validateEmail, validatePassword } from '../../utils/validation';
 
 export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,7 +81,7 @@ export default function LoginScreen() {
                   if (formError) setFormError(null);
                 }}
                 placeholder="you@example.com"
-                placeholderTextColor={colors.text3}
+                placeholderTextColor={c.text3}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
@@ -103,7 +106,7 @@ export default function LoginScreen() {
                   if (formError) setFormError(null);
                 }}
                 placeholder="At least 8 characters"
-                placeholderTextColor={colors.text3}
+                placeholderTextColor={c.text3}
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -136,7 +139,7 @@ export default function LoginScreen() {
               accessibilityLabel="Sign in"
             >
               {submitting ? (
-                <ActivityIndicator color={colors.surface} />
+                <ActivityIndicator color={c.surface} />
               ) : (
                 <Text style={styles.ctaText}>Sign in</Text>
               )}
@@ -163,80 +166,82 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.xxxl,
-    paddingBottom: spacing.xxl,
-  },
-  header: { marginBottom: spacing.xxxl },
-  title: {
-    ...typography.pageTitle,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  subtitle: { ...typography.body, color: colors.text2 },
-  form: { gap: spacing.lg },
-  field: { gap: spacing.sm },
-  label: {
-    ...typography.bodyStrong,
-    color: colors.text,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    fontSize: 15,
-    color: colors.text,
-    minHeight: 48,
-  },
-  inputError: { borderColor: colors.danger },
-  errorText: {
-    ...typography.bodySmall,
-    color: colors.danger,
-  },
-  banner: {
-    backgroundColor: colors.dangerLight,
-    borderColor: colors.dangerMid,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  bannerText: {
-    ...typography.bodySmall,
-    color: colors.danger,
-  },
-  cta: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  ctaPressed: { opacity: 0.85 },
-  ctaDisabled: { opacity: 0.6 },
-  ctaText: {
-    ...typography.cta,
-    color: colors.surface,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  footerText: { ...typography.body, color: colors.text2 },
-  footerLink: {
-    ...typography.bodyStrong,
-    color: colors.primary,
-  },
-  forgotBtn: { alignItems: 'center', paddingVertical: spacing.xs },
-  forgotText: { ...typography.bodySmall, color: colors.primary },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.xxxl,
+      paddingBottom: spacing.xxl,
+    },
+    header: { marginBottom: spacing.xxxl },
+    title: {
+      ...typography.pageTitle,
+      color: c.text,
+      marginBottom: spacing.sm,
+    },
+    subtitle: { ...typography.body, color: c.text2 },
+    form: { gap: spacing.lg },
+    field: { gap: spacing.sm },
+    label: {
+      ...typography.bodyStrong,
+      color: c.text,
+    },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      fontSize: 15,
+      color: c.text,
+      minHeight: 48,
+    },
+    inputError: { borderColor: c.danger },
+    errorText: {
+      ...typography.bodySmall,
+      color: c.danger,
+    },
+    banner: {
+      backgroundColor: c.dangerLight,
+      borderColor: c.dangerMid,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    bannerText: {
+      ...typography.bodySmall,
+      color: c.danger,
+    },
+    cta: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+    },
+    ctaPressed: { opacity: 0.85 },
+    ctaDisabled: { opacity: 0.6 },
+    ctaText: {
+      ...typography.cta,
+      color: c.surface,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: spacing.lg,
+    },
+    footerText: { ...typography.body, color: c.text2 },
+    footerLink: {
+      ...typography.bodyStrong,
+      color: c.primary,
+    },
+    forgotBtn: { alignItems: 'center', paddingVertical: spacing.xs },
+    forgotText: { ...typography.bodySmall, color: c.primary },
+  });
+}

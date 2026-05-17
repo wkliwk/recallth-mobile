@@ -4,7 +4,7 @@
  * shows the "You're set up" success state with a CTA into Chat.
  */
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,10 +17,14 @@ import {
 } from '../../services/notifications';
 import { useAuthStore } from '../../stores/auth';
 import { useOnboardingStore } from '../../stores/onboarding';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 export default function DoneScreen() {
   const router = useRouter();
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const token = useAuthStore((s) => s.token);
   const goal = useOnboardingStore((s) => s.goal);
   const cabinetItems = useOnboardingStore((s) => s.cabinetItems);
@@ -87,7 +91,7 @@ export default function DoneScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <ActivityIndicator color={c.primary} size="large" />
           <Text style={styles.savingText}>Setting up your profile…</Text>
         </View>
       </SafeAreaView>
@@ -153,95 +157,97 @@ export default function DoneScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  savingText: {
-    ...typography.body,
-    color: colors.text2,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.xxxl,
-    paddingBottom: spacing.xxxl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkWrap: { marginBottom: spacing.xxxl },
-  check: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkMark: { fontSize: 36, color: colors.surface, fontWeight: '700' },
-  title: {
-    ...typography.pageTitle,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.text2,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: spacing.xxxl,
-    maxWidth: 320,
-  },
-  summarySection: {
-    width: '100%',
-    marginBottom: spacing.xl,
-  },
-  summaryLabel: {
-    ...typography.caption,
-    color: colors.text3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    justifyContent: 'center',
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: { ...typography.bodySmall, color: colors.text2 },
-  chipGoal: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.aiLight,
-    borderWidth: 1,
-    borderColor: colors.ai,
-  },
-  chipGoalText: { ...typography.bodySmall, color: colors.ai, fontWeight: '600' },
-  cta: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.xl,
-  },
-  ctaPressed: { opacity: 0.85 },
-  ctaText: { ...typography.cta, color: colors.surface },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+    },
+    savingText: {
+      ...typography.body,
+      color: c.text2,
+    },
+    container: {
+      flex: 1,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.xxxl,
+      paddingBottom: spacing.xxxl,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkWrap: { marginBottom: spacing.xxxl },
+    check: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.full,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkMark: { fontSize: 36, color: c.surface, fontWeight: '700' },
+    title: {
+      ...typography.pageTitle,
+      color: c.text,
+      textAlign: 'center',
+      marginBottom: spacing.md,
+    },
+    subtitle: {
+      ...typography.body,
+      color: c.text2,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: spacing.xxxl,
+      maxWidth: 320,
+    },
+    summarySection: {
+      width: '100%',
+      marginBottom: spacing.xl,
+    },
+    summaryLabel: {
+      ...typography.caption,
+      color: c.text3,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: spacing.sm,
+      textAlign: 'center',
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      justifyContent: 'center',
+    },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipText: { ...typography.bodySmall, color: c.text2 },
+    chipGoal: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.aiLight,
+      borderWidth: 1,
+      borderColor: c.ai,
+    },
+    chipGoalText: { ...typography.bodySmall, color: c.ai, fontWeight: '600' },
+    cta: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.xl,
+    },
+    ctaPressed: { opacity: 0.85 },
+    ctaText: { ...typography.cta, color: c.surface },
+  });
+}
