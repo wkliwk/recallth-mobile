@@ -52,6 +52,10 @@ import { useAuthStore } from '../../stores/auth';
 import * as Haptics from 'expo-haptics';
 import * as storage from '../../services/storage';
 import { shareProgressCard } from '../../utils/shareProgressCard';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { useIsOnline } from '../../utils/networkStatus';
+import { enqueueOfflineDoseLog, drainOfflineQueue } from '../../utils/offlineQueue';
+import { readCache, writeCache, CACHE_KEYS } from '../../utils/screenCache';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { analyseTimingPatterns, type TimingSuggestion } from '../../utils/timingOptimiser';
 import { STREAK_MILESTONES, badgeById, streakBadgeId, type EarnedBadge } from '../../utils/badges';
@@ -136,6 +140,8 @@ export default function HomeScreen() {
   } | null>(null);
   const [weeklyAdherencePct, setWeeklyAdherencePct] = useState(0);
   const [sharing, setSharing] = useState(false);
+  const isOnline = useIsOnline();
+  const wasOnlineRef = useRef(false);
 
   const MILESTONES = [...STREAK_MILESTONES];
 
@@ -149,6 +155,20 @@ export default function HomeScreen() {
 
       if (isRefresh) setRefreshing(true);
       else if (!isSilent) setLoading(true);
+
+      // Offline: restore from cache and return early
+      const { checkIsOnline } = await import('../../utils/networkStatus');
+      const online = await checkIsOnline();
+      if (!online && !isRefresh) {
+        const cached = await readCache<{ supplements: SupplementEntry[]; cabinetItems: CabinetItem[] }>(CACHE_KEYS.homeSchedule);
+        if (cached) {
+          setSupplements(cached.supplements);
+          setCabinetItems(cached.cabinetItems);
+        }
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
 
       const today = new Date().toISOString().slice(0, 10);
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -199,6 +219,8 @@ export default function HomeScreen() {
             return logId ? { ...s, taken: true, doseLogId: logId } : s;
           });
           setSupplements(finalEntries);
+          // Write to cache for offline use (mark all as untaken to avoid stale taken state)
+          void writeCache(CACHE_KEYS.homeSchedule, { supplements: finalEntries.map((s) => ({ ...s, taken: false, doseLogId: undefined })), cabinetItems: supplementsRes.value });
           // Determine fully-logged blocks for nudge cancellation
           const blocks = [...new Set(finalEntries.map((s) => s.timeBlock))];
           loggedBlocks = blocks.filter((b) =>
@@ -206,6 +228,7 @@ export default function HomeScreen() {
           );
         } else {
           setSupplements(entries);
+          void writeCache(CACHE_KEYS.homeSchedule, { supplements: entries, cabinetItems: supplementsRes.value });
         }
 
         // Cancel nudge notifications for fully-logged time blocks
@@ -412,6 +435,19 @@ export default function HomeScreen() {
     }, [loadSupplements]),
   );
 
+  // Drain offline queue when connectivity is restored
+  useEffect(() => {
+    if (isOnline && !wasOnlineRef.current && token) {
+      void drainOfflineQueue(token).then((drained) => {
+        if (drained > 0) {
+          // Silent re-sync: reload schedule to show server state
+          void loadSupplements(false, true);
+        }
+      }).catch(() => {/* non-critical */});
+    }
+    wasOnlineRef.current = isOnline;
+  }, [isOnline, token, loadSupplements]);
+
   const taken = supplements.filter((s) => s.taken).length;
   const total = supplements.length;
 
@@ -472,6 +508,14 @@ export default function HomeScreen() {
       // Optimistic update
       setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, taken: true } : s));
       setPendingDoseLog(null);
+
+      // Offline: enqueue for later sync
+      const { checkIsOnline: checkOnline } = await import('../../utils/networkStatus');
+      const canReach = await checkOnline();
+      if (!canReach) {
+        void enqueueOfflineDoseLog({ supplementId: id, supplementName: name, slot: timeBlock, takenAt: new Date().toISOString(), notes: note || undefined });
+        return;
+      }
 
       try {
         const log = await logDose(token, id, name, timeBlock, false, note || undefined);
@@ -822,6 +866,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <OfflineBanner visible={!isOnline} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}

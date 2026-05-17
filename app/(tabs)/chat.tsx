@@ -31,6 +31,7 @@ import { useAuthStore } from '../../stores/auth';
 import { useChatStore, type LocalMessage, type ExtractionToastData } from '../../stores/chat';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import * as storage from '../../services/storage';
+import { useIsOnline } from '../../utils/networkStatus';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,6 +92,7 @@ function DisclaimerStrip() {
 
 export default function ChatScreen() {
   const token = useAuthStore((s) => s.token);
+  const isOnline = useIsOnline();
   const [historyOpen, setHistoryOpen] = useState(false);
   const {
     messages,
@@ -226,10 +228,19 @@ export default function ChatScreen() {
 
       {ErrorBanner}
 
+      {/* Offline message */}
+      {!isOnline && (
+        <View style={styles.offlineContainer}>
+          <Text style={styles.offlineIcon}>📡</Text>
+          <Text style={styles.offlineTitle}>Chat unavailable offline</Text>
+          <Text style={styles.offlineBody}>Connect to the internet to ask Recallth.</Text>
+        </View>
+      )}
+
       {/* Message list */}
-      {messages.length === 0 ? (
+      {isOnline && messages.length === 0 ? (
         <EmptyState onPrompt={handleSend} />
-      ) : (
+      ) : isOnline ? (
         <FlatList
           ref={listRef}
           data={listItems}
@@ -244,10 +255,10 @@ export default function ChatScreen() {
             minIndexForVisible: 0,
           }}
         />
-      )}
+      ) : null}
 
-      {/* Composer */}
-      <ChatComposer onSend={handleSend} isLoading={isLoading} />
+      {/* Composer — hidden when offline */}
+      {isOnline && <ChatComposer onSend={handleSend} isLoading={isLoading} />}
 
       {token !== null && (
         <ConversationHistorySheet
@@ -272,6 +283,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+  offlineContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+    gap: spacing.md,
+  },
+  offlineIcon: { fontSize: 48 },
+  offlineTitle: { ...typography.sectionTitle, color: colors.text, textAlign: 'center' },
+  offlineBody: { ...typography.body, color: colors.text2, textAlign: 'center', lineHeight: 22 },
 
   // Header
   header: {
