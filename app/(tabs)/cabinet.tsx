@@ -41,6 +41,8 @@ import { getRecommendations, type Recommendation } from '../../services/recommen
 import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
 import { cancelSupplementReminder, getReminderTime, scheduleSupplementReminder } from '../../utils/reminderTimes';
+import { readCache, writeCache, CACHE_KEYS } from '../../utils/screenCache';
+import { checkIsOnline } from '../../utils/networkStatus';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 const CABINET_ORDER_KEY = 'recallth:cabinet-order';
@@ -194,6 +196,18 @@ export default function CabinetScreen() {
 
       setState((s) => ({ ...s, loading: !isRefresh && !isSilent, refreshing: isRefresh, error: null }));
 
+      // Offline: restore from cache
+      const online = await checkIsOnline();
+      if (!online && !isRefresh) {
+        const cached = await readCache<{ items: ApiItem[] }>(CACHE_KEYS.cabinet);
+        if (cached) {
+          setState((s) => ({ ...s, items: cached.items, loading: false, refreshing: false }));
+        } else {
+          setState((s) => ({ ...s, loading: false, refreshing: false }));
+        }
+        return;
+      }
+
       const [itemsRes, interactionsRes, evidenceRes, restockRes] = await Promise.allSettled([
         listAllCabinetItems(token),
         getInteractions(token),
@@ -248,6 +262,9 @@ export default function CabinetScreen() {
         usedMock: false,
         error: null,
       });
+
+      // Write to cache for offline use
+      void writeCache(CACHE_KEYS.cabinet, { items: orderedCards });
     },
     [token],
   );
