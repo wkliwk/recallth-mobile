@@ -362,6 +362,42 @@ export default function HomeScreen() {
     [token, supplements],
   );
 
+  const handleLogAll = useCallback(
+    (block: TimeBlock) => {
+      if (!token) return;
+      const targets = supplements.filter((s) => s.timeBlock === block && !s.taken);
+      if (targets.length === 0) return;
+
+      // Optimistic update — mark all as taken
+      setSupplements((prev) =>
+        prev.map((s) => targets.some((t) => t.id === s.id) ? { ...s, taken: true } : s),
+      );
+
+      // Log each dose in parallel, update doseLogId as responses arrive
+      Promise.allSettled(
+        targets.map((t) =>
+          logDose(token, t.id, t.name, t.timeBlock).then((log) => {
+            setSupplements((prev) =>
+              prev.map((s) => s.id === t.id ? { ...s, doseLogId: log._id } : s),
+            );
+          }),
+        ),
+      ).then((results) => {
+        // Restore any failed ones
+        results.forEach((r, i) => {
+          if (r.status === 'rejected') {
+            setSupplements((prev) =>
+              prev.map((s) => s.id === targets[i].id ? { ...s, taken: false, doseLogId: undefined } : s),
+            );
+          }
+        });
+        // Single streak check after bulk log
+        void logIntakeToday(token).catch(() => {/* non-critical */});
+      });
+    },
+    [token, supplements],
+  );
+
   const handleTimingDismiss = useCallback(async (supplementId: string) => {
     setDismissedTimingSuggestions((prev) => [...prev, supplementId]);
     const dismissKey = 'recallth:timing-dismissed';
@@ -537,6 +573,7 @@ export default function HomeScreen() {
               label={TIME_BLOCK_LABELS[block]}
               items={supplements.filter((s) => s.timeBlock === block)}
               onToggle={toggleTaken}
+              onLogAll={() => handleLogAll(block)}
             />
           ))}
         </View>
