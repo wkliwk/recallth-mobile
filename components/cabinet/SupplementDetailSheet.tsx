@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { colors, radius, spacing, typography } from '../../utils/theme';
-import { updateCabinetItem, type CabinetItem } from '../../services/cabinet';
+import { updateCabinetItem, pauseCabinetItem, unpauseCabinetItem, type CabinetItem } from '../../services/cabinet';
 import { getSideEffects, type SideEffectEntry } from '../../services/sideEffects';
 import { SideEffectSheet } from './SideEffectSheet';
 
@@ -52,6 +52,8 @@ export function SupplementDetailSheet({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [sideEffects, setSideEffects] = useState<SideEffectEntry[]>([]);
   const [sideEffectSheetVisible, setSideEffectSheetVisible] = useState(false);
+  const [pauseLoading, setPauseLoading] = useState(false);
+  const [pauseError, setPauseError] = useState<string | null>(null);
   const seLoadedRef = useRef(false);
 
   // Reset draft when item changes
@@ -110,6 +112,35 @@ export function SupplementDetailSheet({
       setSaveError('Could not save. Please try again.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePause = async (days: number) => {
+    if (!item) return;
+    setPauseLoading(true);
+    setPauseError(null);
+    try {
+      await pauseCabinetItem(item._id, days, token);
+      const pausedUntil = new Date(Date.now() + days * 86_400_000).toISOString();
+      onUpdated({ ...item, isPaused: true, pausedUntil });
+    } catch {
+      setPauseError('Could not pause. Please try again.');
+    } finally {
+      setPauseLoading(false);
+    }
+  };
+
+  const handleUnpause = async () => {
+    if (!item) return;
+    setPauseLoading(true);
+    setPauseError(null);
+    try {
+      await unpauseCabinetItem(item._id, token);
+      onUpdated({ ...item, isPaused: false, pausedUntil: undefined });
+    } catch {
+      setPauseError('Could not resume. Please try again.');
+    } finally {
+      setPauseLoading(false);
     }
   };
 
@@ -269,6 +300,43 @@ export function SupplementDetailSheet({
               )}
             </View>
 
+            {/* ── Pause / Holiday Mode ────────────────────── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Holiday Mode</Text>
+              {item.isPaused && item.pausedUntil ? (
+                <View style={styles.pausedBanner}>
+                  <Text style={styles.pausedBannerText}>
+                    Paused until {new Date(item.pausedUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Text>
+                  <Pressable
+                    onPress={() => { void handleUnpause(); }}
+                    disabled={pauseLoading}
+                    style={({ pressed }) => [styles.resumeBtn, pressed && { opacity: 0.8 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Resume supplement"
+                  >
+                    <Text style={styles.resumeBtnText}>Resume now</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.pauseRow}>
+                  {([1, 3, 7, 14] as const).map((days) => (
+                    <Pressable
+                      key={days}
+                      onPress={() => { void handlePause(days); }}
+                      disabled={pauseLoading}
+                      style={({ pressed }) => [styles.pauseChip, pressed && { opacity: 0.8 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Pause for ${days} days`}
+                    >
+                      <Text style={styles.pauseChipText}>{days}d</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              {pauseError !== null && <Text style={styles.errorText}>{pauseError}</Text>}
+            </View>
+
             <View style={{ height: spacing.xxxl }} />
           </ScrollView>
         </KeyboardAvoidingView>
@@ -411,6 +479,47 @@ const styles = StyleSheet.create({
     color: colors.danger,
     marginBottom: spacing.md,
     textAlign: 'center',
+  },
+  pauseRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  pauseChip: {
+    backgroundColor: colors.infoLight,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.info,
+  },
+  pauseChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.info,
+  },
+  pausedBanner: {
+    backgroundColor: colors.infoLight,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  pausedBannerText: {
+    fontSize: 13,
+    color: colors.info,
+    fontWeight: '500',
+  },
+  resumeBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.info,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  resumeBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
   },
   stockRow: {
     flexDirection: 'row',

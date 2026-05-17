@@ -94,6 +94,8 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[], evidenceS
     conflictNote,
     startDate: item.startDate,
     researchNotes: item.researchNotes,
+    isPaused: item.isPaused,
+    pausedUntil: item.pausedUntil,
     _source: item,
   };
 }

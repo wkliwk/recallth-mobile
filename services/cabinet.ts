@@ -52,6 +52,8 @@ export interface CabinetItem {
   quantityRemaining?: number;
   dailyDoseCount?: number;
   lowSupplyWarning?: boolean;
+  pausedUntil?: string;
+  isPaused?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -263,4 +265,21 @@ export async function getSupplementResearch(
 ): Promise<{ research: DeepResearch | null; generating: boolean }> {
   const res = await api.get<DeepResearchResponse>(`/cabinet/${id}/research`, { token });
   return { research: res.data ?? null, generating: res.generating ?? false };
+}
+
+interface PauseResponse { success: boolean; data: unknown; error: string | null }
+
+export async function pauseCabinetItem(
+  id: string,
+  days: number,
+  token: string,
+): Promise<void> {
+  await api.post<PauseResponse>(`/cabinet/${id}/pause`, { days }, { token });
+}
+
+export async function unpauseCabinetItem(
+  id: string,
+  token: string,
+): Promise<void> {
+  await api.delete(`/cabinet/${id}/pause`, { token });
 }
