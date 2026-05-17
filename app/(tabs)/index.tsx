@@ -51,6 +51,7 @@ import { isEffectPromptDue, saveEffectRating, deferEffectPrompt, type EffectRati
 import { useAuthStore } from '../../stores/auth';
 import * as Haptics from 'expo-haptics';
 import * as storage from '../../services/storage';
+import { shareProgressCard } from '../../utils/shareProgressCard';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { analyseTimingPatterns, type TimingSuggestion } from '../../utils/timingOptimiser';
 import { STREAK_MILESTONES, badgeById, streakBadgeId, type EarnedBadge } from '../../utils/badges';
@@ -133,6 +134,8 @@ export default function HomeScreen() {
     blockLabel: string;
     nudgeKey: string;
   } | null>(null);
+  const [weeklyAdherencePct, setWeeklyAdherencePct] = useState(0);
+  const [sharing, setSharing] = useState(false);
 
   const MILESTONES = [...STREAK_MILESTONES];
 
@@ -330,6 +333,14 @@ export default function HomeScreen() {
         const suggestions = analyseTimingPatterns(filteredLogs);
         setTimingSuggestions(suggestions);
 
+        // Weekly adherence: unique supplement-day pairs in last 7 days / (activeCount × 7)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const weekLogs = recentLogsRes.value.filter((l) => l.takenAt >= sevenDaysAgo && !pausedIds.has(l.supplementId));
+        const uniquePairs = new Set(weekLogs.map((l) => `${l.supplementId}|${l.takenAt.slice(0, 10)}`));
+        const activeCount = supplementsRes.value.filter((x) => x.active && !x.isPaused).length;
+        const expected = activeCount * 7;
+        setWeeklyAdherencePct(expected > 0 ? Math.min(100, (uniquePairs.size / expected) * 100) : 0);
+
         // Load persisted dismiss state
         const dismissKey = 'recallth:timing-dismissed';
         const raw = await storage.getItem(dismissKey);
@@ -403,6 +414,22 @@ export default function HomeScreen() {
 
   const taken = supplements.filter((s) => s.taken).length;
   const total = supplements.length;
+
+  const handleShare = useCallback(async () => {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      await shareProgressCard({
+        streak: currentStreak,
+        weeklyAdherencePct,
+        activeSuppCount: cabinetItems.filter((x) => x.active).length,
+      });
+    } catch {
+      // non-critical — share sheet may be dismissed
+    } finally {
+      setSharing(false);
+    }
+  }, [sharing, currentStreak, weeklyAdherencePct, cabinetItems]);
 
   const toggleTaken = useCallback(
     (id: string) => {
@@ -884,6 +911,21 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Share progress button — visible after 3+ day streak */}
+        {currentStreak >= 3 && (
+          <Pressable
+            onPress={() => { void handleShare(); }}
+            disabled={sharing}
+            style={({ pressed }) => [styles.shareBtn, (pressed || sharing) && styles.shareBtnPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Share my progress"
+          >
+            <Text style={styles.shareBtnText}>
+              {sharing ? 'Generating…' : '🔗 Share my progress'}
+            </Text>
+          </Pressable>
+        )}
+
         {/* Timing optimiser suggestions */}
         {visibleTimingSuggestions.map((s) => (
           <TimingSuggestionCard
@@ -1159,6 +1201,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: colors.primary,
+  },
+  shareBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    marginBottom: 12,
+  },
+  shareBtnPressed: {
+    opacity: 0.7,
+  },
+  shareBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text2,
   },
 
   disclaimer: {
