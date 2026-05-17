@@ -40,6 +40,7 @@
     "expo": "~54.0.33",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
+    "expo-document-picker": "~14.0.8",
     "expo-file-system": "~19.0.22",
     "expo-linking": "~8.0.12",
     "expo-notifications": "~0.32.17",
