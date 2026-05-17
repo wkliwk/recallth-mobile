@@ -3,6 +3,7 @@
  * All fields are optional; user can skip the entire step.
  */
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,7 +17,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Sex, useOnboardingStore } from '../../stores/onboarding';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 const SEX_OPTIONS: { label: string; value: Sex }[] = [
   { label: 'Male', value: 'male' },
@@ -26,6 +28,9 @@ const SEX_OPTIONS: { label: string; value: Sex }[] = [
 
 export default function Step1Screen() {
   const router = useRouter();
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const { heightCm, weightKg, sex, age, setBodyStats } = useOnboardingStore(
     (s) => ({
       heightCm: s.heightCm,
@@ -83,7 +88,7 @@ export default function Step1Screen() {
               value={heightCm}
               onChangeText={(v) => setBodyStats({ heightCm: v })}
               placeholder="e.g. 175"
-              placeholderTextColor={colors.text3}
+              placeholderTextColor={c.text3}
               keyboardType="numeric"
               returnKeyType="next"
               accessibilityLabel="Height in centimetres"
@@ -98,7 +103,7 @@ export default function Step1Screen() {
               value={weightKg}
               onChangeText={(v) => setBodyStats({ weightKg: v })}
               placeholder="e.g. 70"
-              placeholderTextColor={colors.text3}
+              placeholderTextColor={c.text3}
               keyboardType="numeric"
               returnKeyType="next"
               accessibilityLabel="Weight in kilograms"
@@ -113,7 +118,7 @@ export default function Step1Screen() {
               value={age}
               onChangeText={(v) => setBodyStats({ age: v })}
               placeholder="e.g. 32"
-              placeholderTextColor={colors.text3}
+              placeholderTextColor={c.text3}
               keyboardType="numeric"
               returnKeyType="done"
               accessibilityLabel="Age in years"
@@ -178,6 +183,8 @@ function StepIndicator({
   current: number;
   total: number;
 }) {
+  const c = useThemeColors();
+  const indicatorStyles = useMemo(() => makeIndicatorStyles(c), [c]);
   return (
     <View style={indicatorStyles.row} accessibilityLabel={`Step ${current} of ${total}`}>
       {Array.from({ length: total }).map((_, i) => (
@@ -194,73 +201,77 @@ function StepIndicator({
   );
 }
 
-const indicatorStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 6 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.text4,
-  },
-  dotActive: { backgroundColor: colors.primary, width: 20 },
-  dotDone: { backgroundColor: colors.primaryMid },
-});
+function makeIndicatorStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: { flexDirection: 'row', gap: 6 },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.text4,
+    },
+    dotActive: { backgroundColor: c.primary, width: 20 },
+    dotDone: { backgroundColor: c.primaryMid },
+  });
+}
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xxxl,
-  },
-  skip: { ...typography.body, color: colors.text2 },
-  header: { marginBottom: spacing.xxxl },
-  title: { ...typography.pageTitle, color: colors.text, marginBottom: spacing.sm },
-  subtitle: { ...typography.body, color: colors.text2 },
-  field: { marginBottom: spacing.xl, gap: spacing.sm },
-  label: { ...typography.bodyStrong, color: colors.text },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    fontSize: 15,
-    color: colors.text,
-    minHeight: 48,
-  },
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipSelected: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  chipText: { ...typography.body, color: colors.text2 },
-  chipTextSelected: { ...typography.bodyStrong, color: colors.primary },
-  actions: { marginTop: spacing.xl },
-  cta: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaPressed: { opacity: 0.85 },
-  ctaText: { ...typography.cta, color: colors.surface },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxxl,
+    },
+    topRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.xxxl,
+    },
+    skip: { ...typography.body, color: c.text2 },
+    header: { marginBottom: spacing.xxxl },
+    title: { ...typography.pageTitle, color: c.text, marginBottom: spacing.sm },
+    subtitle: { ...typography.body, color: c.text2 },
+    field: { marginBottom: spacing.xl, gap: spacing.sm },
+    label: { ...typography.bodyStrong, color: c.text },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      fontSize: 15,
+      color: c.text,
+      minHeight: 48,
+    },
+    chips: { flexDirection: 'row', gap: spacing.sm },
+    chip: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipSelected: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary,
+    },
+    chipText: { ...typography.body, color: c.text2 },
+    chipTextSelected: { ...typography.bodyStrong, color: c.primary },
+    actions: { marginTop: spacing.xl },
+    cta: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ctaPressed: { opacity: 0.85 },
+    ctaText: { ...typography.cta, color: c.surface },
+  });
+}
