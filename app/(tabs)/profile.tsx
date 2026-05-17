@@ -47,7 +47,7 @@ import {
 import { useAuthStore } from '../../stores/auth';
 import { listBloodwork, type BloodworkEntry } from '../../services/bloodwork';
 import { listExtractions } from '../../services/extractionReview';
-import { generateAndShareReport, shareProgressCard } from '../../services/exportReport';
+import { exportDoseCsv, generateAndShareReport, shareProgressCard } from '../../services/exportReport';
 import { getStreak } from '../../services/intake';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
@@ -193,6 +193,7 @@ export default function ProfileScreen() {
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [sharing, setSharing] = useState(false);
 
   // Auto-reset success feedback after 2s
@@ -315,6 +316,22 @@ export default function ProfileScreen() {
       setExporting(false);
     }
   }, [token, user]);
+
+  const handleExportCsv = useCallback(async () => {
+    if (!token) return;
+    setExportingCsv(true);
+    try {
+      const result = await exportDoseCsv(token);
+      if (result === 'no_logs') {
+        Alert.alert('No dose logs', 'No dose logs to export yet. Log some doses first.');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not export CSV';
+      Alert.alert('Export failed', message);
+    } finally {
+      setExportingCsv(false);
+    }
+  }, [token]);
 
   // ─── Render states ──────────────────────────────────────────────────────────
 
@@ -627,6 +644,19 @@ export default function ProfileScreen() {
           </Text>
         </Pressable>
 
+        {/* Export CSV */}
+        <Pressable
+          onPress={() => void handleExportCsv()}
+          disabled={exportingCsv}
+          style={({ pressed }) => [styles.exportBtn, styles.exportCsvBtn, (pressed || exportingCsv) && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Export dose logs as CSV"
+        >
+          <Text style={styles.exportBtnText}>
+            {exportingCsv ? 'Exporting…' : '📊 Export Dose Logs (CSV)'}
+          </Text>
+        </Pressable>
+
         {/* History link */}
         <Pressable
           onPress={() => router.push('/(tabs)/history' as Parameters<typeof router.push>[0])}
@@ -742,6 +772,9 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
     color: colors.text,
     fontSize: 14,
+  },
+  exportCsvBtn: {
+    marginTop: spacing.sm,
   },
   historyLink: {
     marginTop: spacing.sm,
