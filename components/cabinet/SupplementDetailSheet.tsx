@@ -15,7 +15,9 @@ import { colors, radius, spacing, typography } from '../../utils/theme';
 import { updateCabinetItem, pauseCabinetItem, unpauseCabinetItem, type CabinetItem } from '../../services/cabinet';
 import { getSideEffects, type SideEffectEntry } from '../../services/sideEffects';
 import { getDoseLogsRange, type DoseLogEntry } from '../../services/schedule';
+import { fetchEffects, type SupplementEffectAvg } from '../../services/trends';
 import { findInteractions, type FoundInteraction } from '../../utils/interactions';
+import { computeOptimalBlock } from '../../utils/timingOptimiser';
 import { SideEffectSheet } from './SideEffectSheet';
 
 const RATING_LABELS: Record<number, string> = {
@@ -61,6 +63,8 @@ export function SupplementDetailSheet({
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [doseLogs, setDoseLogs] = useState<DoseLogEntry[]>([]);
   const [doseLogsLoading, setDoseLogsLoading] = useState(false);
+  const [effectAvg, setEffectAvg] = useState<SupplementEffectAvg | null>(null);
+  const [applyingTiming, setApplyingTiming] = useState(false);
   const seLoadedRef = useRef(false);
   const doseLogsLoadedRef = useRef<string | null>(null);
 
@@ -79,30 +83,37 @@ export function SupplementDetailSheet({
     doseLogsLoadedRef.current = null;
     setActiveTab('details');
     setDoseLogs([]);
+    setEffectAvg(null);
   }, [item?._id]);
 
-  // Load side effects when sheet opens
+  // Load side effects + dose logs + effect ratings when sheet opens
   useEffect(() => {
-    if (!visible || !item || seLoadedRef.current || item._id.startsWith('mock')) return;
-    seLoadedRef.current = true;
-    void getSideEffects(token, item._id, 20)
-      .then(setSideEffects)
-      .catch(() => {/* non-critical */});
-  }, [visible, item, token]);
+    if (!visible || !item || item._id.startsWith('mock')) return;
 
-  // Load dose logs when History tab is first activated
-  useEffect(() => {
-    if (activeTab !== 'history' || !item || item._id.startsWith('mock')) return;
-    if (doseLogsLoadedRef.current === item._id) return;
-    doseLogsLoadedRef.current = item._id;
-    setDoseLogsLoading(true);
-    const to = new Date().toISOString().slice(0, 10);
-    const from = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
-    void getDoseLogsRange(token, from, to)
-      .then((logs) => setDoseLogs(logs.filter((l) => l.supplementId === item._id)))
-      .catch(() => setDoseLogs([]))
-      .finally(() => setDoseLogsLoading(false));
-  }, [activeTab, item, token]);
+    if (!seLoadedRef.current) {
+      seLoadedRef.current = true;
+      void getSideEffects(token, item._id, 20)
+        .then(setSideEffects)
+        .catch(() => {/* non-critical */});
+    }
+
+    if (doseLogsLoadedRef.current !== item._id) {
+      doseLogsLoadedRef.current = item._id;
+      setDoseLogsLoading(true);
+      const to = new Date().toISOString().slice(0, 10);
+      const from = new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10);
+      void getDoseLogsRange(token, from, to)
+        .then((logs) => setDoseLogs(logs.filter((l) => l.supplementId === item._id)))
+        .catch(() => setDoseLogs([]))
+        .finally(() => setDoseLogsLoading(false));
+      void fetchEffects(token, 90)
+        .then((avgs) => {
+          const match = avgs.find((a) => a.name.toLowerCase() === item.name.toLowerCase());
+          setEffectAvg(match ?? null);
+        })
+        .catch(() => {/* non-critical */});
+    }
+  }, [visible, item, token]);
 
   const refreshSideEffects = useCallback(() => {
     if (!item || item._id.startsWith('mock')) return;
@@ -169,10 +180,25 @@ export function SupplementDetailSheet({
     }
   };
 
+  const handleApplyTiming = async (slotLabel: string) => {
+    if (!item) return;
+    setApplyingTiming(true);
+    try {
+      const updated = await updateCabinetItem(item._id, { timing: slotLabel }, token);
+      onUpdated(updated);
+      setDraft((d) => ({ ...d, timing: slotLabel }));
+    } catch {
+      // non-critical — timing update failed silently
+    } finally {
+      setApplyingTiming(false);
+    }
+  };
+
   if (!item) return null;
 
   const interactions: FoundInteraction[] = findInteractions(item.name, otherItemNames);
   const stockLabel = currentStock !== undefined ? `${currentStock}d` : '—';
+  const optimalBlock = computeOptimalBlock(doseLogs, effectAvg);
 
   return (
     <>
@@ -382,6 +408,47 @@ export function SupplementDetailSheet({
                 ))}
               </View>
             )}
+
+            {/* ── Best time for you ───────────────────────── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Best time for you</Text>
+              {optimalBlock ? (
+                <>
+                  <Text style={styles.bestTimeDesc}>
+                    Based on <Text style={styles.bold}>{optimalBlock.sampleCount}</Text> effect ratings, you typically take{' '}
+                    <Text style={styles.bold}>{item.name}</Text> in the{' '}
+                    <Text style={styles.bold}>{optimalBlock.slotLabel}</Text> and rate its effects{' '}
+                    <Text style={styles.bold}>{optimalBlock.overallScore}/5</Text>.
+                  </Text>
+                  <Pressable
+                    onPress={() => { void handleApplyTiming(optimalBlock.slotLabel); }}
+                    disabled={applyingTiming || draft.timing.toLowerCase() === optimalBlock.slotLabel.toLowerCase()}
+                    style={({ pressed }) => [
+                      styles.applyTimingBtn,
+                      (pressed || applyingTiming) && { opacity: 0.7 },
+                      draft.timing.toLowerCase() === optimalBlock.slotLabel.toLowerCase() && styles.applyTimingBtnApplied,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Apply ${optimalBlock.slotLabel} timing`}
+                  >
+                    <Text style={[
+                      styles.applyTimingBtnText,
+                      draft.timing.toLowerCase() === optimalBlock.slotLabel.toLowerCase() && { color: colors.text2 },
+                    ]}>
+                      {draft.timing.toLowerCase() === optimalBlock.slotLabel.toLowerCase()
+                        ? '✓ Applied'
+                        : applyingTiming ? 'Applying…' : `Apply ${optimalBlock.slotLabel} timing`}
+                    </Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Text style={styles.bestTimeEmpty}>
+                  {(effectAvg?.count ?? 0) < 7
+                    ? `Not enough data yet — log ${Math.max(0, 7 - (effectAvg?.count ?? 0))} more effect rating${Math.max(0, 7 - (effectAvg?.count ?? 0)) !== 1 ? 's' : ''} to see your personalised recommendation.`
+                    : 'Not enough data yet — keep logging your effects after each dose.'}
+                </Text>
+              )}
+            </View>
 
             {/* ── Pause / Holiday Mode ────────────────────── */}
             <View style={styles.section}>
@@ -745,5 +812,38 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.text2,
     lineHeight: 16,
+  },
+  bestTimeDesc: {
+    ...typography.bodySmall,
+    color: colors.text2,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  bestTimeEmpty: {
+    ...typography.bodySmall,
+    color: colors.text3,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  bold: {
+    fontWeight: '700',
+    color: colors.text,
+  },
+  applyTimingBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    alignSelf: 'flex-start',
+  },
+  applyTimingBtnApplied: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  applyTimingBtnText: {
+    ...typography.bodySmall,
+    color: colors.surface,
+    fontWeight: '700',
   },
 });
