@@ -14,6 +14,7 @@ import { EffectRatingSheet, type EffectRatings } from '../../components/summary/
 import { BadgeCelebrationModal } from '../../components/summary/BadgeCelebrationModal';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
+import { BlockEffectNudgeBanner } from '../../components/home/BlockEffectNudgeBanner';
 import { RecoveryBanner } from '../../components/home/RecoveryBanner';
 import { RecoverySheet } from '../../components/home/RecoverySheet';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -114,6 +115,13 @@ export default function HomeScreen() {
   const [pendingDoseLog, setPendingDoseLog] = useState<SupplementEntry | null>(null);
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
   const [showRecoverySheet, setShowRecoverySheet] = useState(false);
+  const [effectNudgeInfo, setEffectNudgeInfo] = useState<{
+    supplementId: string;
+    supplementName: string;
+    doseLogId: string;
+    blockLabel: string;
+    nudgeKey: string;
+  } | null>(null);
 
   const MILESTONES = [...STREAK_MILESTONES];
 
@@ -460,19 +468,40 @@ export default function HomeScreen() {
             setSupplements((prev) =>
               prev.map((s) => s.id === t.id ? { ...s, doseLogId: log._id } : s),
             );
+            return { target: t, logId: log._id };
           }),
         ),
       ).then((results) => {
+        const successful: Array<{ target: SupplementEntry; logId: string }> = [];
         // Restore any failed ones
         results.forEach((r, i) => {
           if (r.status === 'rejected') {
             setSupplements((prev) =>
               prev.map((s) => s.id === targets[i].id ? { ...s, taken: false, doseLogId: undefined } : s),
             );
+          } else {
+            successful.push(r.value);
           }
         });
         // Single streak check after bulk log
         void logIntakeToday(token).catch(() => {/* non-critical */});
+        // Block effect nudge — only if ≥2 supplements logged, not yet shown today
+        if (successful.length >= 2) {
+          const today = new Date().toISOString().slice(0, 10);
+          const nudgeKey = `recallth:effect-nudge-${today}-${block}`;
+          void storage.getItem(nudgeKey).then((existing) => {
+            if (!existing) {
+              const first = successful[0];
+              setEffectNudgeInfo({
+                supplementId: first.target.id,
+                supplementName: first.target.name,
+                doseLogId: first.logId,
+                blockLabel: TIME_BLOCK_LABELS[block],
+                nudgeKey,
+              });
+            }
+          });
+        }
       });
     },
     [token, supplements],
@@ -560,6 +589,23 @@ export default function HomeScreen() {
     },
     [token, supplements],
   );
+
+  const handleEffectNudgeRate = useCallback(() => {
+    if (!effectNudgeInfo) return;
+    void storage.setItem(effectNudgeInfo.nudgeKey, 'shown');
+    setEffectPrompt({
+      doseLogId: effectNudgeInfo.doseLogId,
+      supplementId: effectNudgeInfo.supplementId,
+      supplementName: effectNudgeInfo.supplementName,
+    });
+    setEffectNudgeInfo(null);
+  }, [effectNudgeInfo]);
+
+  const handleEffectNudgeLater = useCallback(() => {
+    if (!effectNudgeInfo) return;
+    void storage.setItem(effectNudgeInfo.nudgeKey, 'shown');
+    setEffectNudgeInfo(null);
+  }, [effectNudgeInfo]);
 
   if (loading) {
     return (
@@ -667,6 +713,15 @@ export default function HomeScreen() {
           <RecoveryBanner
             onRecover={() => setShowRecoverySheet(true)}
             onDismiss={() => setShowRecoveryBanner(false)}
+          />
+        )}
+
+        {/* Block effect nudge banner */}
+        {effectNudgeInfo && (
+          <BlockEffectNudgeBanner
+            blockLabel={effectNudgeInfo.blockLabel}
+            onRateNow={handleEffectNudgeRate}
+            onLater={handleEffectNudgeLater}
           />
         )}
 
