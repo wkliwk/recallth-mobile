@@ -21,11 +21,15 @@ const CONFETTI_COUNT = 24;
 
 function Confetti() {
   const anims = useRef(
-    Array.from({ length: CONFETTI_COUNT }, () => ({
-      x: new Animated.Value(Math.random()),
-      y: new Animated.Value(0),
-      rot: new Animated.Value(0),
-    })),
+    Array.from({ length: CONFETTI_COUNT }, () => {
+      const xPct = Math.random();
+      return {
+        xPct,
+        x: new Animated.Value(xPct),
+        y: new Animated.Value(0),
+        rot: new Animated.Value(0),
+      };
+    }),
   ).current;
 
   useEffect(() => {
@@ -41,7 +45,7 @@ function Confetti() {
   return (
     <>
       {anims.map((anim, i) => {
-        const left = `${Math.round(anim.x._value * 100)}%` as `${number}%`;
+        const left = `${Math.round(anim.xPct * 100)}%` as `${number}%`;
         const translateY = anim.y.interpolate({ inputRange: [0, 1], outputRange: [-20, 500] });
         const rotate = anim.rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${Math.random() > 0.5 ? 360 : -360}deg`] });
         const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];

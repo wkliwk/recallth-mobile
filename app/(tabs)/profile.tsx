@@ -47,6 +47,7 @@ import {
 import { useAuthStore } from '../../stores/auth';
 import { listBloodwork, type BloodworkEntry } from '../../services/bloodwork';
 import { listExtractions } from '../../services/extractionReview';
+import { generateAndShareReport } from '../../services/exportReport';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { type EarnedBadge } from '../../utils/badges';
@@ -182,12 +183,14 @@ function sectionProvenance(section: unknown): Provenance {
 
 export default function ProfileScreen() {
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const [bloodworkEntries, setBloodworkEntries] = useState<BloodworkEntry[]>([]);
   const [pendingExtractionCount, setPendingExtractionCount] = useState(0);
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   // Auto-reset success feedback after 2s
   const successTimers = useRef<Record<SectionKey, ReturnType<typeof setTimeout> | null>>({
@@ -281,6 +284,20 @@ export default function ProfileScreen() {
     },
     [],
   );
+
+  const handleExport = useCallback(async () => {
+    if (!token) return;
+    setExporting(true);
+    try {
+      const displayName = user?.email?.split('@')[0] ?? 'User';
+      await generateAndShareReport(token, displayName);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not generate report';
+      Alert.alert('Export failed', message);
+    } finally {
+      setExporting(false);
+    }
+  }, [token, user]);
 
   // ─── Render states ──────────────────────────────────────────────────────────
 
@@ -576,6 +593,19 @@ export default function ProfileScreen() {
         {/* Achievements */}
         <AchievementsSection earned={earnedBadges} />
 
+        {/* Export Report */}
+        <Pressable
+          onPress={() => void handleExport()}
+          disabled={exporting}
+          style={({ pressed }) => [styles.exportBtn, (pressed || exporting) && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Export supplement report as PDF"
+        >
+          <Text style={styles.exportBtnText}>
+            {exporting ? 'Generating…' : '📄 Export Supplement Report'}
+          </Text>
+        </Pressable>
+
         {/* History link */}
         <Pressable
           onPress={() => router.push('/(tabs)/history' as Parameters<typeof router.push>[0])}
@@ -676,6 +706,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#fff',
+  },
+  exportBtn: {
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  exportBtnText: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    fontSize: 14,
   },
   historyLink: {
     marginTop: spacing.sm,
