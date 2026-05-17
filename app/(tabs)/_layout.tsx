@@ -64,6 +64,10 @@ export default function TabsLayout() {
       />
       {/* Hidden from tab bar — accessible via deep link */}
       <Tabs.Screen
+        name="insights"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="history"
         options={{ href: null }}
       />
