@@ -17,7 +17,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AdherenceCard from '../../components/trends/AdherenceCard';
@@ -78,6 +78,7 @@ const initialState: TrendsState = {
 
 export default function TrendsScreen() {
   const token = useAuthStore((s) => s.token);
+  const router = useRouter();
   const [state, setState] = useState<TrendsState>(initialState);
 
   const load = useCallback(
@@ -203,8 +204,20 @@ export default function TrendsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Trends</Text>
-          <Text style={styles.subtitle}>Your consistency, body, and overall score.</Text>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.title}>Trends</Text>
+              <Text style={styles.subtitle}>Your consistency, body, and overall score.</Text>
+            </View>
+            <Pressable
+              onPress={() => router.push('/(tabs)/insights' as Parameters<typeof router.push>[0])}
+              style={({ pressed }) => [styles.insightsBtn, pressed && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityLabel="View adherence insights"
+            >
+              <Text style={styles.insightsBtnText}>Insights →</Text>
+            </Pressable>
+          </View>
         </View>
 
         <StreakCard streak={state.streak} />
@@ -242,6 +255,23 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.lg,
     gap: 4,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  insightsBtn: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  insightsBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
   },
   title: {
     ...typography.pageTitle,
