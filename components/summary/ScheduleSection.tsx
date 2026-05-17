@@ -20,7 +20,10 @@ type ScheduleSectionProps = {
 export function ScheduleSection({ label, items, onToggle, onLogAll, onSwipeLog, onSwipeUnlog }: ScheduleSectionProps) {
   if (items.length === 0) return null;
 
-  const hasUnlogged = items.some((s) => !s.taken);
+  const unloggedCount = items.filter((s) => !s.taken).length;
+  const hasUnlogged = unloggedCount > 0;
+  const isPartial = hasUnlogged && unloggedCount < items.length;
+  const logAllLabel = isPartial ? `Log remaining (${unloggedCount})` : 'Log all';
 
   return (
     <View>
@@ -30,13 +33,16 @@ export function ScheduleSection({ label, items, onToggle, onLogAll, onSwipeLog, 
         {hasUnlogged && onLogAll && (
           <Pressable
             onPress={onLogAll}
-            style={({ pressed }) => [styles.logAllBtn, pressed && { opacity: 0.75 }]}
+            style={({ pressed }) => [styles.logAllBtn, isPartial && styles.logAllBtnPartial, pressed && { opacity: 0.75 }]}
             accessibilityRole="button"
-            accessibilityLabel={`Log all ${label} supplements`}
+            accessibilityLabel={`${logAllLabel} ${label} supplements`}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <Text style={styles.logAllText}>Log all</Text>
+            <Text style={styles.logAllText}>{logAllLabel}</Text>
           </Pressable>
+        )}
+        {!hasUnlogged && items.length > 1 && (
+          <Text style={styles.allDoneLabel}>All done ✓</Text>
         )}
       </View>
 
@@ -82,9 +88,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary + '40',
   },
+  logAllBtnPartial: {
+    backgroundColor: colors.warningLight,
+    borderColor: colors.warning + '50',
+  },
   logAllText: {
     fontSize: 11,
     fontWeight: '700',
     color: colors.primary,
+  },
+  allDoneLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.ok,
   },
 });
