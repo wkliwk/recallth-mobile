@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 
 import { AiSuggestion, CabinetItem, CreateCabinetItemInput, SupplementStatus, SupplementType, aiLookupSupplement, deriveStatus, statusToFields } from '../../services/cabinet';
+import { type Recommendation } from '../../services/recommendations';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { BarcodeScannerSheet } from './BarcodeScannerSheet';
@@ -37,6 +38,7 @@ type Props = {
   onClose: () => void;
   onSave: (input: CreateCabinetItemInput) => Promise<void>;
   item?: CabinetItem | null;
+  prefill?: Recommendation;
 };
 
 type TypeOption = { value: SupplementType; label: string; icon: string };
@@ -64,7 +66,7 @@ function getRandomSuggestions(count: number): string[] {
   return shuffled.slice(0, count);
 }
 
-export function AddSheet({ visible, onClose, onSave, item }: Props) {
+export function AddSheet({ visible, onClose, onSave, item, prefill }: Props) {
   const isEdit = Boolean(item);
   const token = useAuthStore((s) => s.token);
 
@@ -97,6 +99,14 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
         setTiming(item.timing ?? '');
         setPurpose(item.purpose ?? '');
         setStatus(deriveStatus(item));
+      } else if (prefill) {
+        setName(prefill.name);
+        setType(prefill.type);
+        setDosage(prefill.dosage ?? '');
+        setFrequency(prefill.frequency ?? '');
+        setTiming('');
+        setPurpose('');
+        setStatus('active');
       } else {
         setName('');
         setType('supplement');
@@ -118,7 +128,7 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
     } else {
       slideAnim.setValue(300);
     }
-  }, [visible, item, slideAnim]);
+  }, [visible, item, prefill, slideAnim]);
 
   const handleClose = useCallback(() => {
     Animated.spring(slideAnim, {
