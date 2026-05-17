@@ -17,7 +17,13 @@ import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
 import { RecoveryBanner } from '../../components/home/RecoveryBanner';
 import { RecoverySheet } from '../../components/home/RecoverySheet';
 import { ErrorState } from '../../components/ui/ErrorState';
-import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
+import {
+  cancelNudgesForBlocks,
+  requestPermissions,
+  scheduleDailyReminders,
+  scheduleSmartReminders,
+  type SupplementSchedule,
+} from '../../services/notifications';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseLogSheet } from '../../components/summary/DoseLogSheet';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
@@ -158,17 +164,52 @@ export default function HomeScreen() {
           .map(cabinetToEntry);
 
         // Restore taken state from today's dose logs.
+        let loggedBlocks: string[] = [];
         if (doseLogsRes.status === 'fulfilled' && doseLogsRes.value.length > 0) {
           const logsBySuppId = new Map<string, string>();
+          const loggedSuppIds = new Set<string>();
           for (const log of doseLogsRes.value) {
             logsBySuppId.set(log.supplementId, log._id);
+            loggedSuppIds.add(log.supplementId);
           }
-          setSupplements(entries.map((s) => {
+          const finalEntries = entries.map((s) => {
             const logId = logsBySuppId.get(s.id);
             return logId ? { ...s, taken: true, doseLogId: logId } : s;
-          }));
+          });
+          setSupplements(finalEntries);
+          // Determine fully-logged blocks for nudge cancellation
+          const blocks = [...new Set(finalEntries.map((s) => s.timeBlock))];
+          loggedBlocks = blocks.filter((b) =>
+            finalEntries.filter((s) => s.timeBlock === b).every((s) => s.taken),
+          );
         } else {
           setSupplements(entries);
+        }
+
+        // Cancel nudge notifications for fully-logged time blocks
+        if (loggedBlocks.length > 0) {
+          void cancelNudgesForBlocks(loggedBlocks);
+        }
+
+        // Schedule smart supplement-named notifications (non-critical)
+        const nudgeRaw = await storage.getItem('recallth:missed-nudges-enabled');
+        const nudgesEnabled = nudgeRaw !== 'false';
+        const blockTimes: Record<string, string> = {
+          morning: '08:00', midday: '12:00', evening: '18:00', night: '21:00',
+        };
+        const schedulesByBlock = new Map<string, string[]>();
+        for (const entry of entries) {
+          const arr = schedulesByBlock.get(entry.timeBlock) ?? [];
+          arr.push(entry.name);
+          schedulesByBlock.set(entry.timeBlock, arr);
+        }
+        const schedules: SupplementSchedule[] = [];
+        for (const [block, supps] of schedulesByBlock.entries()) {
+          schedules.push({ time: blockTimes[block] ?? '09:00', supplements: supps, blockKey: block });
+        }
+        const status = await requestPermissions().catch(() => 'denied' as const);
+        if (status === 'granted' && schedules.length > 0) {
+          void scheduleSmartReminders(schedules, nudgesEnabled).catch(() => {/* non-critical */});
         }
       } else {
         setSupplements([]);

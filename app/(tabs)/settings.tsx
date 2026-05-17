@@ -25,6 +25,7 @@ import {
   requestPermissions,
   scheduleDailyReminders,
 } from '../../services/notifications';
+import { getItem, setItem } from '../../services/storage';
 import { deleteAccount } from '../../services/auth';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
@@ -57,6 +58,7 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [missedNudgesEnabled, setMissedNudgesEnabled] = useState(true);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerDate, setPickerDate] = useState<Date>(() => {
     const d = new Date();
@@ -64,12 +66,15 @@ export default function SettingsScreen() {
     return d;
   });
 
+  const NUDGE_KEY = 'recallth:missed-nudges-enabled';
+
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const s = await getSettings(token);
+      const [s, nudgeRaw] = await Promise.all([getSettings(token), getItem(NUDGE_KEY)]);
       setSettings(s);
+      if (nudgeRaw !== null) setMissedNudgesEnabled(nudgeRaw !== 'false');
     } catch {
       /* use defaults */
     } finally {
@@ -177,6 +182,20 @@ export default function SettingsScreen() {
 
             {settings.remindersEnabled && (
               <>
+                <View style={styles.divider} />
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>Missed dose nudges</Text>
+                  <Switch
+                    value={missedNudgesEnabled}
+                    onValueChange={async (v) => {
+                      setMissedNudgesEnabled(v);
+                      await setItem('recallth:missed-nudges-enabled', String(v));
+                    }}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor="#fff"
+                    accessibilityLabel="Toggle missed dose nudges"
+                  />
+                </View>
                 <View style={styles.divider} />
                 <Text style={styles.subLabel}>Reminder times</Text>
                 {settings.reminderTimes.map((t) => (
