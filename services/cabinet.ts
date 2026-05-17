@@ -37,6 +37,7 @@ export interface CabinetItem {
   timing?: string;
   brand?: string;
   notes?: string;
+  purpose?: string;
   active: boolean;
   startDate: string;
   endDate?: string;
@@ -72,6 +73,7 @@ export type CreateCabinetItemInput = {
   timing?: string;
   brand?: string;
   notes?: string;
+  purpose?: string;
   active?: boolean;
   startDate?: string;
   endDate?: string;

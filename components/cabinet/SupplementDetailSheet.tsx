@@ -35,6 +35,7 @@ interface EditDraft {
   timing: string;
   frequency: string;
   notes: string;
+  purpose: string;
 }
 
 export function SupplementDetailSheet({
@@ -46,7 +47,7 @@ export function SupplementDetailSheet({
   onStockChange,
   currentStock,
 }: Props) {
-  const [draft, setDraft] = useState<EditDraft>({ dosage: '', timing: '', frequency: '', notes: '' });
+  const [draft, setDraft] = useState<EditDraft>({ dosage: '', timing: '', frequency: '', notes: '', purpose: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [sideEffects, setSideEffects] = useState<SideEffectEntry[]>([]);
@@ -61,6 +62,7 @@ export function SupplementDetailSheet({
       timing: item.timing ?? '',
       frequency: item.frequency ?? '',
       notes: item.notes ?? '',
+      purpose: item.purpose ?? '',
     });
     setSaveError(null);
     seLoadedRef.current = false;
@@ -87,7 +89,8 @@ export function SupplementDetailSheet({
       draft.dosage !== (item.dosage ?? '') ||
       draft.timing !== (item.timing ?? '') ||
       draft.frequency !== (item.frequency ?? '') ||
-      draft.notes !== (item.notes ?? '')
+      draft.notes !== (item.notes ?? '') ||
+      draft.purpose !== (item.purpose ?? '')
     );
 
   const handleSave = async () => {
@@ -100,6 +103,7 @@ export function SupplementDetailSheet({
         timing: draft.timing || undefined,
         frequency: draft.frequency || undefined,
         notes: draft.notes || undefined,
+        purpose: draft.purpose || undefined,
       }, token);
       onUpdated(updated);
     } catch {
@@ -188,6 +192,12 @@ export function SupplementDetailSheet({
                 placeholder="Personal notes…"
                 multiline
                 onChangeText={(t) => setDraft((d) => ({ ...d, notes: t }))}
+              />
+              <DetailField
+                label="Purpose"
+                value={draft.purpose}
+                placeholder="e.g. better sleep, immune support"
+                onChangeText={(t) => setDraft((d) => ({ ...d, purpose: t }))}
               />
             </View>
 

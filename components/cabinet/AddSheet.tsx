@@ -74,6 +74,7 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
   const [frequency, setFrequency] = useState('');
   const [timing, setTiming] = useState('');
   const [status, setStatus] = useState<SupplementStatus>('active');
+  const [purpose, setPurpose] = useState('');
   const [saving, setSaving] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
   const [localSuggestions] = useState<string[]>(() => getRandomSuggestions(3));
@@ -94,6 +95,7 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
         setDosage(item.dosage ?? '');
         setFrequency(item.frequency ?? '');
         setTiming(item.timing ?? '');
+        setPurpose(item.purpose ?? '');
         setStatus(deriveStatus(item));
       } else {
         setName('');
@@ -101,6 +103,7 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
         setDosage('');
         setFrequency('');
         setTiming('');
+        setPurpose('');
         setStatus('active');
       }
       setShowSuggestions(false);
@@ -144,6 +147,7 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
         dosage: dosage.trim() || undefined,
         frequency: frequency.trim() || undefined,
         timing: timing.trim() || undefined,
+        purpose: purpose.trim() || undefined,
         active: statusFields.active,
         endDate: statusFields.endDate ?? undefined,
         source: 'user_input',
@@ -391,6 +395,20 @@ export function AddSheet({ visible, onClose, onSave, item }: Props) {
               />
             </View>
 
+            {/* Purpose */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Purpose <Text style={styles.optional}>(optional)</Text></Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. better sleep, immune support, post-workout"
+                placeholderTextColor={colors.text3}
+                value={purpose}
+                onChangeText={setPurpose}
+                maxLength={100}
+                testID="input-purpose"
+              />
+            </View>
+
             {/* Status selector */}
             <View style={styles.field}>
               <Text style={styles.label}>Status</Text>
@@ -533,6 +551,10 @@ const styles = StyleSheet.create({
   },
   required: {
     color: colors.danger,
+  },
+  optional: {
+    color: colors.text4,
+    fontWeight: '400',
   },
   input: {
     backgroundColor: colors.bg,
