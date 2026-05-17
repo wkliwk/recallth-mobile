@@ -40,6 +40,7 @@ import {
 import { getRecommendations, type Recommendation } from '../../services/recommendations';
 import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
+import { cancelSupplementReminder, getReminderTime, scheduleSupplementReminder } from '../../utils/reminderTimes';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 const CABINET_ORDER_KEY = 'recallth:cabinet-order';
@@ -165,6 +166,7 @@ export default function CabinetScreen() {
   const [showAddSheet, setShowAddSheet] = useState(openAdd === '1');
   const [reorderMode, setReorderMode] = useState(false);
   const [editingItem, setEditingItem] = useState<CabinetItem | null>(null);
+  const [editingReminderTime, setEditingReminderTime] = useState<string | null>(null);
   const [detailItem, setDetailItem] = useState<CabinetItem | null>(null);
   const [restockDismissed, setRestockDismissed] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -216,6 +218,14 @@ export default function CabinetScreen() {
 
       const activeItems = rawItems.filter((item) => deriveStatus(item) === 'active');
       const cards = activeItems.map((item) => apiItemToCard(item, interactions, evidenceScores));
+
+      // Attach stored reminder times
+      const reminderTimes = await Promise.all(
+        cards.map((c) => getReminderTime(c._id).catch(() => null)),
+      );
+      reminderTimes.forEach((rt, i) => {
+        if (rt && cards[i]) cards[i]!.reminderTime = rt;
+      });
 
       // Apply saved sort order
       const orderRaw = await storage.getItem(CABINET_ORDER_KEY).catch(() => null);
@@ -290,6 +300,11 @@ export default function CabinetScreen() {
       const order: string[] = orderRaw ? JSON.parse(orderRaw) : [];
       void storage.setItem(CABINET_ORDER_KEY, JSON.stringify([...order, newItem._id]));
 
+      // Schedule reminder if set
+      if (input.reminderTime) {
+        void scheduleSupplementReminder(newItem._id, newItem.name, input.reminderTime);
+      }
+
       // Show onboarding reminder nudge after first supplement is saved
       if (isFirstItem) {
         setShowReminderNudge(true);
@@ -327,6 +342,13 @@ export default function CabinetScreen() {
         ...s,
         items: s.items.map((item) => (item._id === updated._id ? card : item)),
       }));
+
+      // Update reminder: cancel old, schedule new (or just cancel if cleared)
+      if (input.reminderTime) {
+        void scheduleSupplementReminder(updated._id, updated.name, input.reminderTime);
+      } else {
+        void cancelSupplementReminder(updated._id);
+      }
     },
     [token, editingItem],
   );
@@ -359,6 +381,7 @@ export default function CabinetScreen() {
       // Optimistic removal.
       setState((s) => ({ ...s, items: s.items.filter((item) => item._id !== id) }));
       if (!token || id.startsWith('mock-')) return;
+      void cancelSupplementReminder(id);
       void deleteCabinetItem(id, token).catch(() => {
         // Reload to restore removed item if delete failed.
         void load(false);
@@ -399,6 +422,12 @@ export default function CabinetScreen() {
   const handleSelectRec = useCallback((rec: Recommendation) => {
     setPrefillRec(rec);
     setShowAddSheet(true);
+  }, []);
+
+  const handleOpenEdit = useCallback(async (source: CabinetItem) => {
+    const rt = await getReminderTime(source._id).catch(() => null);
+    setEditingReminderTime(rt);
+    setEditingItem(source);
   }, []);
 
   const completeOnboarding = useCallback(() => {
@@ -617,7 +646,7 @@ export default function CabinetScreen() {
                     isExpanded={expandedId === left._id}
                     onToggle={() => setExpandedId((prev) => (prev === left._id ? null : left._id))}
                     onDelete={() => handleDelete(left._id)}
-                    onEdit={left._source ? () => setEditingItem(left._source!) : undefined}
+                    onEdit={left._source ? () => { void handleOpenEdit(left._source!); } : undefined}
                     onUpdateStock={left._source ? (delta) => handleUpdateStock(left._id, delta) : undefined}
                     onViewDetail={left._source ? () => setDetailItem(left._source!) : undefined}
                   />
@@ -629,7 +658,7 @@ export default function CabinetScreen() {
                       isExpanded={expandedId === right._id}
                       onToggle={() => setExpandedId((prev) => (prev === right._id ? null : right._id))}
                       onDelete={() => handleDelete(right._id)}
-                      onEdit={right._source ? () => setEditingItem(right._source!) : undefined}
+                      onEdit={right._source ? () => { void handleOpenEdit(right._source!); } : undefined}
                       onUpdateStock={right._source ? (delta) => handleUpdateStock(right._id, delta) : undefined}
                       onViewDetail={right._source ? () => setDetailItem(right._source!) : undefined}
                     />
@@ -652,10 +681,11 @@ export default function CabinetScreen() {
       />
       <AddSheet
         visible={editingItem !== null}
-        onClose={() => setEditingItem(null)}
+        onClose={() => { setEditingItem(null); setEditingReminderTime(null); }}
         onSave={handleUpdate}
         item={editingItem}
         existingItems={state.items}
+        initialReminderTime={editingReminderTime}
       />
       {token !== null && (
         <SupplementDetailSheet

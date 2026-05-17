@@ -29,6 +29,10 @@ import {
 
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { getPermissionsAsync } from 'expo-notifications';
+import * as Linking from 'expo-linking';
+import { formatReminderTime } from '../../utils/reminderTimes';
 
 import { AiSuggestion, CabinetItem, CreateCabinetItemInput, LabelScanResult, SupplementStatus, SupplementType, aiLookupSupplement, deriveStatus, extractSupplementFromImage, statusToFields } from '../../services/cabinet';
 import { type Recommendation } from '../../services/recommendations';
@@ -44,6 +48,7 @@ type Props = {
   item?: CabinetItem | null;
   prefill?: Recommendation;
   existingItems?: { name: string }[];
+  initialReminderTime?: string | null;
 };
 
 type TypeOption = { value: SupplementType; label: string; icon: string };
@@ -71,7 +76,7 @@ function getRandomSuggestions(count: number): string[] {
   return shuffled.slice(0, count);
 }
 
-export function AddSheet({ visible, onClose, onSave, item, prefill, existingItems = [] }: Props) {
+export function AddSheet({ visible, onClose, onSave, item, prefill, existingItems = [], initialReminderTime }: Props) {
   const isEdit = Boolean(item);
   const token = useAuthStore((s) => s.token);
 
@@ -89,6 +94,9 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
   const [lookingUp, setLookingUp] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [labelScanning, setLabelScanning] = useState(false);
+  const [reminderTime, setReminderTime] = useState<Date | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [notifPermDenied, setNotifPermDenied] = useState(false);
 
   const nameInputRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
@@ -131,6 +139,17 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
         setTiming('');
         setPurpose('');
         setStatus('active');
+      }
+      // Restore reminder time from parent (loaded from storage for edits)
+      if (initialReminderTime) {
+        const [h, m] = initialReminderTime.split(':').map(Number);
+        if (!isNaN(h ?? NaN) && !isNaN(m ?? NaN)) {
+          const d = new Date();
+          d.setHours(h!, m!, 0, 0);
+          setReminderTime(d);
+        }
+      } else {
+        setReminderTime(null);
       }
       setShowSuggestions(false);
 
@@ -220,6 +239,9 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
         active: statusFields.active,
         endDate: statusFields.endDate ?? undefined,
         source: 'user_input',
+        reminderTime: reminderTime
+          ? `${reminderTime.getHours()}:${String(reminderTime.getMinutes()).padStart(2, '0')}`
+          : undefined,
       };
       await onSave(input);
       handleClose();
@@ -229,7 +251,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
     } finally {
       setSaving(false);
     }
-  }, [name, type, dosage, frequency, timing, status, onSave, handleClose]);
+  }, [name, type, dosage, frequency, timing, status, purpose, reminderTime, onSave, handleClose]);
 
   const handleNameChange = useCallback((text: string) => {
     setName(text);
@@ -474,6 +496,54 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
                 maxLength={100}
                 testID="input-timing"
               />
+            </View>
+
+            {/* Daily reminder */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Daily reminder <Text style={styles.optional}>(optional)</Text></Text>
+              {notifPermDenied ? (
+                <View style={styles.permDeniedBanner}>
+                  <Text style={styles.permDeniedText}>Enable notifications in Settings to use reminders</Text>
+                  <Pressable onPress={() => { void Linking.openSettings(); }}>
+                    <Text style={styles.permDeniedLink}>Open Settings</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={async () => {
+                    const { status } = await getPermissionsAsync();
+                    if (status !== 'granted') { setNotifPermDenied(true); return; }
+                    setShowTimePicker(true);
+                  }}
+                  style={styles.reminderRow}
+                  accessibilityRole="button"
+                  accessibilityLabel={reminderTime ? `Reminder set for ${formatReminderTime(`${reminderTime.getHours()}:${reminderTime.getMinutes()}`)}. Tap to change.` : 'Set a daily reminder'}
+                >
+                  <Text style={[styles.reminderText, !reminderTime && styles.reminderPlaceholder]}>
+                    {reminderTime
+                      ? formatReminderTime(`${reminderTime.getHours()}:${String(reminderTime.getMinutes()).padStart(2, '0')}`)
+                      : 'No reminder set'}
+                  </Text>
+                  {reminderTime && (
+                    <Pressable
+                      onPress={() => setReminderTime(null)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Clear reminder"
+                    >
+                      <Text style={styles.reminderClear}>✕</Text>
+                    </Pressable>
+                  )}
+                </Pressable>
+              )}
+              {showTimePicker && (
+                <DateTimePicker
+                  mode="time"
+                  value={reminderTime ?? new Date()}
+                  onChange={(_, d) => { setShowTimePicker(false); if (d) setReminderTime(d); }}
+                  display="spinner"
+                />
+              )}
             </View>
 
             {/* Purpose */}
@@ -821,6 +891,45 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     ...typography.body,
     color: colors.text3,
+  },
+  reminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.bg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 48,
+  },
+  reminderText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  reminderPlaceholder: {
+    color: colors.text3,
+  },
+  reminderClear: {
+    fontSize: 14,
+    color: colors.text3,
+    fontWeight: '600',
+  },
+  permDeniedBanner: {
+    backgroundColor: colors.warningLight,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  permDeniedText: {
+    ...typography.bodySmall,
+    color: colors.text2,
+  },
+  permDeniedLink: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: '600',
   },
   interactionBanner: {
     backgroundColor: colors.warningLight,

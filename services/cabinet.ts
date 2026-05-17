@@ -80,6 +80,8 @@ export type CreateCabinetItemInput = {
   startDate?: string;
   endDate?: string;
   source?: SupplementSource;
+  /** Local-only: daily reminder time in HH:mm format (not sent to backend). */
+  reminderTime?: string;
 };
 
 export type UpdateCabinetItemInput = Partial<CreateCabinetItemInput> & {
@@ -133,7 +135,9 @@ export async function createCabinetItem(
   input: CreateCabinetItemInput,
   token: string,
 ): Promise<CabinetItem> {
-  const res = await api.post<ApiResponse<CabinetItem>>('/cabinet', input, { token });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { reminderTime: _rt, ...apiInput } = input;
+  const res = await api.post<ApiResponse<CabinetItem>>('/cabinet', apiInput, { token });
   return res.data;
 }
 
