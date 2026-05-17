@@ -25,6 +25,7 @@ import {
   scheduleSmartReminders,
   scheduleWeeklySummaryNotification,
   type SupplementSchedule,
+  type StreakContext,
 } from '../../services/notifications';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseLogSheet } from '../../components/summary/DoseLogSheet';
@@ -221,7 +222,15 @@ export default function HomeScreen() {
         if (status === 'granted' && schedules.length > 0) {
           const weeklySummaryRaw = await storage.getItem('recallth:weekly-summary-enabled');
           const weeklySummaryEnabled = weeklySummaryRaw !== 'false';
-          void scheduleSmartReminders(schedules, nudgesEnabled)
+          const streakCtx: StreakContext | undefined = streakRes.status === 'fulfilled' ? {
+            streak: streakRes.value.currentStreak,
+            freezeActive: (streakRes.value.freezeTokens ?? 0) > 0,
+            missedYesterday:
+              yesterdayLogsRes.status === 'fulfilled' &&
+              yesterdayLogsRes.value.length === 0 &&
+              streakRes.value.lastLoggedDate === dayBeforeYesterday,
+          } : undefined;
+          void scheduleSmartReminders(schedules, nudgesEnabled, streakCtx)
             .then(() => scheduleWeeklySummaryNotification(token, weeklySummaryEnabled, entries.length > 0))
             .catch(() => {/* non-critical */});
         }
