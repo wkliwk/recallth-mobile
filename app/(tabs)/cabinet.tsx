@@ -603,6 +603,11 @@ export default function CabinetScreen() {
               ? state.items.find((x) => x._id === detailItem._id)?.stock
               : undefined
           }
+          otherItemNames={
+            detailItem
+              ? state.items.filter((x) => x._id !== detailItem._id).map((x) => x.name)
+              : []
+          }
         />
       )}
     </SafeAreaView>
