@@ -9,6 +9,11 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { seedProfile, seedSupplements } from '../../services/onboarding';
+import {
+  requestPermissions,
+  scheduleSmartReminders,
+  type SupplementSchedule,
+} from '../../services/notifications';
 import { useAuthStore } from '../../stores/auth';
 import { useOnboardingStore } from '../../stores/onboarding';
 import { colors, radius, spacing, typography } from '../../utils/theme';
@@ -47,6 +52,17 @@ export default function DoneScreen() {
             ),
             seedSupplements(cabinetItems, token),
           ]);
+        }
+        // Request notification permission at peak intent — after onboarding succeeds.
+        // Fire-and-forget: we route to tabs regardless of the response.
+        const permStatus = await requestPermissions().catch(() => 'denied' as const);
+        if (permStatus === 'granted') {
+          const schedules: SupplementSchedule[] = cabinetItems.length > 0
+            ? [{ time: '08:00', supplements: cabinetItems, blockKey: 'morning' }]
+            : [];
+          if (schedules.length > 0) {
+            await scheduleSmartReminders(schedules, true).catch(() => {/* non-critical */});
+          }
         }
       } finally {
         await markSeen();
