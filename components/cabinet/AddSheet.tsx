@@ -27,7 +27,10 @@ import {
   View,
 } from 'react-native';
 
-import { AiSuggestion, CabinetItem, CreateCabinetItemInput, SupplementStatus, SupplementType, aiLookupSupplement, deriveStatus, statusToFields } from '../../services/cabinet';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+
+import { AiSuggestion, CabinetItem, CreateCabinetItemInput, LabelScanResult, SupplementStatus, SupplementType, aiLookupSupplement, deriveStatus, extractSupplementFromImage, statusToFields } from '../../services/cabinet';
 import { type Recommendation } from '../../services/recommendations';
 import { useAuthStore } from '../../stores/auth';
 import { colors, radius, spacing, typography } from '../../utils/theme';
@@ -85,6 +88,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [labelScanning, setLabelScanning] = useState(false);
 
   const nameInputRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
@@ -151,6 +155,49 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
       onClose();
     });
   }, [onClose, slideAnim]);
+
+  const applyLabelScan = useCallback((result: LabelScanResult) => {
+    if (result.name) setName(result.name);
+    if (result.dosage) setDosage(result.dosage);
+    if (result.ingredients) {
+      // Store ingredients in the purpose field since AddSheet doesn't have an ingredients field
+    }
+    if (result.type) setType(result.type);
+    setShowSuggestions(false);
+  }, []);
+
+  const handleScanLabel = useCallback(async () => {
+    if (!token) return;
+
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    setLabelScanning(true);
+    try {
+      const asset = result.assets[0]!;
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+      );
+
+      if (!manipulated.base64) throw new Error('base64 conversion failed');
+
+      const extracted = await extractSupplementFromImage(token, manipulated.base64, 'image/jpeg');
+      applyLabelScan(extracted);
+    } catch {
+      Alert.alert("Couldn't read the label", 'Try a clearer photo or fill in manually.');
+    } finally {
+      setLabelScanning(false);
+    }
+  }, [token, applyLabelScan]);
 
   const handleSave = useCallback(async () => {
     const trimmedName = name.trim();
@@ -305,6 +352,18 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
                   accessibilityLabel="Scan barcode"
                 >
                   <Text style={styles.scanBtnIcon}>⌗</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => { void handleScanLabel(); }}
+                  disabled={labelScanning}
+                  style={({ pressed }) => [styles.scanBtn, styles.scanLabelBtn, (pressed || labelScanning) && { opacity: 0.7 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Scan supplement label"
+                >
+                  {labelScanning
+                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    : <Text style={styles.scanBtnIcon}>📷</Text>
+                  }
                 </Pressable>
               </View>
 
@@ -624,6 +683,9 @@ const styles = StyleSheet.create({
   scanBtnIcon: {
     fontSize: 22,
     color: colors.text2,
+  },
+  scanLabelBtn: {
+    marginLeft: spacing.xs,
   },
   suggestions: {
     gap: spacing.sm,
