@@ -14,6 +14,7 @@ import { requestPermissions, scheduleDailyReminders } from '../../services/notif
 import { fetchDailyBrief } from '../../services/insights';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
+import { MissedDoseChips } from '../../components/summary/MissedDoseChips';
 import { ScheduleSection } from '../../components/summary/ScheduleSection';
 import {
   MOCK_SUPPLEMENTS,
@@ -84,6 +85,7 @@ export default function HomeScreen() {
   const [milestoneDays, setMilestoneDays] = useState<number | null>(null);
   const [showNotifNudge, setShowNotifNudge] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [missedDismissed, setMissedDismissed] = useState<string[]>([]);
 
   const MILESTONES = [7, 30, 100];
 
@@ -240,6 +242,30 @@ export default function HomeScreen() {
     [token, supplements],
   );
 
+  const handleLogLate = useCallback(
+    (id: string) => {
+      const target = supplements.find((s) => s.id === id);
+      if (!target || !token) return;
+
+      setSupplements((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, taken: true } : s)),
+      );
+      setMissedDismissed((prev) => [...prev, id]);
+
+      void logDose(token, id, target.name, target.timeBlock, true).then((log) => {
+        setSupplements((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, doseLogId: log._id } : s)),
+        );
+      }).catch(() => {
+        setSupplements((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, taken: false } : s)),
+        );
+        setMissedDismissed((prev) => prev.filter((x) => x !== id));
+      });
+    },
+    [token, supplements],
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -338,6 +364,14 @@ export default function HomeScreen() {
             />
           ))}
         </View>
+
+        {/* Missed dose chips */}
+        <MissedDoseChips
+          supplements={supplements}
+          dismissed={missedDismissed}
+          onLogLate={handleLogLate}
+          onDismiss={(id) => setMissedDismissed((prev) => [...prev, id])}
+        />
 
         {/* Daily check-in */}
         {token !== null && (

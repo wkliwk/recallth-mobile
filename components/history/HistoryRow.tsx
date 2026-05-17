@@ -118,7 +118,14 @@ function DoseRow({ item }: { item: DoseEntry }): React.JSX.Element {
           <Text style={styles.title} numberOfLines={1}>
             {item.data.supplementName}
           </Text>
-          <Text style={styles.time}>{formatTime(item.timestamp)}</Text>
+          <View style={styles.timeRow}>
+            {item.data.late && (
+              <View style={styles.latePill}>
+                <Text style={styles.latePillText}>Late</Text>
+              </View>
+            )}
+            <Text style={styles.time}>{formatTime(item.timestamp)}</Text>
+          </View>
         </View>
         <Text style={styles.meta}>{slotLabel} dose logged</Text>
       </View>
@@ -200,6 +207,23 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.text3,
     flexShrink: 0,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+  },
+  latePill: {
+    backgroundColor: colors.warningLight,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  latePillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.warning,
   },
   preview: {
     ...typography.bodySmall,
