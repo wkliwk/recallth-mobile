@@ -26,11 +26,21 @@ export function DoseProgressCard({ taken, total }: DoseProgressCardProps) {
 
       {/* Progress bar */}
       <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as `${number}%` }]} />
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${Math.round(progress * 100)}%` as `${number}%` },
+            allDone && styles.progressFillDone,
+          ]}
+        />
       </View>
 
-      <Text style={styles.statusText}>
-        {allDone ? 'All done for today ✓' : `${total - taken} remaining`}
+      <Text style={[styles.statusText, allDone && styles.statusTextDone]}>
+        {allDone
+          ? 'All done for today ✓'
+          : total > 0
+            ? `${Math.round(progress * 100)}% · ${total - taken} remaining`
+            : 'No doses scheduled'}
       </Text>
     </View>
   );
@@ -89,10 +99,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.primary,
   },
+  progressFillDone: {
+    backgroundColor: colors.ok,
+  },
   statusText: {
     fontSize: 12,
     lineHeight: 16,
     color: colors.text2,
     marginTop: spacing.xs,
+  },
+  statusTextDone: {
+    color: colors.ok,
+    fontWeight: '600',
   },
 });
