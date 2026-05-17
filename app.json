@@ -4,6 +4,7 @@
     "slug": "recallth-mobile",
     "scheme": "recallth",
     "version": "1.0.0",
+    "description": "Recallth helps you build lasting supplement habits. Track your daily dose schedule, log what you've taken, chat with an AI health assistant for personalised guidance, and monitor your streak to stay consistent.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,12 +17,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.recallth.mobile",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSUserNotificationUsageDescription": "Recallth sends daily reminders to help you stay on track with your supplement schedule."
+        "NSUserNotificationUsageDescription": "Recallth sends daily reminders to help you stay on track with your supplement schedule.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.recallth.mobile",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
