@@ -11,6 +11,8 @@ import { useOnboardingStore } from '../stores/onboarding';
 import { useAppearanceStore } from '../stores/appearance';
 import {
   configureNotificationHandler,
+  flushPendingDoseLogs,
+  handleLogDoseResponse,
   handleSnoozeResponse,
   registerNotificationCategories,
 } from '../services/notifications';
@@ -85,6 +87,7 @@ function AuthGate() {
 export default function RootLayout() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const onboardingHydrated = useOnboardingStore((s) => s.isHydrated);
+  const token = useAuthStore((s) => s.token);
   const isDark = useIsDark();
   const router = useRouter();
   const notifResponseRef = useRef<ExpoNotifications.EventSubscription | null>(null);
@@ -92,13 +95,14 @@ export default function RootLayout() {
   const bothHydrated = isHydrated && onboardingHydrated;
 
   // Deep-link to Home when user taps a dose reminder notification.
-  // Also handles snooze action — reschedules the notification 30 min later.
+  // Handles LOG_DOSE "Taken" action (writes pending queue) and snooze reschedule.
   useEffect(() => {
     notifResponseRef.current = ExpoNotifications.addNotificationResponseReceivedListener(
       (response) => {
+        void handleLogDoseResponse(response);
         void handleSnoozeResponse(response);
 
-        if (response.actionIdentifier === 'SNOOZE') return;
+        if (response.actionIdentifier === 'SNOOZE' || response.actionIdentifier === 'TAKE') return;
 
         const screen = response.notification.request.content.data?.screen;
         if (screen === 'home') {
@@ -112,6 +116,13 @@ export default function RootLayout() {
       notifResponseRef.current?.remove();
     };
   }, [router]);
+
+  // Flush pending dose logs when the app foregrounds with a valid token.
+  useEffect(() => {
+    if (token) {
+      void flushPendingDoseLogs(token);
+    }
+  }, [token]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -4,6 +4,12 @@
  */
 
 jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+jest.mock('expo', () => ({ isRunningInExpoGo: jest.fn(() => false) }));
+jest.mock('../../services/storage', () => ({
+  getItem: jest.fn().mockResolvedValue(null),
+  setItem: jest.fn().mockResolvedValue(undefined),
+  deleteItem: jest.fn().mockResolvedValue(undefined),
+}));
 
 import * as ExpoNotifications from 'expo-notifications';
 import { getDoseLogsRange } from '../../services/schedule';
