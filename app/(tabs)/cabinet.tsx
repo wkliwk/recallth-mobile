@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import {
   ActivityIndicator,
   Alert,
@@ -38,6 +39,8 @@ import { getRecommendations, type Recommendation } from '../../services/recommen
 import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
+
+const CABINET_ORDER_KEY = 'recallth:cabinet-order';
 
 // ─── Mock fallback (unauthenticated / demo) ───────────────────────────────────
 
@@ -148,6 +151,7 @@ export default function CabinetScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { openAdd } = useLocalSearchParams<{ openAdd?: string }>();
   const [showAddSheet, setShowAddSheet] = useState(openAdd === '1');
+  const [reorderMode, setReorderMode] = useState(false);
   const [editingItem, setEditingItem] = useState<CabinetItem | null>(null);
   const [detailItem, setDetailItem] = useState<CabinetItem | null>(null);
   const [restockDismissed, setRestockDismissed] = useState(false);
@@ -196,8 +200,21 @@ export default function CabinetScreen() {
       const activeItems = rawItems.filter((item) => deriveStatus(item) === 'active');
       const cards = activeItems.map((item) => apiItemToCard(item, interactions, evidenceScores));
 
+      // Apply saved sort order
+      const orderRaw = await storage.getItem(CABINET_ORDER_KEY).catch(() => null);
+      let orderedCards = cards;
+      if (orderRaw) {
+        try {
+          const order: string[] = JSON.parse(orderRaw);
+          orderedCards = [
+            ...order.map((id) => cards.find((c) => c._id === id)).filter(Boolean) as typeof cards,
+            ...cards.filter((c) => !order.includes(c._id)),
+          ];
+        } catch { /* use original order */ }
+      }
+
       setState({
-        items: cards,
+        items: orderedCards,
         restockAlerts,
         loading: false,
         refreshing: false,
@@ -246,7 +263,11 @@ export default function CabinetScreen() {
         getEvidenceScores(token).catch(() => [] as EvidenceScore[]),
       ]);
       const card = apiItemToCard(newItem, interactions, evidenceScores);
-      setState((s) => ({ ...s, items: [card, ...s.items] }));
+      setState((s) => ({ ...s, items: [...s.items, card] }));
+      // Append new item to saved order
+      const orderRaw = await storage.getItem(CABINET_ORDER_KEY).catch(() => null);
+      const order: string[] = orderRaw ? JSON.parse(orderRaw) : [];
+      void storage.setItem(CABINET_ORDER_KEY, JSON.stringify([...order, newItem._id]));
 
       // Alert if the newly added item has any interactions
       const newItemConflicts = interactions.filter(
@@ -405,14 +426,30 @@ export default function CabinetScreen() {
             </Text>
             <Text style={styles.headerTitle}>Cabinet</Text>
           </View>
-          <Pressable
-            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Add supplement"
-            onPress={() => setShowAddSheet(true)}
-          >
-            <Text style={styles.addButtonText}>+ Add</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            {activeCount > 1 && !search && (
+              <Pressable
+                style={({ pressed }) => [styles.reorderBtn, reorderMode && styles.reorderBtnActive, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+                accessibilityLabel={reorderMode ? 'Done reordering' : 'Reorder supplements'}
+                onPress={() => setReorderMode((v) => !v)}
+              >
+                <Text style={[styles.reorderBtnText, reorderMode && styles.reorderBtnTextActive]}>
+                  {reorderMode ? 'Done' : '⇅ Reorder'}
+                </Text>
+              </Pressable>
+            )}
+            {!reorderMode && (
+              <Pressable
+                style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Add supplement"
+                onPress={() => setShowAddSheet(true)}
+              >
+                <Text style={styles.addButtonText}>+ Add</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {/* Error banner */}
@@ -477,8 +514,33 @@ export default function CabinetScreen() {
           <FirstRunNudge onAdd={() => setShowAddSheet(true)} />
         )}
 
+        {/* Reorder mode — single column DraggableFlatList */}
+        {reorderMode && state.items.length > 0 && (
+          <DraggableFlatList
+            data={state.items}
+            keyExtractor={(item) => item._id}
+            onDragEnd={({ data }) => {
+              setState((s) => ({ ...s, items: data }));
+              void storage.setItem(CABINET_ORDER_KEY, JSON.stringify(data.map((d) => d._id)));
+            }}
+            renderItem={({ item, drag, isActive }: RenderItemParams<ApiItem>) => (
+              <Pressable
+                onLongPress={drag}
+                style={[styles.reorderRow, isActive && styles.reorderRowActive]}
+                accessibilityRole="none"
+                accessibilityLabel={`${item.name} — long press to drag`}
+              >
+                <Text style={styles.reorderHandle}>☰</Text>
+                <Text style={styles.reorderName}>{item.name}</Text>
+                <Text style={styles.reorderDose}>{item.dose}</Text>
+              </Pressable>
+            )}
+            containerStyle={{ marginHorizontal: spacing.screenPad }}
+          />
+        )}
+
         {/* Grid */}
-        {filtered.length > 0 ? (
+        {!reorderMode && filtered.length > 0 ? (
           <View style={styles.grid}>
             {rows.map(([left, right]) => (
               <View key={left._id} style={styles.gridRow}>
@@ -587,6 +649,47 @@ const styles = StyleSheet.create({
   },
   addButtonPressed: { opacity: 0.85 },
   addButtonText: { ...typography.bodyStrong, fontSize: 14, color: '#ffffff' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  reorderBtn: {
+    height: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  reorderBtnActive: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary + '40',
+  },
+  reorderBtnText: { fontSize: 13, fontWeight: '600', color: colors.text2 },
+  reorderBtnTextActive: { color: colors.primary },
+  reorderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.sm,
+    gap: spacing.md,
+  },
+  reorderRowActive: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary + '40',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  reorderHandle: { fontSize: 18, color: colors.text3 },
+  reorderName: { ...typography.bodyStrong, color: colors.text, flex: 1 },
+  reorderDose: { ...typography.caption, color: colors.text3 },
 
   errorBanner: {
     backgroundColor: colors.dangerLight,
