@@ -23,12 +23,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DateGroupHeader } from '../../components/history/DateGroupHeader';
+import { EditDoseSheet } from '../../components/history/EditDoseSheet';
 import { FilterChip, FilterValue } from '../../components/history/FilterChip';
 import { HistoryRow } from '../../components/history/HistoryRow';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonRow } from '../../components/ui/SkeletonRow';
 import { AnyHistoryEntry, DoseEntry, TimelineEntry, fetchTimeline } from '../../services/history';
-import { getDoseLogsRange, unlogDose } from '../../services/schedule';
+import { DoseLogEntry, EditDoseLogInput, editDoseLog, getDoseLogsRange, unlogDose } from '../../services/schedule';
 import { getItem } from '../../services/storage';
 import { useAuthStore } from '../../stores/auth';
 import { groupByDate } from '../../utils/dateGrouping';
@@ -103,6 +104,8 @@ export default function HistoryScreen(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingEntry, setEditingEntry] = useState<DoseLogEntry | null>(null);
+  const [editedLogIds, setEditedLogIds] = useState<Set<string>>(new Set());
 
   // Track whether initial load has completed
   const initialLoadDone = useRef(false);
@@ -258,6 +261,31 @@ export default function HistoryScreen(): React.JSX.Element {
     [token, doseEntries],
   );
 
+  const handleEditDose = useCallback(
+    (logId: string) => {
+      const entry = doseEntries.find((e) => e.data._id === logId);
+      if (entry) setEditingEntry(entry.data);
+    },
+    [doseEntries],
+  );
+
+  const handleSaveEdit = useCallback(
+    async (logId: string, takenAt: string, notes: string) => {
+      if (!token) return;
+      const input: EditDoseLogInput = { takenAt, notes };
+      const updated = await editDoseLog(token, logId, input);
+      setDoseEntries((prev) =>
+        prev.map((e) =>
+          e.data._id === logId
+            ? { ...e, timestamp: updated.takenAt, data: { ...e.data, takenAt: updated.takenAt, notes: updated.notes } }
+            : e,
+        ),
+      );
+      setEditedLogIds((prev) => new Set(prev).add(logId));
+    },
+    [token],
+  );
+
   // ── Render item ──────────────────────────────────────────────────────
 
   const renderItem = useCallback(
@@ -270,11 +298,13 @@ export default function HistoryScreen(): React.JSX.Element {
           item={item.entry}
           onPressChatItem={handleChatPress}
           onDeleteDose={handleDeleteDose}
+          onEditDose={handleEditDose}
           doseNotes={doseNotes}
+          editedLogIds={editedLogIds}
         />
       );
     },
-    [handleChatPress, handleDeleteDose, doseNotes],
+    [handleChatPress, handleDeleteDose, handleEditDose, doseNotes, editedLogIds],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.id, []);
@@ -368,6 +398,13 @@ export default function HistoryScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <EditDoseSheet
+        entry={editingEntry}
+        visible={editingEntry !== null}
+        onSave={handleSaveEdit}
+        onClose={() => setEditingEntry(null)}
+      />
     </SafeAreaView>
   );
 }
