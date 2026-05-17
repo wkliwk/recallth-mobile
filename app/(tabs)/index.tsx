@@ -17,6 +17,7 @@ import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
+import { DoseLogSheet } from '../../components/summary/DoseLogSheet';
 import { DoseProgressCard } from '../../components/summary/DoseProgressCard';
 import { MissedDoseChips } from '../../components/summary/MissedDoseChips';
 import { ScheduleSection } from '../../components/summary/ScheduleSection';
@@ -102,6 +103,7 @@ export default function HomeScreen() {
   const [effectPrompt, setEffectPrompt] = useState<{ doseLogId: string; supplementId: string; supplementName: string } | null>(null);
   const effectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingBadge, setPendingBadge] = useState<string | null>(null);
+  const [pendingDoseLog, setPendingDoseLog] = useState<SupplementEntry | null>(null);
 
   const MILESTONES = [...STREAK_MILESTONES];
 
@@ -263,54 +265,77 @@ export default function HomeScreen() {
 
       const becameTaken = !target.taken;
 
-      // Optimistic update.
+      // For untaken supplements, open the note sheet instead of logging directly
+      if (becameTaken) {
+        setPendingDoseLog(target);
+        return;
+      }
+
+      // Optimistic update for undo (taken → not taken only from here).
       setSupplements((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, taken: becameTaken, doseLogId: becameTaken ? s.doseLogId : undefined } : s)),
+        prev.map((s) => (s.id === id ? { ...s, taken: false, doseLogId: undefined } : s)),
       );
 
       if (!token) return;
 
-      if (becameTaken) {
-        // Log the specific dose + call streak endpoint on first mark of the day.
-        void logDose(token, id, target.name, target.timeBlock).then(async (log) => {
+      // Undo the dose log.
+      if (target.doseLogId) {
+        void unlogDose(token, target.doseLogId).catch(() => {
           setSupplements((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, doseLogId: log._id } : s)),
-          );
-          // Prompt for effect rating 500ms after logging
-          if (effectTimerRef.current) clearTimeout(effectTimerRef.current);
-          effectTimerRef.current = setTimeout(() => {
-            setEffectPrompt({ doseLogId: log._id, supplementId: id, supplementName: target.name });
-          }, 500);
-          // Show notification nudge after first-ever dose log if permission not yet granted.
-          const nudgeKey = `recallth:notif-nudge-shown:${userId ?? 'anon'}`;
-          const alreadyShown = await storage.getItem(nudgeKey);
-          if (!alreadyShown) {
-            const { status } = await import('expo-notifications').then((m) =>
-              m.getPermissionsAsync(),
-            );
-            if (status !== 'granted') {
-              await storage.setItem(nudgeKey, 'true');
-              setShowNotifNudge(true);
-            }
-          }
-        }).catch(() => {
-          setSupplements((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, taken: false, doseLogId: undefined } : s)),
+            prev.map((s) => (s.id === id ? { ...s, taken: true } : s)),
           );
         });
+      }
+    },
+    [token, supplements],
+  );
 
+  const performDoseLog = useCallback(
+    async (supplement: SupplementEntry, note: string) => {
+      if (!token) { setPendingDoseLog(null); return; }
+      const { id, name, timeBlock } = supplement;
+
+      // Optimistic update
+      setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, taken: true } : s));
+      setPendingDoseLog(null);
+
+      try {
+        const log = await logDose(token, id, name, timeBlock, false, note || undefined);
+        setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, doseLogId: log._id } : s));
+
+        // Save note locally
+        if (note.trim()) {
+          void storage.setItem(`recallth:dose-notes:${log._id}`, note.trim());
+        }
+
+        // Prompt for effect rating 500ms after logging
+        if (effectTimerRef.current) clearTimeout(effectTimerRef.current);
+        effectTimerRef.current = setTimeout(() => {
+          setEffectPrompt({ doseLogId: log._id, supplementId: id, supplementName: name });
+        }, 500);
+
+        // Show notification nudge after first-ever dose log
+        const nudgeKey = `recallth:notif-nudge-shown:${userId ?? 'anon'}`;
+        const alreadyShown = await storage.getItem(nudgeKey);
+        if (!alreadyShown) {
+          const { status } = await import('expo-notifications').then((m) => m.getPermissionsAsync());
+          if (status !== 'granted') {
+            await storage.setItem(nudgeKey, 'true');
+            setShowNotifNudge(true);
+          }
+        }
+
+        // Streak + badge check
         const now = Date.now();
         if (now - lastLogAt.current >= 500) {
           lastLogAt.current = now;
           void logIntakeToday(token).then(async (result) => {
             const streak = result.currentStreak;
             if (!userId) return;
-            // Check for newly earned streak badges
             const badgeRaw = await storage.getItem('recallth:earned_badges');
             let earned: EarnedBadge[] = [];
             try { if (badgeRaw) earned = JSON.parse(badgeRaw); } catch { /* ignore */ }
             const earnedIds = new Set(earned.map((b) => b.id));
-
             const newBadges: EarnedBadge[] = [];
             for (const m of MILESTONES) {
               const badgeId = streakBadgeId(m);
@@ -321,21 +346,15 @@ export default function HomeScreen() {
             if (newBadges.length > 0) {
               const updated = [...earned, ...newBadges];
               await storage.setItem('recallth:earned_badges', JSON.stringify(updated));
-              // Show the highest milestone first
               setPendingBadge(newBadges[newBadges.length - 1].id);
             }
-          }).catch(() => {/* streak failure is non-critical */});
+          }).catch(() => {/* non-critical */});
         }
-      } else if (target.doseLogId) {
-        // Undo the dose log.
-        void unlogDose(token, target.doseLogId).catch(() => {
-          setSupplements((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, taken: true } : s)),
-          );
-        });
+      } catch {
+        setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, taken: false, doseLogId: undefined } : s));
       }
     },
-    [token, supplements],
+    [token, userId, MILESTONES, effectTimerRef],
   );
 
   const handleLogLate = useCallback(
@@ -640,6 +659,14 @@ export default function HomeScreen() {
         onSubmit={handleEffectSubmit}
         onSkip={handleEffectSkip}
       />
+
+      {pendingDoseLog && (
+        <DoseLogSheet
+          supplement={pendingDoseLog}
+          onLog={(note) => { void performDoseLog(pendingDoseLog, note); }}
+          onCancel={() => setPendingDoseLog(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
