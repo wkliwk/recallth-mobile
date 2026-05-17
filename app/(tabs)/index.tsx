@@ -14,6 +14,8 @@ import { EffectRatingSheet, type EffectRatings } from '../../components/summary/
 import { BadgeCelebrationModal } from '../../components/summary/BadgeCelebrationModal';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
+import { RecoveryBanner } from '../../components/home/RecoveryBanner';
+import { RecoverySheet } from '../../components/home/RecoverySheet';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
@@ -104,6 +106,8 @@ export default function HomeScreen() {
   const effectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingBadge, setPendingBadge] = useState<string | null>(null);
   const [pendingDoseLog, setPendingDoseLog] = useState<SupplementEntry | null>(null);
+  const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
+  const [showRecoverySheet, setShowRecoverySheet] = useState(false);
 
   const MILESTONES = [...STREAK_MILESTONES];
 
@@ -119,9 +123,11 @@ export default function HomeScreen() {
       else if (!isSilent) setLoading(true);
 
       const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const dayBeforeYesterday = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-      const [supplementsRes, briefRes, doseLogsRes, journalRes, interactionsRes, restockRes, streakRes, recentLogsRes] = await Promise.allSettled([
+      const [supplementsRes, briefRes, doseLogsRes, journalRes, interactionsRes, restockRes, streakRes, recentLogsRes, yesterdayLogsRes] = await Promise.allSettled([
         listCabinetItems(token),
         fetchDailyBrief(token),
         getTodayDoseLogs(token),
@@ -130,6 +136,7 @@ export default function HomeScreen() {
         getRestockAlerts(token),
         getStreak(token),
         getDoseLogsRange(token, fourteenDaysAgo, today),
+        getDoseLogsRange(token, yesterday, yesterday),
       ]);
 
       if (supplementsRes.status === 'fulfilled') {
@@ -186,6 +193,19 @@ export default function HomeScreen() {
 
       if (streakRes.status === 'fulfilled') {
         setCurrentStreak(streakRes.value.currentStreak);
+      }
+
+      // Recovery banner: show if user missed exactly yesterday (last logged 2 days ago)
+      if (
+        !isRefresh &&
+        yesterdayLogsRes.status === 'fulfilled' &&
+        yesterdayLogsRes.value.length === 0 &&
+        supplementsRes.status === 'fulfilled' &&
+        supplementsRes.value.length > 0 &&
+        streakRes.status === 'fulfilled' &&
+        streakRes.value.lastLoggedDate === dayBeforeYesterday
+      ) {
+        setShowRecoveryBanner(true);
       }
 
       if (recentLogsRes.status === 'fulfilled' && supplementsRes.status === 'fulfilled') {
@@ -472,6 +492,34 @@ export default function HomeScreen() {
     setEffectPrompt(null);
   }, []);
 
+  const handleRecoveryConfirm = useCallback(
+    async (selectedIds: string[]) => {
+      if (!token) return;
+      setShowRecoverySheet(false);
+      setShowRecoveryBanner(false);
+
+      const yesterdayNoon = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      yesterdayNoon.setHours(12, 0, 0, 0);
+      const takenAt = yesterdayNoon.toISOString();
+
+      await Promise.allSettled(
+        selectedIds.map((id) => {
+          const supp = supplements.find((s) => s.id === id);
+          if (!supp) return Promise.resolve();
+          return logDose(token, id, supp.name, supp.timeBlock, false, undefined, takenAt, true);
+        }),
+      );
+
+      try {
+        const newStreak = await getStreak(token);
+        setCurrentStreak(newStreak.currentStreak);
+      } catch {
+        // non-critical
+      }
+    },
+    [token, supplements],
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -573,6 +621,14 @@ export default function HomeScreen() {
           />
         ))}
 
+        {/* Streak recovery banner */}
+        {showRecoveryBanner && (
+          <RecoveryBanner
+            onRecover={() => setShowRecoverySheet(true)}
+            onDismiss={() => setShowRecoveryBanner(false)}
+          />
+        )}
+
         {/* Empty state when cabinet is empty (after load) */}
         {cabinetItems.length === 0 && (
           <FirstRunNudge
@@ -665,6 +721,19 @@ export default function HomeScreen() {
           supplement={pendingDoseLog}
           onLog={(note) => { void performDoseLog(pendingDoseLog, note); }}
           onCancel={() => setPendingDoseLog(null)}
+        />
+      )}
+
+      {showRecoverySheet && (
+        <RecoverySheet
+          items={supplements}
+          yesterdayLabel={new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          })}
+          onConfirm={(selectedIds) => { void handleRecoveryConfirm(selectedIds); }}
+          onCancel={() => setShowRecoverySheet(false)}
         />
       )}
     </SafeAreaView>
