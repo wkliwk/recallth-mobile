@@ -83,12 +83,12 @@ export function AddBloodworkSheet({ visible, token, onClose, onSaved }: Props) {
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Pressable style={styles.backdrop} onPress={handleClose} />
+        <Pressable style={styles.backdrop} onPress={handleClose} accessibilityRole="button" accessibilityLabel="Dismiss" />
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.titleRow}>
             <Text style={styles.title}>Add Blood Marker</Text>
-            <Pressable onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Pressable onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Close">
               <Text style={styles.closeBtn}>✕</Text>
             </Pressable>
           </View>

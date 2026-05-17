@@ -18,7 +18,7 @@ interface Props {
 export function PickerSheet({ visible, title, options, selected, onSelect, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss" />
       <View style={styles.sheet}>
         <View style={styles.handle} />
         <Text style={styles.title}>{title}</Text>

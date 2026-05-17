@@ -504,7 +504,7 @@ export function AddSheet({ visible, onClose, onSave, item, prefill, existingItem
               {notifPermDenied ? (
                 <View style={styles.permDeniedBanner}>
                   <Text style={styles.permDeniedText}>Enable notifications in Settings to use reminders</Text>
-                  <Pressable onPress={() => { void Linking.openSettings(); }}>
+                  <Pressable onPress={() => { void Linking.openSettings(); }} accessibilityRole="link" accessibilityLabel="Open Settings to enable notifications">
                     <Text style={styles.permDeniedLink}>Open Settings</Text>
                   </Pressable>
                 </View>
