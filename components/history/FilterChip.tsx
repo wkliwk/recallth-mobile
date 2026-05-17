@@ -3,10 +3,11 @@
  * Variants: All / Chats / Cabinet / Doses
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 export type FilterValue = 'all' | 'conversation' | 'cabinet_change' | 'profile_change' | 'dose';
 
@@ -18,6 +19,8 @@ interface Props {
 }
 
 export function FilterChip({ label, value, active, onPress }: Props): React.JSX.Element {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable
       style={({ pressed }) => [
@@ -35,30 +38,31 @@ export function FilterChip({ label, value, active, onPress }: Props): React.JSX.
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: c.borderStrong,
     marginRight: spacing.sm,
   },
   chipActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primaryMid,
+    backgroundColor: c.primaryLight,
+    borderColor: c.primaryMid,
   },
   chipPressed: {
     opacity: 0.8,
   },
   label: {
     ...typography.bodySmall,
-    color: colors.text2,
+    color: c.text2,
     fontWeight: '500',
   },
   labelActive: {
-    color: colors.primary,
+    color: c.primary,
     fontWeight: '600',
   },
-});
+});}

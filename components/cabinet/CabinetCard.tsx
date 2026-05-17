@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { formatReminderTime } from '../../utils/reminderTimes';
 import { EvidenceBar } from './EvidenceBar';
 import { SideEffectSheet } from './SideEffectSheet';
@@ -52,6 +53,8 @@ interface CabinetCardProps {
 }
 
 export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUpdateStock, onViewDetail }: CabinetCardProps) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
   const [sideEffectSheetVisible, setSideEffectSheetVisible] = useState(false);
@@ -337,7 +340,7 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
               disabled={loadingResearch}
             >
               {loadingResearch
-                ? <ActivityIndicator size="small" color={colors.primary} />
+                ? <ActivityIndicator size="small" color={c.primary} />
                 : <Text style={styles.actionBtnText}>Research</Text>}
             </Pressable>
             <Pressable
@@ -364,12 +367,13 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -378,7 +382,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   cardExpanded: {
-    borderColor: colors.primary,
+    borderColor: c.primary,
   },
   cardPressed: {
     opacity: 0.92,
@@ -392,16 +396,16 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 12,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   avatarLetter: {
     fontSize: 22,
-    color: colors.text2,
+    color: c.text2,
     fontWeight: '600',
   },
   info: {
@@ -416,18 +420,18 @@ const styles = StyleSheet.create({
   name: {
     ...typography.bodyStrong,
     fontSize: 15,
-    color: colors.text,
+    color: c.text,
     flex: 1,
   },
   dose: {
     fontSize: 12,
-    color: colors.text2,
+    color: c.text2,
     marginTop: 3,
     fontWeight: '400',
   },
   reminderBadge: {
     fontSize: 11,
-    color: colors.text3,
+    color: c.text3,
     marginTop: 3,
     fontWeight: '500',
   },
@@ -435,7 +439,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.warningLight,
+    backgroundColor: c.warningLight,
     borderRadius: radius.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
@@ -445,16 +449,16 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.warning,
+    backgroundColor: c.warning,
   },
   conflictPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.warning,
+    color: c.warning,
   },
 
   pausedPill: {
-    backgroundColor: colors.infoLight,
+    backgroundColor: c.infoLight,
     borderRadius: radius.full,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -464,7 +468,7 @@ const styles = StyleSheet.create({
   pausedPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.info,
+    color: c.info,
   },
 
   // Expanded panel
@@ -473,7 +477,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginBottom: spacing.md,
   },
   statsRow: {
@@ -486,14 +490,14 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: colors.text2,
+    color: c.text2,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   statValue: {
     ...typography.bodyStrong,
     fontSize: 13,
-    color: colors.text,
+    color: c.text,
     marginTop: 2,
   },
   stockRow: {
@@ -511,15 +515,15 @@ const styles = StyleSheet.create({
     minWidth: 24,
     paddingHorizontal: spacing.xs,
     borderRadius: radius.sm,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperBtnAdd: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary + '60',
+    backgroundColor: c.primaryLight,
+    borderColor: c.primary + '60',
   },
   stepperBtnPressed: {
     opacity: 0.6,
@@ -527,53 +531,53 @@ const styles = StyleSheet.create({
   stepperBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.text2,
+    color: c.text2,
     lineHeight: 16,
   },
   stepperBtnAddText: {
-    color: colors.primary,
+    color: c.primary,
   },
   conflictNote: {
     marginTop: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.warningLight,
+    backgroundColor: c.warningLight,
     borderRadius: radius.md,
   },
   conflictNoteText: {
     fontSize: 13,
-    color: colors.warning,
+    color: c.warning,
     lineHeight: 18,
   },
   researchSection: {
     marginTop: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   researchLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.text3,
+    color: c.text3,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.xs,
   },
   researchText: {
     fontSize: 13,
-    color: colors.text,
+    color: c.text,
     lineHeight: 18,
   },
   researchMeta: {
     fontSize: 12,
-    color: colors.text2,
+    color: c.text2,
     marginTop: spacing.xs,
     lineHeight: 17,
   },
   researchCautions: {
     fontSize: 12,
-    color: colors.warning,
+    color: c.warning,
     marginTop: spacing.xs,
     lineHeight: 17,
   },
@@ -585,21 +589,21 @@ const styles = StyleSheet.create({
   actionBtn: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.cardSolid,
+    backgroundColor: c.cardSolid,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   actionBtnDanger: {
-    backgroundColor: colors.dangerLight,
-    borderColor: colors.dangerMid,
+    backgroundColor: c.dangerLight,
+    borderColor: c.dangerMid,
   },
   actionBtnDetail: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary + '40',
+    backgroundColor: c.primaryLight,
+    borderColor: c.primary + '40',
   },
   actionBtnTextDetail: {
-    color: colors.primary,
+    color: c.primary,
   },
   actionBtnPressed: {
     opacity: 0.7,
@@ -607,32 +611,32 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.text,
+    color: c.text,
   },
   actionBtnTextDanger: {
-    color: colors.danger,
+    color: c.danger,
   },
 
   // Deep research
   deepResearchSection: {
     marginTop: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.primary + '40',
+    borderColor: c.primary + '40',
   },
   deepResearchLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.primary,
+    color: c.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.xs,
   },
   deepResearchSummary: {
     fontSize: 13,
-    color: colors.text,
+    color: c.text,
     lineHeight: 18,
   },
   deepResearchMeta: {
@@ -643,11 +647,11 @@ const styles = StyleSheet.create({
   },
   deepResearchMetaText: {
     fontSize: 12,
-    color: colors.text2,
+    color: c.text2,
   },
   deepResearchCautions: {
     fontSize: 12,
-    color: colors.warning,
+    color: c.warning,
     marginTop: spacing.xs,
     lineHeight: 17,
   },
@@ -658,20 +662,20 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   sourceChip: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   sourceChipText: {
     fontSize: 10,
-    color: colors.text3,
+    color: c.text3,
   },
   researchErrorText: {
     fontSize: 12,
-    color: colors.text3,
+    color: c.text3,
     marginTop: spacing.sm,
     fontStyle: 'italic',
   },
@@ -680,22 +684,22 @@ const styles = StyleSheet.create({
   sideEffectsSection: {
     marginTop: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.warningLight,
+    backgroundColor: c.warningLight,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.warning + '30',
+    borderColor: c.warning + '30',
   },
   sideEffectsLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.warning,
+    color: c.warning,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
   },
   sideEffectsEmpty: {
     fontSize: 12,
-    color: colors.text3,
+    color: c.text3,
     fontStyle: 'italic',
   },
   sideEffectRow: {
@@ -708,7 +712,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.warning + '30',
+    backgroundColor: c.warning + '30',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -716,7 +720,7 @@ const styles = StyleSheet.create({
   sideEffectRatingText: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.warning,
+    color: c.warning,
   },
   sideEffectInfo: {
     flex: 1,
@@ -726,12 +730,12 @@ const styles = StyleSheet.create({
   },
   sideEffectSymptom: {
     fontSize: 12,
-    color: colors.text,
+    color: c.text,
     flex: 1,
   },
   sideEffectDate: {
     fontSize: 11,
-    color: colors.text3,
+    color: c.text3,
     marginLeft: spacing.xs,
   },
-});
+});}

@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { type SupplementEntry } from './mockData';
 import { SupplementRow } from './SupplementRow';
 
@@ -18,6 +20,8 @@ type ScheduleSectionProps = {
  * Renders nothing when the section has no items.
  */
 export function ScheduleSection({ label, items, onToggle, onLogAll, onSwipeLog, onSwipeUnlog }: ScheduleSectionProps) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   if (items.length === 0) return null;
 
   const unloggedCount = items.filter((s) => !s.taken).length;
@@ -63,43 +67,44 @@ export function ScheduleSection({ label, items, onToggle, onLogAll, onSwipeLog, 
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
     paddingHorizontal: spacing.xl,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   sectionLabel: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: c.text,
   },
   logAllBtn: {
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
     borderRadius: radius.full,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
     borderWidth: 1,
-    borderColor: colors.primary + '40',
+    borderColor: c.primary + '40',
   },
   logAllBtnPartial: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warning + '50',
+    backgroundColor: c.warningLight,
+    borderColor: c.warning + '50',
   },
   logAllText: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.primary,
+    color: c.primary,
   },
   allDoneLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.ok,
+    color: c.ok,
   },
-});
+});}

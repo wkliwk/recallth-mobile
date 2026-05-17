@@ -7,7 +7,7 @@
  * - Multiline TextInput expands up to 5 lines, then scrolls.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -20,7 +20,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,8 @@ export const ChatComposer = React.memo(function ChatComposer({
   isLoading = false,
   placeholder = 'Ask anything about your supplements...',
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [text, setText] = useState('');
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
@@ -68,7 +71,7 @@ export const ChatComposer = React.memo(function ChatComposer({
             value={text}
             onChangeText={setText}
             placeholder={placeholder}
-            placeholderTextColor={colors.text3}
+            placeholderTextColor={c.text3}
             multiline
             maxLength={4000}
             numberOfLines={1}
@@ -91,7 +94,7 @@ export const ChatComposer = React.memo(function ChatComposer({
             accessibilityLabel="Send message"
           >
             {isLoading ? (
-              <ActivityIndicator size="small" color={colors.surface} />
+              <ActivityIndicator size="small" color={c.surface} />
             ) : (
               <Text style={styles.sendIcon}>↑</Text>
             )}
@@ -104,11 +107,12 @@ export const ChatComposer = React.memo(function ChatComposer({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.screenPad,
   },
@@ -121,26 +125,26 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     ...typography.body,
-    color: colors.text,
+    color: c.text,
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   sendButtonDisabled: {
-    backgroundColor: colors.text4,
+    backgroundColor: c.text4,
   },
   sendButtonPressed: {
     opacity: 0.85,
@@ -148,7 +152,7 @@ const styles = StyleSheet.create({
   sendIcon: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.surface,
+    color: c.surface,
     lineHeight: 24,
   },
-});
+});}

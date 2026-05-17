@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import * as Haptics from 'expo-haptics';
 
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 type SupplementRowProps = {
   name: string;
@@ -16,22 +17,26 @@ type SupplementRowProps = {
 };
 
 function SwipeLogAction() {
+  const c = useThemeColors();
   return (
-    <View style={swipeStyles.logAction}>
-      <Text style={swipeStyles.logActionText}>✓ Log</Text>
+    <View style={{ backgroundColor: c.primary, justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: spacing.xl, flex: 1 }}>
+      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>✓ Log</Text>
     </View>
   );
 }
 
 function SwipeUnlogAction() {
+  const c = useThemeColors();
   return (
-    <View style={swipeStyles.unlogAction}>
-      <Text style={swipeStyles.unlogActionText}>↩ Undo</Text>
+    <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: spacing.xl, flex: 1 }}>
+      <Text style={{ color: c.text2, fontWeight: '700', fontSize: 14 }}>↩ Undo</Text>
     </View>
   );
 }
 
 export function SupplementRow({ name, dose, taken, isLast, onToggle, onSwipeLog, onSwipeUnlog }: SupplementRowProps) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const swipeableRef = useRef<Swipeable>(null);
 
   const handleSwipeOpen = (direction: 'left' | 'right') => {
@@ -90,62 +95,34 @@ export function SupplementRow({ name, dose, taken, isLast, onToggle, onSwipeLog,
   );
 }
 
-const swipeStyles = StyleSheet.create({
-  logAction: {
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingHorizontal: spacing.xl,
-    flex: 1,
-  },
-  logActionText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  unlogAction: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingHorizontal: spacing.xl,
-    flex: 1,
-  },
-  unlogActionText: {
-    color: colors.text2,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-});
-
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 13,
     paddingHorizontal: spacing.xl,
     gap: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: radius.sm,
     borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
+    borderColor: c.borderStrong,
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: c.primary,
+    borderColor: c.primary,
   },
   checkboxPressed: {
     opacity: 0.7,
@@ -164,15 +141,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '500',
-    color: colors.text,
+    color: c.text,
   },
   nameTaken: {
-    color: colors.text3,
+    color: c.text3,
     textDecorationLine: 'line-through',
   },
   dose: {
     fontSize: 12,
     lineHeight: 16,
-    color: colors.text2,
+    color: c.text2,
   },
-});
+});}

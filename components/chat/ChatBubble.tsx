@@ -7,7 +7,7 @@
  * sees text appearing word-by-word.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -15,7 +15,8 @@ import {
   View,
 } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import type { LocalMessage } from '../../stores/chat';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -24,9 +25,13 @@ interface Props {
   message: LocalMessage;
 }
 
+const MAX_BUBBLE_WIDTH = 280;
+
 // ─── AI avatar ────────────────────────────────────────────────────────────────
 
 function AIAvatar() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.avatar}>
       <Text style={styles.avatarText}>AI</Text>
@@ -37,9 +42,11 @@ function AIAvatar() {
 // ─── Typing indicator (3-dot animation) ──────────────────────────────────────
 
 function TypingDots() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.typingRow}>
-      <ActivityIndicator size="small" color={colors.ai} />
+      <ActivityIndicator size="small" color={c.ai} />
     </View>
   );
 }
@@ -47,6 +54,8 @@ function TypingDots() {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const ChatBubble = React.memo(function ChatBubble({ message }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const isUser = message.role === 'user';
   const isStreaming = message.isStreaming ?? false;
   const displayText = isStreaming
@@ -84,9 +93,8 @@ export const ChatBubble = React.memo(function ChatBubble({ message }: Props) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const MAX_BUBBLE_WIDTH = 280;
-
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   // User
   userRow: {
     flexDirection: 'row',
@@ -96,7 +104,7 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     maxWidth: MAX_BUBBLE_WIDTH,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     borderBottomLeftRadius: 18,
@@ -106,7 +114,7 @@ const styles = StyleSheet.create({
   },
   userText: {
     ...typography.body,
-    color: colors.surface,
+    color: '#fff',
   },
 
   // Assistant
@@ -122,7 +130,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -130,27 +138,27 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.surface,
+    color: '#fff',
   },
   assistantBubble: {
     maxWidth: MAX_BUBBLE_WIDTH,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     borderBottomLeftRadius: 4,
     borderBottomRightRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
   assistantText: {
     ...typography.body,
-    color: colors.text,
+    color: c.text,
   },
 
   // Typing indicator
   typingRow: {
     paddingVertical: spacing.xs,
   },
-});
+});}
