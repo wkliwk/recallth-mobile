@@ -8,6 +8,7 @@ export interface DoseLogEntry {
   takenAt: string;
   late?: boolean;
   notes?: string;
+  backfill?: boolean;
 }
 
 interface DoseLogResponse {
@@ -22,9 +23,18 @@ export async function logDose(
   slot: string,
   late = false,
   notes?: string,
+  takenAtOverride?: string,
+  backfill?: boolean,
 ): Promise<DoseLogEntry> {
-  const body: Record<string, unknown> = { supplementId, supplementName, slot, takenAt: new Date().toISOString(), late };
+  const body: Record<string, unknown> = {
+    supplementId,
+    supplementName,
+    slot,
+    takenAt: takenAtOverride ?? new Date().toISOString(),
+    late,
+  };
   if (notes?.trim()) body.notes = notes.trim();
+  if (backfill) body.backfill = true;
   const res = await api.post<DoseLogResponse>('/schedule/log-dose', body, { token });
   return res.data;
 }

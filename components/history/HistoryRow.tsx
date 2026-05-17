@@ -139,6 +139,11 @@ function DoseRow({ item, onDelete, note }: { item: DoseEntry; onDelete?: () => v
             {item.data.supplementName}
           </Text>
           <View style={styles.timeRow}>
+            {item.data.backfill && (
+              <View style={styles.backfillPill}>
+                <Text style={styles.backfillPillText}>Backfill</Text>
+              </View>
+            )}
             {item.data.late && (
               <View style={styles.latePill}>
                 <Text style={styles.latePillText}>Late</Text>
@@ -252,6 +257,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.warning,
+  },
+  backfillPill: {
+    backgroundColor: colors.infoLight,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  backfillPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.info,
   },
   preview: {
     ...typography.bodySmall,
