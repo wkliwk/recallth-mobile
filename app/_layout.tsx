@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as ExpoNotifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '../stores/auth';
@@ -97,6 +98,7 @@ export default function RootLayout() {
   }, [router]);
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <StatusBar style="auto" />
       <AuthGate />
@@ -112,6 +114,7 @@ export default function RootLayout() {
         </View>
       )}
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
