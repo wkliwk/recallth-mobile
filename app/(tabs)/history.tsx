@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   ListRenderItemInfo,
   Pressable,
@@ -27,7 +28,7 @@ import { HistoryRow } from '../../components/history/HistoryRow';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonRow } from '../../components/ui/SkeletonRow';
 import { AnyHistoryEntry, DoseEntry, TimelineEntry, fetchTimeline } from '../../services/history';
-import { getDoseLogsRange } from '../../services/schedule';
+import { getDoseLogsRange, unlogDose } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
 import { groupByDate } from '../../utils/dateGrouping';
 import { colors, spacing, typography } from '../../utils/theme';
@@ -224,6 +225,23 @@ export default function HistoryScreen(): React.JSX.Element {
     [router],
   );
 
+  const handleDeleteDose = useCallback(
+    async (logId: string) => {
+      if (!token) return;
+      // Optimistically remove the entry
+      const removed = doseEntries.find((e) => e.data._id === logId);
+      setDoseEntries((prev) => prev.filter((e) => e.data._id !== logId));
+      try {
+        await unlogDose(token, logId);
+      } catch {
+        // Restore on failure
+        if (removed) setDoseEntries((prev) => [removed, ...prev]);
+        Alert.alert('Delete failed', 'Could not remove the dose log. Please try again.');
+      }
+    },
+    [token, doseEntries],
+  );
+
   // ── Render item ──────────────────────────────────────────────────────
 
   const renderItem = useCallback(
@@ -235,10 +253,11 @@ export default function HistoryScreen(): React.JSX.Element {
         <HistoryRow
           item={item.entry}
           onPressChatItem={handleChatPress}
+          onDeleteDose={handleDeleteDose}
         />
       );
     },
-    [handleChatPress],
+    [handleChatPress, handleDeleteDose],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.id, []);
