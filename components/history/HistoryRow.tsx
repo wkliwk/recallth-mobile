@@ -23,6 +23,7 @@ interface Props {
   item: AnyHistoryEntry;
   onPressChatItem?: (conversationId: string) => void;
   onDeleteDose?: (logId: string) => void;
+  doseNotes?: Record<string, string>;
 }
 
 function formatTime(iso: string): string {
@@ -107,7 +108,7 @@ function ProfileRow({ item }: { item: ProfileChangeEntry }): React.JSX.Element {
   );
 }
 
-function DoseRow({ item, onDelete }: { item: DoseEntry; onDelete?: () => void }): React.JSX.Element {
+function DoseRow({ item, onDelete, note }: { item: DoseEntry; onDelete?: () => void; note?: string }): React.JSX.Element {
   const slotLabel = item.data.slot.charAt(0).toUpperCase() + item.data.slot.slice(1);
 
   const handleLongPress = () => {
@@ -147,12 +148,13 @@ function DoseRow({ item, onDelete }: { item: DoseEntry; onDelete?: () => void })
           </View>
         </View>
         <Text style={styles.meta}>{slotLabel} dose logged · hold to delete</Text>
+        {note ? <Text style={styles.noteText}>{note}</Text> : null}
       </View>
     </Pressable>
   );
 }
 
-function HistoryRowInner({ item, onPressChatItem, onDeleteDose }: Props): React.JSX.Element {
+function HistoryRowInner({ item, onPressChatItem, onDeleteDose, doseNotes }: Props): React.JSX.Element {
   if (item.type === 'conversation') {
     return <ConversationRow item={item} onPress={onPressChatItem} />;
   }
@@ -165,6 +167,7 @@ function HistoryRowInner({ item, onPressChatItem, onDeleteDose }: Props): React.
       <DoseRow
         item={item}
         onDelete={logId && onDeleteDose ? () => onDeleteDose(logId) : undefined}
+        note={logId ? doseNotes?.[logId] : undefined}
       />
     );
   }
@@ -257,5 +260,10 @@ const styles = StyleSheet.create({
   meta: {
     ...typography.caption,
     color: colors.text3,
+  },
+  noteText: {
+    ...typography.caption,
+    color: colors.text2,
+    fontStyle: 'italic',
   },
 });

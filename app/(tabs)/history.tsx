@@ -29,6 +29,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonRow } from '../../components/ui/SkeletonRow';
 import { AnyHistoryEntry, DoseEntry, TimelineEntry, fetchTimeline } from '../../services/history';
 import { getDoseLogsRange, unlogDose } from '../../services/schedule';
+import { getItem } from '../../services/storage';
 import { useAuthStore } from '../../stores/auth';
 import { groupByDate } from '../../utils/dateGrouping';
 import { colors, spacing, typography } from '../../utils/theme';
@@ -92,6 +93,7 @@ export default function HistoryScreen(): React.JSX.Element {
 
   const [allEntries, setAllEntries] = useState<TimelineEntry[]>([]);
   const [doseEntries, setDoseEntries] = useState<DoseEntry[]>([]);
+  const [doseNotes, setDoseNotes] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -146,6 +148,17 @@ export default function HistoryScreen(): React.JSX.Element {
           data: log,
         })),
       );
+      const noteEntries = await Promise.all(
+        logs.map(async (log) => {
+          const note = await getItem(`recallth:dose-notes:${log._id}`);
+          return [log._id, note] as const;
+        }),
+      );
+      const notesMap: Record<string, string> = {};
+      for (const [id, note] of noteEntries) {
+        if (note) notesMap[id] = note;
+      }
+      setDoseNotes(notesMap);
     } catch {
       // non-critical
     }
@@ -254,10 +267,11 @@ export default function HistoryScreen(): React.JSX.Element {
           item={item.entry}
           onPressChatItem={handleChatPress}
           onDeleteDose={handleDeleteDose}
+          doseNotes={doseNotes}
         />
       );
     },
-    [handleChatPress, handleDeleteDose],
+    [handleChatPress, handleDeleteDose, doseNotes],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.id, []);
