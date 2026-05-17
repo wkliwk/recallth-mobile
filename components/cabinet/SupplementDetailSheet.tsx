@@ -15,6 +15,7 @@ import { colors, radius, spacing, typography } from '../../utils/theme';
 import { updateCabinetItem, pauseCabinetItem, unpauseCabinetItem, type CabinetItem } from '../../services/cabinet';
 import { getSideEffects, type SideEffectEntry } from '../../services/sideEffects';
 import { getDoseLogsRange, type DoseLogEntry } from '../../services/schedule';
+import { findInteractions, type FoundInteraction } from '../../utils/interactions';
 import { SideEffectSheet } from './SideEffectSheet';
 
 const RATING_LABELS: Record<number, string> = {
@@ -29,6 +30,7 @@ interface Props {
   onUpdated: (item: CabinetItem) => void;
   onStockChange?: (id: string, delta: number) => void;
   currentStock?: number;
+  otherItemNames?: string[];
 }
 
 interface EditDraft {
@@ -47,6 +49,7 @@ export function SupplementDetailSheet({
   onUpdated,
   onStockChange,
   currentStock,
+  otherItemNames = [],
 }: Props) {
   const [draft, setDraft] = useState<EditDraft>({ dosage: '', timing: '', frequency: '', notes: '', purpose: '' });
   const [saving, setSaving] = useState(false);
@@ -168,6 +171,7 @@ export function SupplementDetailSheet({
 
   if (!item) return null;
 
+  const interactions: FoundInteraction[] = findInteractions(item.name, otherItemNames);
   const stockLabel = currentStock !== undefined ? `${currentStock}d` : '—';
 
   return (
@@ -365,6 +369,19 @@ export function SupplementDetailSheet({
                 ))
               )}
             </View>
+
+            {/* ── Interactions ────────────────────────────── */}
+            {interactions.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Interactions</Text>
+                {interactions.map((ix) => (
+                  <View key={ix.withName} style={styles.interactionCard}>
+                    <Text style={styles.interactionWith}>⚠️ {ix.withName}</Text>
+                    <Text style={styles.interactionMsg}>{ix.message}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* ── Pause / Holiday Mode ────────────────────── */}
             <View style={styles.section}>
@@ -710,4 +727,23 @@ const styles = StyleSheet.create({
   seInfo: { flex: 1 },
   seSymptom: { ...typography.bodySmall, fontWeight: '600', color: colors.text },
   seMeta: { ...typography.caption, color: colors.text3, marginTop: 2 },
+  interactionCard: {
+    backgroundColor: colors.warningLight,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.warning + '50',
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  interactionWith: {
+    ...typography.bodySmall,
+    fontWeight: '700',
+    color: colors.warning,
+  },
+  interactionMsg: {
+    ...typography.caption,
+    color: colors.text2,
+    lineHeight: 16,
+  },
 });
