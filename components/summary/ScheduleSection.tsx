@@ -9,13 +9,15 @@ type ScheduleSectionProps = {
   items: SupplementEntry[];
   onToggle: (id: string) => void;
   onLogAll?: () => void;
+  onSwipeLog?: (id: string) => void;
+  onSwipeUnlog?: (id: string) => void;
 };
 
 /**
  * A labelled time-block section (e.g. "Morning") containing supplement rows.
  * Renders nothing when the section has no items.
  */
-export function ScheduleSection({ label, items, onToggle, onLogAll }: ScheduleSectionProps) {
+export function ScheduleSection({ label, items, onToggle, onLogAll, onSwipeLog, onSwipeUnlog }: ScheduleSectionProps) {
   if (items.length === 0) return null;
 
   const hasUnlogged = items.some((s) => !s.taken);
@@ -47,6 +49,8 @@ export function ScheduleSection({ label, items, onToggle, onLogAll }: ScheduleSe
           taken={item.taken}
           isLast={index === items.length - 1}
           onToggle={() => onToggle(item.id)}
+          onSwipeLog={onSwipeLog ? () => onSwipeLog(item.id) : undefined}
+          onSwipeUnlog={onSwipeUnlog ? () => onSwipeUnlog(item.id) : undefined}
         />
       ))}
     </View>

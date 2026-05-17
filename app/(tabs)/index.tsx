@@ -450,6 +450,39 @@ export default function HomeScreen() {
     [token, supplements],
   );
 
+  const handleSwipeLog = useCallback(
+    (id: string) => {
+      const target = supplements.find((s) => s.id === id);
+      if (!target || target.taken || !token) return;
+
+      setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, taken: true } : s));
+
+      void logDose(token, id, target.name, target.timeBlock).then((log) => {
+        setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, doseLogId: log._id } : s));
+        void logIntakeToday(token).catch(() => {/* non-critical */});
+      }).catch(() => {
+        setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, taken: false, doseLogId: undefined } : s));
+      });
+    },
+    [token, supplements],
+  );
+
+  const handleSwipeUnlog = useCallback(
+    (id: string) => {
+      const target = supplements.find((s) => s.id === id);
+      if (!target || !target.taken || !token) return;
+
+      setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, taken: false, doseLogId: undefined } : s));
+
+      if (target.doseLogId) {
+        void unlogDose(token, target.doseLogId).catch(() => {
+          setSupplements((prev) => prev.map((s) => s.id === id ? { ...s, taken: true } : s));
+        });
+      }
+    },
+    [token, supplements],
+  );
+
   const handleLogAll = useCallback(
     (block: TimeBlock) => {
       if (!token) return;
@@ -745,6 +778,8 @@ export default function HomeScreen() {
               items={supplements.filter((s) => s.timeBlock === block)}
               onToggle={toggleTaken}
               onLogAll={() => handleLogAll(block)}
+              onSwipeLog={handleSwipeLog}
+              onSwipeUnlog={handleSwipeUnlog}
             />
           ))}
         </View>
