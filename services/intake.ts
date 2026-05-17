@@ -23,6 +23,16 @@ const inFlight = new Map<string, Promise<IntakeLogResult>>();
  * subsequent calls resolve to the cached result and the cache is cleared
  * when the promise settles.
  */
+export interface StreakResult {
+  currentStreak: number;
+  longestStreak: number;
+  lastLoggedDate: string | null;
+}
+
+export function getStreak(token: string): Promise<StreakResult> {
+  return api.get<StreakResult>('/intake/streak', { token });
+}
+
 export function logIntakeToday(token: string): Promise<IntakeLogResult> {
   const cached = inFlight.get(token);
   if (cached) return cached;

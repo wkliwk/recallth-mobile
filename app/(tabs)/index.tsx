@@ -23,7 +23,7 @@ import {
   type TimeBlock,
 } from '../../components/summary/mockData';
 import { getInteractions, getRestockAlerts, listCabinetItems, type CabinetItem } from '../../services/cabinet';
-import { logIntakeToday } from '../../services/intake';
+import { logIntakeToday, getStreak } from '../../services/intake';
 import { getTodayDoseLogs, logDose, unlogDose } from '../../services/schedule';
 import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
@@ -83,6 +83,7 @@ export default function HomeScreen() {
   const userId = useAuthStore((s) => s.user?.userId ?? null);
   const [milestoneDays, setMilestoneDays] = useState<number | null>(null);
   const [showNotifNudge, setShowNotifNudge] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   const MILESTONES = [7, 30, 100];
 
@@ -97,13 +98,14 @@ export default function HomeScreen() {
       if (isRefresh) setRefreshing(true);
       else if (!isSilent) setLoading(true);
 
-      const [supplementsRes, briefRes, doseLogsRes, journalRes, interactionsRes, restockRes] = await Promise.allSettled([
+      const [supplementsRes, briefRes, doseLogsRes, journalRes, interactionsRes, restockRes, streakRes] = await Promise.allSettled([
         listCabinetItems(token),
         fetchDailyBrief(token),
         getTodayDoseLogs(token),
         getTodayJournal(token),
         getInteractions(token),
         getRestockAlerts(token),
+        getStreak(token),
       ]);
 
       if (supplementsRes.status === 'fulfilled') {
@@ -141,6 +143,10 @@ export default function HomeScreen() {
 
       if (restockRes.status === 'fulfilled') {
         setRestockNames(restockRes.value.map((a) => a.name));
+      }
+
+      if (streakRes.status === 'fulfilled') {
+        setCurrentStreak(streakRes.value.currentStreak);
       }
 
       setLoading(false);
@@ -302,6 +308,18 @@ export default function HomeScreen() {
           />
         )}
 
+        {/* Streak badge */}
+        {currentStreak > 0 ? (
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakEmoji}>🔥</Text>
+            <Text style={styles.streakText}>{currentStreak} day streak</Text>
+          </View>
+        ) : (
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakText}>Start your streak today</Text>
+          </View>
+        )}
+
         {/* Time-block schedule card */}
         <View style={styles.scheduleCard}>
           <View style={styles.scheduleCardHeader}>
@@ -434,6 +452,28 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '600',
     color: colors.text,
+  },
+
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    marginBottom: 12,
+    gap: 4,
+  },
+  streakEmoji: {
+    fontSize: 14,
+  },
+  streakText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text2,
   },
 
   disclaimer: {
