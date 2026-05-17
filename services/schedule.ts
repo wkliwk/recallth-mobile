@@ -6,6 +6,7 @@ export interface DoseLogEntry {
   supplementName: string;
   slot: string;
   takenAt: string;
+  late?: boolean;
 }
 
 interface DoseLogResponse {
@@ -18,10 +19,11 @@ export async function logDose(
   supplementId: string,
   supplementName: string,
   slot: string,
+  late = false,
 ): Promise<DoseLogEntry> {
   const res = await api.post<DoseLogResponse>(
     '/schedule/log-dose',
-    { supplementId, supplementName, slot, takenAt: new Date().toISOString() },
+    { supplementId, supplementName, slot, takenAt: new Date().toISOString(), late },
     { token },
   );
   return res.data;
