@@ -209,14 +209,24 @@ export async function handleLogDoseResponse(
  * Flush pending dose logs to the API. Call on app foreground.
  * Successfully submitted entries are removed from the queue.
  */
+const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+
 export async function flushPendingDoseLogs(token: string): Promise<void> {
   if (!token) return;
   const queue = await readPendingQueue();
   if (queue.length === 0) return;
 
+  const now = Date.now();
+  const fresh = queue.filter((e) => now - new Date(e.takenAt).getTime() < STALE_THRESHOLD_MS);
+
+  if (fresh.length === 0) {
+    await writePendingQueue([]);
+    return;
+  }
+
   const remaining: PendingDoseLog[] = [];
   await Promise.allSettled(
-    queue.map(async (entry) => {
+    fresh.map(async (entry) => {
       try {
         await logDose(token, entry.supplementId, entry.supplementName, entry.slot, false, undefined, entry.takenAt);
       } catch {

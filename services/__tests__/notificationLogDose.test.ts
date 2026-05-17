@@ -159,3 +159,65 @@ describe('flushPendingDoseLogs', () => {
     expect(readQueue()).toHaveLength(1);
   });
 });
+
+describe('flushPendingDoseLogs — edge cases', () => {
+  it('duplicate flush calls do not double-log — second flush is a no-op', async () => {
+    await handleLogDoseResponse(makeResponse('TAKE', [{ id: 'sup1', name: 'Vitamin D' }]));
+    await flushPendingDoseLogs('tok');
+    expect(mockLogDose).toHaveBeenCalledTimes(1);
+    expect(readQueue()).toHaveLength(0);
+    // Second flush: queue already empty, logDose must not be called again
+    await flushPendingDoseLogs('tok');
+    expect(mockLogDose).toHaveBeenCalledTimes(1);
+  });
+
+  it('stale entry older than 24h is discarded without calling logDose', async () => {
+    const staleTime = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+    const staleEntry = {
+      supplementId: 'sup1',
+      supplementName: 'Vitamin D',
+      slot: 'morning',
+      takenAt: staleTime,
+      source: 'notification' as const,
+      dedupKey: `sup1:morning:${staleTime.slice(0, 10)}`,
+    };
+    store[PENDING_QUEUE_KEY] = JSON.stringify([staleEntry]);
+    await flushPendingDoseLogs('tok');
+    expect(mockLogDose).not.toHaveBeenCalled();
+    expect(readQueue()).toHaveLength(0);
+  });
+
+  it('multiple queued supplements are all flushed and queue is cleared', async () => {
+    await handleLogDoseResponse(makeResponse('TAKE', [
+      { id: 'sup1', name: 'Vitamin D' },
+      { id: 'sup2', name: 'Magnesium' },
+      { id: 'sup3', name: 'Omega-3' },
+    ]));
+    await flushPendingDoseLogs('tok');
+    expect(mockLogDose).toHaveBeenCalledTimes(3);
+    expect(readQueue()).toHaveLength(0);
+  });
+
+  it('partial API failure — failed entry remains, succeeded entries are removed', async () => {
+    await handleLogDoseResponse(makeResponse('TAKE', [
+      { id: 'sup1', name: 'Vitamin D' },
+      { id: 'sup2', name: 'Magnesium' },
+      { id: 'sup3', name: 'Omega-3' },
+    ]));
+    // Second logDose call (for sup2) fails
+    mockLogDose
+      .mockResolvedValueOnce({ _id: 'log1' })
+      .mockRejectedValueOnce(new Error('Network'))
+      .mockResolvedValueOnce({ _id: 'log3' });
+    await flushPendingDoseLogs('tok');
+    expect(mockLogDose).toHaveBeenCalledTimes(3);
+    const remaining = readQueue();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.supplementId).toBe('sup2');
+  });
+
+  it('empty queue flush is a no-op — no API call, no error', async () => {
+    await expect(flushPendingDoseLogs('tok')).resolves.toBeUndefined();
+    expect(mockLogDose).not.toHaveBeenCalled();
+  });
+});
