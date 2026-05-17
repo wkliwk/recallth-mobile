@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import { getDoseLogsRange } from './schedule';
 import { getStreak } from './intake';
+import { getNotificationCopy } from '../utils/notificationCopy';
 
 export const SNOOZE_CATEGORY = 'DOSE_REMINDER_SNOOZE';
 export const NUDGE_ID_PREFIX = 'nudge-';
@@ -52,9 +53,16 @@ function buildNotificationBody(supplements: string[]): string {
   return supplements.length > 3 ? `${names} + ${supplements.length - 3} more` : names;
 }
 
+export interface StreakContext {
+  streak: number;
+  freezeActive: boolean;
+  missedYesterday: boolean;
+}
+
 export async function scheduleSmartReminders(
   schedules: SupplementSchedule[],
   missedNudgesEnabled = true,
+  streakCtx?: StreakContext,
 ): Promise<void> {
   await ExpoNotifications.cancelAllScheduledNotificationsAsync();
 
@@ -65,7 +73,15 @@ export async function scheduleSmartReminders(
     const minute = parseInt(parts[1] ?? '0', 10);
     if (isNaN(hour) || isNaN(minute)) continue;
 
-    const body = buildNotificationBody(schedule.supplements);
+    const body = streakCtx
+      ? getNotificationCopy({
+          streak: streakCtx.streak,
+          supplements: schedule.supplements,
+          notificationHour: hour,
+          freezeActive: streakCtx.freezeActive,
+          missedYesterday: streakCtx.missedYesterday,
+        })
+      : buildNotificationBody(schedule.supplements);
 
     await ExpoNotifications.scheduleNotificationAsync({
       identifier: `dose-${schedule.blockKey}`,
