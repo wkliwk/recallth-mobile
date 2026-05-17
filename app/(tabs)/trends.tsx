@@ -24,6 +24,7 @@ import AdherenceCard from '../../components/trends/AdherenceCard';
 import JournalInsightsCard from '../../components/trends/JournalInsightsCard';
 import MoodEnergyCard from '../../components/trends/MoodEnergyCard';
 import RedundancyCard from '../../components/trends/RedundancyCard';
+import EffectsCard from '../../components/trends/EffectsCard';
 import StreakCard from '../../components/trends/StreakCard';
 import WeightCard from '../../components/trends/WeightCard';
 import WellnessCard from '../../components/trends/WellnessCard';
@@ -32,10 +33,12 @@ import { fetchJournalInsights, type JournalInsightsResult } from '../../services
 import { getJournalEntries, type JournalEntry } from '../../services/journal';
 import { getDoseLogsRange, type DoseLogEntry } from '../../services/schedule';
 import {
+  fetchEffects,
   fetchStreak,
   fetchWeightTrend,
   fetchWellnessScore,
   type IntakeStreak,
+  type SupplementEffectAvg,
   type WeightTrendEntry,
   type WellnessScore,
 } from '../../services/trends';
@@ -43,6 +46,7 @@ import { useAuthStore } from '../../stores/auth';
 import { colors, spacing, typography } from '../../utils/theme';
 
 interface TrendsState {
+  effects: SupplementEffectAvg[];
   streak: IntakeStreak | null;
   weight: WeightTrendEntry[];
   wellness: WellnessScore | null;
@@ -57,6 +61,7 @@ interface TrendsState {
 }
 
 const initialState: TrendsState = {
+  effects: [],
   streak: null,
   weight: [],
   wellness: null,
@@ -92,7 +97,7 @@ export default function TrendsScreen() {
       const today = new Date().toISOString().slice(0, 10);
       const weekAgo = new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-      const [streakRes, weightRes, wellnessRes, redundanciesRes, weekLogsRes, cabinetRes, journalRes, journalInsightsRes] = await Promise.allSettled([
+      const [streakRes, weightRes, wellnessRes, redundanciesRes, weekLogsRes, cabinetRes, journalRes, journalInsightsRes, effectsRes] = await Promise.allSettled([
         fetchStreak(token),
         fetchWeightTrend(token),
         fetchWellnessScore(token),
@@ -101,6 +106,7 @@ export default function TrendsScreen() {
         listCabinetItems(token),
         getJournalEntries(token, 7),
         fetchJournalInsights(token),
+        fetchEffects(token, 30),
       ]);
 
       const weekLogs = weekLogsRes.status === 'fulfilled' ? weekLogsRes.value : [];
@@ -108,6 +114,7 @@ export default function TrendsScreen() {
       const cabinetCount = cabinetRes.status === 'fulfilled' ? cabinetRes.value.length : 0;
 
       setState({
+        effects: effectsRes.status === 'fulfilled' ? effectsRes.value : [],
         streak,
         weight: weightRes.status === 'fulfilled' ? weightRes.value : [],
         wellness: wellnessRes.status === 'fulfilled' ? wellnessRes.value : null,
@@ -201,6 +208,7 @@ export default function TrendsScreen() {
 
         <StreakCard streak={state.streak} />
         <AdherenceCard logs={state.weekLogs} totalScheduled={state.weekScheduled} />
+        <EffectsCard effects={state.effects} />
         <MoodEnergyCard entries={state.journalEntries} />
         <JournalInsightsCard
           insights={state.journalInsights?.insights ?? []}

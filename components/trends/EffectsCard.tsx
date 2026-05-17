@@ -1,0 +1,122 @@
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { type SupplementEffectAvg } from '../../services/trends';
+import { colors, radius, spacing, typography } from '../../utils/theme';
+import TrendsCard from './TrendsCard';
+
+interface Props {
+  effects: SupplementEffectAvg[];
+}
+
+const DIMENSIONS: { key: keyof SupplementEffectAvg; label: string; color: string }[] = [
+  { key: 'avgEnergy', label: 'Energy', color: '#f59e0b' },
+  { key: 'avgFocus',  label: 'Focus',  color: '#3b82f6' },
+  { key: 'avgSleep',  label: 'Sleep',  color: '#8b5cf6' },
+  { key: 'avgMood',   label: 'Mood',   color: '#10b981' },
+];
+
+function DimBar({ value, color }: { value: number | null; color: string }) {
+  if (value === null) return <View style={styles.dimBarEmpty} />;
+  const width = `${Math.round((value / 5) * 100)}%` as `${number}%`;
+  return (
+    <View style={styles.dimBarTrack}>
+      <View style={[styles.dimBarFill, { width, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+function SupplementRow({ effect }: { effect: SupplementEffectAvg }) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.suppName} numberOfLines={1}>{effect.name}</Text>
+      <Text style={styles.suppCount}>{effect.count} ratings</Text>
+      <View style={styles.dims}>
+        {DIMENSIONS.map(({ key, label, color }) => (
+          <View key={key} style={styles.dimRow}>
+            <Text style={styles.dimLabel}>{label}</Text>
+            <DimBar value={effect[key] as number | null} color={color} />
+            <Text style={styles.dimValue}>
+              {effect[key] !== null ? (effect[key] as number).toFixed(1) : '—'}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export default function EffectsCard({ effects }: Props) {
+  if (effects.length === 0) {
+    return (
+      <TrendsCard label="Supplement Effects">
+        <Text style={styles.empty}>
+          After logging a dose, rate how you feel to see personalised effect data here.
+          {'\n'}Requires at least 3 ratings per supplement.
+        </Text>
+      </TrendsCard>
+    );
+  }
+
+  return (
+    <TrendsCard label="Supplement Effects">
+      <View style={styles.list}>
+        {effects.map((e) => (
+          <SupplementRow key={e.name} effect={e} />
+        ))}
+      </View>
+    </TrendsCard>
+  );
+}
+
+const styles = StyleSheet.create({
+  empty: {
+    ...typography.bodySmall,
+    color: colors.text3,
+    lineHeight: 20,
+  },
+  list: { gap: spacing.lg },
+  row: { gap: spacing.xs },
+  suppName: {
+    ...typography.bodyStrong,
+    color: colors.text,
+  },
+  suppCount: {
+    ...typography.caption,
+    color: colors.text3,
+  },
+  dims: { gap: spacing.xs, marginTop: spacing.xs },
+  dimRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dimLabel: {
+    ...typography.caption,
+    color: colors.text3,
+    width: 44,
+  },
+  dimBarTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: colors.border,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  dimBarFill: {
+    height: 6,
+    borderRadius: 3,
+  },
+  dimBarEmpty: {
+    flex: 1,
+    height: 6,
+    backgroundColor: colors.border,
+    borderRadius: 3,
+  },
+  dimValue: {
+    ...typography.caption,
+    color: colors.text2,
+    fontWeight: '600',
+    width: 28,
+    textAlign: 'right',
+  },
+});
