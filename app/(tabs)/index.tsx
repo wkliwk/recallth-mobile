@@ -18,6 +18,7 @@ import { BlockEffectNudgeBanner } from '../../components/home/BlockEffectNudgeBa
 import { RecoveryBanner } from '../../components/home/RecoveryBanner';
 import { RecoverySheet } from '../../components/home/RecoverySheet';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { UndoToast } from '../../components/ui/UndoToast';
 import {
   cancelNudgesForBlocks,
   requestPermissions,
@@ -45,6 +46,7 @@ import { getTodayDoseLogs, getDoseLogsRange, logDose, unlogDose } from '../../se
 import { fetchDailyBrief, getMonthlySummary, type MonthlySummary } from '../../services/insights';
 import { saveEffect } from '../../services/trends';
 import { useAuthStore } from '../../stores/auth';
+import * as Haptics from 'expo-haptics';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { analyseTimingPatterns, type TimingSuggestion } from '../../utils/timingOptimiser';
@@ -118,6 +120,7 @@ export default function HomeScreen() {
   const [pendingDoseLog, setPendingDoseLog] = useState<SupplementEntry | null>(null);
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
   const [showRecoverySheet, setShowRecoverySheet] = useState(false);
+  const [batchUndo, setBatchUndo] = useState<{ ids: string[]; logIds: string[]; count: number } | null>(null);
   const [effectNudgeInfo, setEffectNudgeInfo] = useState<{
     supplementId: string;
     supplementName: string;
@@ -516,6 +519,8 @@ export default function HomeScreen() {
       const targets = supplements.filter((s) => s.timeBlock === block && !s.taken);
       if (targets.length === 0) return;
 
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
       // Optimistic update — mark all as taken
       setSupplements((prev) =>
         prev.map((s) => targets.some((t) => t.id === s.id) ? { ...s, taken: true } : s),
@@ -537,12 +542,24 @@ export default function HomeScreen() {
         results.forEach((r, i) => {
           if (r.status === 'rejected') {
             setSupplements((prev) =>
-              prev.map((s) => s.id === targets[i].id ? { ...s, taken: false, doseLogId: undefined } : s),
+              prev.map((s) => s.id === targets[i]?.id ? { ...s, taken: false, doseLogId: undefined } : s),
             );
           } else {
             successful.push(r.value);
           }
         });
+
+        if (successful.length > 0) {
+          // Show undo toast
+          setBatchUndo({
+            ids: successful.map((s) => s.target.id),
+            logIds: successful.map((s) => s.logId),
+            count: successful.length,
+          });
+          // All-done haptic
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+
         // Single streak check after bulk log
         void logIntakeToday(token).catch(() => {/* non-critical */});
         // Block effect nudge — only if ≥2 supplements logged, not yet shown today
@@ -552,13 +569,15 @@ export default function HomeScreen() {
           void storage.getItem(nudgeKey).then((existing) => {
             if (!existing) {
               const first = successful[0];
-              setEffectNudgeInfo({
-                supplementId: first.target.id,
-                supplementName: first.target.name,
-                doseLogId: first.logId,
-                blockLabel: TIME_BLOCK_LABELS[block],
-                nudgeKey,
-              });
+              if (first) {
+                setEffectNudgeInfo({
+                  supplementId: first.target.id,
+                  supplementName: first.target.name,
+                  doseLogId: first.logId,
+                  blockLabel: TIME_BLOCK_LABELS[block],
+                  nudgeKey,
+                });
+              }
             }
           });
         }
@@ -566,6 +585,20 @@ export default function HomeScreen() {
     },
     [token, supplements],
   );
+
+  const handleBatchUndo = useCallback(() => {
+    if (!batchUndo || !token) return;
+    const { ids, logIds } = batchUndo;
+    setBatchUndo(null);
+    // Revert optimistic state
+    setSupplements((prev) =>
+      prev.map((s) => ids.includes(s.id) ? { ...s, taken: false, doseLogId: undefined } : s),
+    );
+    // Delete each dose log
+    logIds.forEach((logId) => {
+      void unlogDose(token, logId).catch(() => {/* non-critical — already reverted in UI */});
+    });
+  }, [batchUndo, token]);
 
   const handleTimingDismiss = useCallback(async (supplementId: string) => {
     setDismissedTimingSuggestions((prev) => [...prev, supplementId]);
@@ -909,6 +942,14 @@ export default function HomeScreen() {
           })}
           onConfirm={(selectedIds) => { void handleRecoveryConfirm(selectedIds); }}
           onCancel={() => setShowRecoverySheet(false)}
+        />
+      )}
+
+      {batchUndo && (
+        <UndoToast
+          message={`Logged ${batchUndo.count} supplement${batchUndo.count === 1 ? '' : 's'}`}
+          onUndo={handleBatchUndo}
+          onExpire={() => setBatchUndo(null)}
         />
       )}
     </SafeAreaView>
