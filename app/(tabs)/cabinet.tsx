@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { CabinetCard } from '../../components/cabinet/CabinetCard';
 import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
+import { RecommendationsBanner } from '../../components/cabinet/RecommendationsBanner';
 import { SupplementDetailSheet } from '../../components/cabinet/SupplementDetailSheet';
 import type { CabinetMockItem } from '../../components/cabinet/CabinetCard';
 import {
@@ -33,7 +34,9 @@ import {
   type RestockAlert,
   type UpdateCabinetItemInput,
 } from '../../services/cabinet';
+import { getRecommendations, type Recommendation } from '../../services/recommendations';
 import { useAuthStore } from '../../stores/auth';
+import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 // ─── Mock fallback (unauthenticated / demo) ───────────────────────────────────
@@ -145,6 +148,9 @@ export default function CabinetScreen() {
   const [editingItem, setEditingItem] = useState<CabinetItem | null>(null);
   const [detailItem, setDetailItem] = useState<CabinetItem | null>(null);
   const [restockDismissed, setRestockDismissed] = useState(false);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [dismissedRecs, setDismissedRecs] = useState<string[]>([]);
+  const [prefillRec, setPrefillRec] = useState<Recommendation | null>(null);
 
   const load = useCallback(
     async (isRefresh = false, isSilent = false) => {
@@ -212,6 +218,21 @@ export default function CabinetScreen() {
       void load(false, true);
     }, [load]),
   );
+
+  useEffect(() => {
+    if (!token) return;
+    void getRecommendations(token).then(setRecommendations).catch(() => {/* non-critical */});
+    const userId = token.slice(-8);
+    void (async () => {
+      const stored = await storage.getItem(`recallth:recs-dismissed:${userId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Array<{ name: string; at: number }>;
+        const now = Date.now();
+        const active = parsed.filter((d) => now - d.at < 86_400_000).map((d) => d.name);
+        setDismissedRecs(active);
+      }
+    })();
+  }, [token]);
 
   const handleAdd = useCallback(
     async (input: CreateCabinetItemInput) => {
@@ -310,6 +331,25 @@ export default function CabinetScreen() {
     [],
   );
 
+  const handleDismissRec = useCallback(
+    async (name: string) => {
+      setDismissedRecs((prev) => [...prev, name]);
+      if (!token) return;
+      const userId = token.slice(-8);
+      const key = `recallth:recs-dismissed:${userId}`;
+      const stored = await storage.getItem(key);
+      const existing: Array<{ name: string; at: number }> = stored ? (JSON.parse(stored) as Array<{ name: string; at: number }>) : [];
+      const updated = [...existing.filter((d) => d.name !== name), { name, at: Date.now() }];
+      await storage.setItem(key, JSON.stringify(updated));
+    },
+    [token],
+  );
+
+  const handleSelectRec = useCallback((rec: Recommendation) => {
+    setPrefillRec(rec);
+    setShowAddSheet(true);
+  }, []);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return state.items;
@@ -399,6 +439,16 @@ export default function CabinetScreen() {
           </View>
         )}
 
+        {/* Recommendations */}
+        {!state.usedMock && recommendations.length > 0 && (
+          <RecommendationsBanner
+            recommendations={recommendations}
+            dismissed={dismissedRecs}
+            onDismiss={(name) => { void handleDismissRec(name); }}
+            onSelect={handleSelectRec}
+          />
+        )}
+
         {/* Search bar */}
         <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
           <Text style={styles.searchIcon}>⌕</Text>
@@ -463,8 +513,9 @@ export default function CabinetScreen() {
 
       <AddSheet
         visible={showAddSheet}
-        onClose={() => setShowAddSheet(false)}
+        onClose={() => { setShowAddSheet(false); setPrefillRec(null); }}
         onSave={handleAdd}
+        prefill={prefillRec ?? undefined}
       />
       <AddSheet
         visible={editingItem !== null}
