@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,7 +14,8 @@ import { getDoseLogsRange, type DoseLogEntry } from '../../services/schedule';
 import { listCabinetItems, type CabinetItem } from '../../services/cabinet';
 import { getStreak } from '../../services/intake';
 import { useAuthStore } from '../../stores/auth';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,7 +96,8 @@ function buildInsights(
 const CELL_SIZE = 8;
 const CELL_GAP = 2;
 
-function HeatmapRow({ insight, dates }: { insight: SupplementInsight; dates: string[] }) {
+function HeatmapRow({ insight, dates, c }: { insight: SupplementInsight; dates: string[]; c: ColorPalette }) {
+  const rowStyles = useMemo(() => makeRowStyles(c), [c]);
   return (
     <View style={rowStyles.row}>
       <Text style={rowStyles.name} numberOfLines={1}>{insight.name}</Text>
@@ -117,45 +119,50 @@ function HeatmapRow({ insight, dates }: { insight: SupplementInsight; dates: str
   );
 }
 
-const rowStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  name: {
-    width: 90,
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.text2,
-  },
-  cells: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: CELL_GAP,
-    flexWrap: 'nowrap',
-  },
-  cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
-    borderRadius: 2,
-  },
-  cellTaken: { backgroundColor: colors.primary },
-  cellMissed: { backgroundColor: colors.text4 },
-  cellInactive: { backgroundColor: 'transparent', borderWidth: 0 },
-  pct: {
-    width: 34,
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.text3,
-    textAlign: 'right',
-  },
-});
+function makeRowStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+    },
+    name: {
+      width: 90,
+      fontSize: 12,
+      fontWeight: '500',
+      color: c.text2,
+    },
+    cells: {
+      flex: 1,
+      flexDirection: 'row',
+      gap: CELL_GAP,
+      flexWrap: 'nowrap',
+    },
+    cell: {
+      width: CELL_SIZE,
+      height: CELL_SIZE,
+      borderRadius: 2,
+    },
+    cellTaken: { backgroundColor: c.primary },
+    cellMissed: { backgroundColor: c.text4 },
+    cellInactive: { backgroundColor: 'transparent', borderWidth: 0 },
+    pct: {
+      width: 34,
+      fontSize: 11,
+      fontWeight: '600',
+      color: c.text3,
+      textAlign: 'right',
+    },
+  });
+}
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function InsightsScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
 
@@ -231,7 +238,7 @@ export default function InsightsScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={c.primary} />
         </View>
       ) : !hasEnoughData ? (
         <View style={styles.center}>
@@ -266,11 +273,11 @@ export default function InsightsScreen() {
           {/* Heatmap legend */}
           <View style={styles.legend}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+              <View style={[styles.legendDot, { backgroundColor: c.primary }]} />
               <Text style={styles.legendLabel}>Taken</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: colors.text4 }]} />
+              <View style={[styles.legendDot, { backgroundColor: c.text4 }]} />
               <Text style={styles.legendLabel}>Missed</Text>
             </View>
             <Text style={styles.legendDates}>
@@ -284,7 +291,7 @@ export default function InsightsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>30-Day Heatmap</Text>
             {insights.map((insight) => (
-              <HeatmapRow key={insight.id} insight={insight} dates={dates} />
+              <HeatmapRow key={insight.id} insight={insight} dates={dates} c={c} />
             ))}
           </View>
 
@@ -295,7 +302,7 @@ export default function InsightsScreen() {
               {topPerformers.map((s) => (
                 <View key={s.id} style={styles.rankRow}>
                   <View style={styles.rankBar}>
-                    <View style={[styles.rankFill, { width: `${s.pct}%`, backgroundColor: colors.primary }]} />
+                    <View style={[styles.rankFill, { width: `${s.pct}%`, backgroundColor: c.primary }]} />
                   </View>
                   <Text style={styles.rankName} numberOfLines={1}>{s.name}</Text>
                   <Text style={styles.rankPct}>{s.pct}%</Text>
@@ -311,10 +318,10 @@ export default function InsightsScreen() {
               {needsAttention.map((s) => (
                 <View key={s.id} style={styles.rankRow}>
                   <View style={styles.rankBar}>
-                    <View style={[styles.rankFill, { width: `${s.pct}%`, backgroundColor: colors.warning }]} />
+                    <View style={[styles.rankFill, { width: `${s.pct}%`, backgroundColor: c.warning }]} />
                   </View>
                   <Text style={styles.rankName} numberOfLines={1}>{s.name}</Text>
-                  <Text style={[styles.rankPct, { color: colors.warning }]}>{s.pct}%</Text>
+                  <Text style={[styles.rankPct, { color: c.warning }]}>{s.pct}%</Text>
                 </View>
               ))}
               <Text style={styles.attentionNote}>
@@ -328,82 +335,84 @@ export default function InsightsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: { fontSize: 16, color: colors.primary, fontWeight: '500' },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text },
-  headerRight: { width: 50 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl },
-  emptyIcon: { fontSize: 48, marginBottom: spacing.lg },
-  emptyTitle: { ...typography.sectionTitle, color: colors.text, marginBottom: spacing.sm, textAlign: 'center' },
-  emptyBody: { ...typography.body, color: colors.text2, textAlign: 'center', lineHeight: 22 },
-  scroll: { flex: 1 },
-  scrollContent: { padding: spacing.xl, gap: spacing.xl, paddingBottom: spacing.xxxl },
-  statsRow: { flexDirection: 'row', gap: spacing.md },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    alignItems: 'center',
-    gap: 4,
-  },
-  statValue: { fontSize: 24, fontWeight: '700', color: colors.text },
-  statLabel: { fontSize: 11, fontWeight: '500', color: colors.text3, textAlign: 'center' },
-  legend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 2 },
-  legendLabel: { fontSize: 12, color: colors.text3 },
-  legendDates: { marginLeft: 'auto', fontSize: 11, color: colors.text3 },
-  section: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.bodyStrong,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  rankRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 28,
-  },
-  rankBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: colors.bg,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  rankFill: { height: '100%', borderRadius: radius.full },
-  rankName: { width: 100, fontSize: 13, color: colors.text2, fontWeight: '500' },
-  rankPct: { width: 34, fontSize: 12, fontWeight: '700', color: colors.primary, textAlign: 'right' },
-  attentionNote: {
-    fontSize: 12,
-    color: colors.text3,
-    fontStyle: 'italic',
-    marginTop: spacing.xs,
-    lineHeight: 17,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    backBtn: { fontSize: 16, color: c.primary, fontWeight: '500' },
+    title: { fontSize: 17, fontWeight: '700', color: c.text },
+    headerRight: { width: 50 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl },
+    emptyIcon: { fontSize: 48, marginBottom: spacing.lg },
+    emptyTitle: { ...typography.sectionTitle, color: c.text, marginBottom: spacing.sm, textAlign: 'center' },
+    emptyBody: { ...typography.body, color: c.text2, textAlign: 'center', lineHeight: 22 },
+    scroll: { flex: 1 },
+    scrollContent: { padding: spacing.xl, gap: spacing.xl, paddingBottom: spacing.xxxl },
+    statsRow: { flexDirection: 'row', gap: spacing.md },
+    statCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.md,
+      alignItems: 'center',
+      gap: 4,
+    },
+    statValue: { fontSize: 24, fontWeight: '700', color: c.text },
+    statLabel: { fontSize: 11, fontWeight: '500', color: c.text3, textAlign: 'center' },
+    legend: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.lg,
+    },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    legendDot: { width: 8, height: 8, borderRadius: 2 },
+    legendLabel: { fontSize: 12, color: c.text3 },
+    legendDates: { marginLeft: 'auto', fontSize: 11, color: c.text3 },
+    section: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      ...typography.bodyStrong,
+      color: c.text,
+      marginBottom: spacing.xs,
+    },
+    rankRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 28,
+    },
+    rankBar: {
+      flex: 1,
+      height: 6,
+      backgroundColor: c.bg,
+      borderRadius: radius.full,
+      overflow: 'hidden',
+    },
+    rankFill: { height: '100%', borderRadius: radius.full },
+    rankName: { width: 100, fontSize: 13, color: c.text2, fontWeight: '500' },
+    rankPct: { width: 34, fontSize: 12, fontWeight: '700', color: c.primary, textAlign: 'right' },
+    attentionNote: {
+      fontSize: 12,
+      color: c.text3,
+      fontStyle: 'italic',
+      marginTop: spacing.xs,
+      lineHeight: 17,
+    },
+  });
+}

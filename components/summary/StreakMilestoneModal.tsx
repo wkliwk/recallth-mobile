@@ -1,5 +1,7 @@
+import React, { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 const MILESTONE_CONFIG: Record<number, { emoji: string; subtitle: string }> = {
   7: { emoji: '🔥', subtitle: 'One full week of consistent care. Keep the flame alive!' },
@@ -13,6 +15,9 @@ interface Props {
 }
 
 export function StreakMilestoneModal({ days, onDismiss }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const config = MILESTONE_CONFIG[days];
   if (!config) return null;
 
@@ -43,57 +48,59 @@ export function StreakMilestoneModal({ days, onDismiss }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.screenPad,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xxl,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  emoji: {
-    fontSize: 56,
-    lineHeight: 64,
-    marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.5,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.text2,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: spacing.xl,
-  },
-  btn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xxl,
-  },
-  btnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.screenPad,
+    },
+    card: {
+      width: '100%',
+      backgroundColor: c.surface,
+      borderRadius: radius.xxl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.xxl,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.18,
+      shadowRadius: 24,
+      elevation: 12,
+    },
+    emoji: {
+      fontSize: 56,
+      lineHeight: 64,
+      marginBottom: spacing.md,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '700',
+      color: c.text,
+      letterSpacing: -0.5,
+      marginBottom: spacing.sm,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: 14,
+      color: c.text2,
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: spacing.xl,
+    },
+    btn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xxl,
+    },
+    btnText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#fff',
+    },
+  });
+}

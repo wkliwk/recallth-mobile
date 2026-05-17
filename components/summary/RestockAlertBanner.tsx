@@ -1,5 +1,7 @@
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   names: string[];
@@ -14,6 +16,9 @@ function formatNames(names: string[]): string {
 }
 
 export function RestockAlertBanner({ names, onPress }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   if (names.length === 0) return null;
   return (
     <Pressable
@@ -34,44 +39,46 @@ export function RestockAlertBanner({ names, onPress }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.warningMid,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.warning + '40',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: 14,
-  },
-  left: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    flex: 1,
-  },
-  icon: {
-    fontSize: 18,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.warning,
-    lineHeight: 19,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: colors.warning,
-    opacity: 0.75,
-    marginTop: 1,
-  },
-  chevron: {
-    fontSize: 20,
-    color: colors.warning,
-    fontWeight: '300',
-    marginLeft: spacing.sm,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.warningMid,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.warning + '40',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      marginBottom: 14,
+    },
+    left: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      flex: 1,
+    },
+    icon: {
+      fontSize: 18,
+    },
+    title: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.warning,
+      lineHeight: 19,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: c.warning,
+      opacity: 0.75,
+      marginTop: 1,
+    },
+    chevron: {
+      fontSize: 20,
+      color: c.warning,
+      fontWeight: '300',
+      marginLeft: spacing.sm,
+    },
+  });
+}

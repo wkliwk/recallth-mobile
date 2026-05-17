@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { WellnessScore } from '../../services/trends';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import TrendsCard from './TrendsCard';
 
 interface Props {
@@ -14,9 +15,10 @@ interface CategoryBarProps {
   score: number;
   max: number;
   detail: string;
+  styles: ReturnType<typeof makeStyles>;
 }
 
-function CategoryBar({ label, score, max, detail }: CategoryBarProps) {
+function CategoryBar({ label, score, max, detail, styles }: CategoryBarProps) {
   const pct = max > 0 ? Math.min(100, Math.round((score / max) * 100)) : 0;
   const widthLabel = `${pct}%` as `${number}%`;
   return (
@@ -36,6 +38,9 @@ function CategoryBar({ label, score, max, detail }: CategoryBarProps) {
 }
 
 export default function WellnessCard({ score }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   if (!score) {
     return (
       <TrendsCard label="Wellness score">
@@ -64,18 +69,21 @@ export default function WellnessCard({ score }: Props) {
           score={breakdown.profileCompleteness.score}
           max={breakdown.profileCompleteness.max}
           detail={breakdown.profileCompleteness.detail}
+          styles={styles}
         />
         <CategoryBar
           label="Cabinet quality"
           score={breakdown.cabinetQuality.score}
           max={breakdown.cabinetQuality.max}
           detail={breakdown.cabinetQuality.detail}
+          styles={styles}
         />
         <CategoryBar
           label="Goal alignment"
           score={breakdown.goalAlignment.score}
           max={breakdown.goalAlignment.max}
           detail={breakdown.goalAlignment.detail}
+          styles={styles}
         />
       </View>
 
@@ -89,87 +97,89 @@ export default function WellnessCard({ score }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: spacing.md,
-  },
-  bigScore: {
-    fontSize: 44,
-    lineHeight: 52,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  scoreOutOf: {
-    ...typography.body,
-    color: colors.text2,
-    marginLeft: 4,
-  },
-  catList: {
-    gap: spacing.md,
-  },
-  catRow: {
-    gap: 4,
-  },
-  catHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  catLabel: {
-    ...typography.bodySmall,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  catScore: {
-    ...typography.bodySmall,
-    color: colors.text2,
-  },
-  catTrack: {
-    height: 6,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  catFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-  },
-  catDetail: {
-    ...typography.caption,
-    color: colors.text3,
-  },
-  tipsBox: {
-    marginTop: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.md,
-    gap: 4,
-  },
-  tipsLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primaryBright,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  tipsText: {
-    ...typography.bodySmall,
-    color: colors.text,
-  },
-  empty: {
-    paddingVertical: spacing.sm,
-    gap: 4,
-  },
-  emptyTitle: {
-    ...typography.bodyStrong,
-    color: colors.text,
-  },
-  emptyBody: {
-    ...typography.bodySmall,
-    color: colors.text2,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    scoreRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      marginBottom: spacing.md,
+    },
+    bigScore: {
+      fontSize: 44,
+      lineHeight: 52,
+      fontWeight: '700',
+      color: c.primary,
+    },
+    scoreOutOf: {
+      ...typography.body,
+      color: c.text2,
+      marginLeft: 4,
+    },
+    catList: {
+      gap: spacing.md,
+    },
+    catRow: {
+      gap: 4,
+    },
+    catHead: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+    },
+    catLabel: {
+      ...typography.bodySmall,
+      fontWeight: '600',
+      color: c.text,
+    },
+    catScore: {
+      ...typography.bodySmall,
+      color: c.text2,
+    },
+    catTrack: {
+      height: 6,
+      backgroundColor: c.surface,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+    },
+    catFill: {
+      height: '100%',
+      backgroundColor: c.primary,
+    },
+    catDetail: {
+      ...typography.caption,
+      color: c.text3,
+    },
+    tipsBox: {
+      marginTop: spacing.md,
+      padding: spacing.md,
+      backgroundColor: c.primaryLight,
+      borderRadius: radius.md,
+      gap: 4,
+    },
+    tipsLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: c.primaryBright,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    tipsText: {
+      ...typography.bodySmall,
+      color: c.text,
+    },
+    empty: {
+      paddingVertical: spacing.sm,
+      gap: 4,
+    },
+    emptyTitle: {
+      ...typography.bodyStrong,
+      color: c.text,
+    },
+    emptyBody: {
+      ...typography.bodySmall,
+      color: c.text2,
+    },
+  });
+}

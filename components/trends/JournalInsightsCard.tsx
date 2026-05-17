@@ -1,5 +1,7 @@
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   insights: string[];
@@ -17,6 +19,9 @@ function relativeTime(iso: string): string {
 }
 
 export default function JournalInsightsCard({ insights, isEmpty, generatedAt }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -47,75 +52,77 @@ export default function JournalInsightsCard({ insights, isEmpty, generatedAt }: 
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.2,
-  },
-  timestamp: {
-    fontSize: 11,
-    color: colors.text3,
-  },
-  emptyState: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  lockIcon: {
-    fontSize: 16,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: colors.text3,
-    flex: 1,
-    lineHeight: 18,
-    fontStyle: 'italic',
-  },
-  insightsList: {
-    gap: 0,
-  },
-  insightRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  insightRowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  insightBullet: {
-    fontSize: 8,
-    color: colors.primary,
-    marginTop: 5,
-    flexShrink: 0,
-  },
-  insightText: {
-    fontSize: 13,
-    color: colors.text,
-    lineHeight: 19,
-    flex: 1,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.03,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    label: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.text,
+      letterSpacing: -0.2,
+    },
+    timestamp: {
+      fontSize: 11,
+      color: c.text3,
+    },
+    emptyState: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    lockIcon: {
+      fontSize: 16,
+    },
+    emptyText: {
+      fontSize: 13,
+      color: c.text3,
+      flex: 1,
+      lineHeight: 18,
+      fontStyle: 'italic',
+    },
+    insightsList: {
+      gap: 0,
+    },
+    insightRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    insightRowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    insightBullet: {
+      fontSize: 8,
+      color: c.primary,
+      marginTop: 5,
+      flexShrink: 0,
+    },
+    insightText: {
+      fontSize: 13,
+      color: c.text,
+      lineHeight: 19,
+      flex: 1,
+    },
+  });
+}
