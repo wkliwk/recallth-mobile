@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,7 +11,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { createBloodworkEntry, type BloodworkEntry, type CreateBloodworkInput } from '../../services/bloodwork';
 
 interface Props {
@@ -24,6 +25,9 @@ interface Props {
 const today = new Date().toISOString().slice(0, 10);
 
 export function AddBloodworkSheet({ visible, token, onClose, onSaved }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [date, setDate] = useState(today);
   const [marker, setMarker] = useState('');
   const [value, setValue] = useState('');
@@ -130,6 +134,8 @@ function Field({ label, value, onChangeText, placeholder, keyboardType }: {
   placeholder?: string;
   keyboardType?: 'default' | 'decimal-pad' | 'numbers-and-punctuation';
 }) {
+  const c = useThemeColors();
+  const fieldStyles = useMemo(() => makeFieldStyles(c), [c]);
   return (
     <View style={fieldStyles.wrap}>
       <Text style={fieldStyles.label}>{label}</Text>
@@ -138,7 +144,7 @@ function Field({ label, value, onChangeText, placeholder, keyboardType }: {
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.text4}
+        placeholderTextColor={c.text4}
         keyboardType={keyboardType ?? 'default'}
         autoCapitalize="none"
         autoCorrect={false}
@@ -147,56 +153,60 @@ function Field({ label, value, onChangeText, placeholder, keyboardType }: {
   );
 }
 
-const fieldStyles = StyleSheet.create({
-  wrap: { marginBottom: spacing.md },
-  label: { fontSize: 12, fontWeight: '600', color: colors.text2, marginBottom: spacing.xs },
-  input: {
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 14,
-    color: colors.text,
-  },
-});
+function makeFieldStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    wrap: { marginBottom: spacing.md },
+    label: { fontSize: 12, fontWeight: '600', color: c.text2, marginBottom: spacing.xs },
+    input: {
+      backgroundColor: c.bg,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 14,
+      color: c.text,
+    },
+  });
+}
 
-const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.sm,
-    maxHeight: '90%',
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text },
-  closeBtn: { fontSize: 14, color: colors.text3, fontWeight: '600' },
-  errorText: { fontSize: 12, color: colors.danger, marginBottom: spacing.md },
-  saveBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: { flex: 1, justifyContent: 'flex-end' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xxl,
+      borderTopRightRadius: radius.xxl,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.sm,
+      maxHeight: '90%',
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.border,
+      alignSelf: 'center',
+      marginBottom: spacing.md,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.lg,
+    },
+    title: { fontSize: 17, fontWeight: '700', color: c.text },
+    closeBtn: { fontSize: 14, color: c.text3, fontWeight: '600' },
+    errorText: { fontSize: 12, color: c.danger, marginBottom: spacing.md },
+    saveBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    saveBtnDisabled: { opacity: 0.6 },
+    saveBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  });
+}

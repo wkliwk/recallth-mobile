@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -8,7 +8,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors, radius, spacing } from '../../utils/theme';
+import { ColorPalette, radius, spacing } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { getHistory, type Conversation } from '../../services/chat';
 
 interface Props {
@@ -42,6 +43,9 @@ function conversationLabel(c: Conversation): string {
 }
 
 export function ConversationHistorySheet({ visible, token, activeConversationId, onSelect, onClose }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +97,7 @@ export function ConversationHistorySheet({ visible, token, activeConversationId,
           {/* Content */}
           {loading ? (
             <View style={styles.center}>
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={c.primary} />
             </View>
           ) : error !== null ? (
             <View style={styles.center}>
@@ -111,28 +115,28 @@ export function ConversationHistorySheet({ visible, token, activeConversationId,
             </View>
           ) : (
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-              {conversations.map((c) => {
-                const isActive = c._id === activeConversationId;
+              {conversations.map((conv) => {
+                const isActive = conv._id === activeConversationId;
                 return (
                   <Pressable
-                    key={c._id}
+                    key={conv._id}
                     style={({ pressed }) => [
                       styles.row,
                       isActive && styles.rowActive,
                       pressed && styles.rowPressed,
                     ]}
-                    onPress={() => onSelect(c._id)}
+                    onPress={() => onSelect(conv._id)}
                     accessibilityRole="button"
-                    accessibilityLabel={conversationLabel(c)}
+                    accessibilityLabel={conversationLabel(conv)}
                   >
                     <View style={styles.rowLeft}>
                       <Text style={[styles.rowLabel, isActive && styles.rowLabelActive]} numberOfLines={1}>
-                        {conversationLabel(c)}
+                        {conversationLabel(conv)}
                       </Text>
                       <Text style={styles.rowMeta}>
-                        {relativeDate(c.createdAt)}
-                        {c.messageCount !== undefined && c.messageCount > 0
-                          ? ` · ${c.messageCount} message${c.messageCount === 1 ? '' : 's'}`
+                        {relativeDate(conv.createdAt)}
+                        {conv.messageCount !== undefined && conv.messageCount > 0
+                          ? ` · ${conv.messageCount} message${conv.messageCount === 1 ? '' : 's'}`
                           : ''}
                       </Text>
                     </View>
@@ -149,116 +153,118 @@ export function ConversationHistorySheet({ visible, token, activeConversationId,
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
-    paddingHorizontal: spacing.screenPad,
-    paddingTop: spacing.sm,
-    maxHeight: '75%',
-    minHeight: 200,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  closeBtn: {
-    padding: spacing.xs,
-  },
-  closeBtnText: {
-    fontSize: 14,
-    color: colors.text3,
-    fontWeight: '600',
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xxl,
-  },
-  errorText: {
-    fontSize: 13,
-    color: colors.text2,
-    marginBottom: spacing.sm,
-  },
-  retryBtn: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  retryBtnText: {
-    fontSize: 13,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  emptyText: {
-    fontSize: 13,
-    color: colors.text3,
-    fontStyle: 'italic',
-  },
-  list: {
-    flex: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  rowActive: {
-    backgroundColor: colors.primaryLight,
-    marginHorizontal: -spacing.screenPad,
-    paddingHorizontal: spacing.screenPad,
-    borderRadius: radius.md,
-  },
-  rowPressed: {
-    opacity: 0.7,
-  },
-  rowLeft: {
-    flex: 1,
-  },
-  rowLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  rowLabelActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  rowMeta: {
-    fontSize: 12,
-    color: colors.text3,
-  },
-  activeCheck: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '700',
-    marginLeft: spacing.sm,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xxl,
+      borderTopRightRadius: radius.xxl,
+      paddingHorizontal: spacing.screenPad,
+      paddingTop: spacing.sm,
+      maxHeight: '75%',
+      minHeight: 200,
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.border,
+      alignSelf: 'center',
+      marginBottom: spacing.md,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    title: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: c.text,
+    },
+    closeBtn: {
+      padding: spacing.xs,
+    },
+    closeBtnText: {
+      fontSize: 14,
+      color: c.text3,
+      fontWeight: '600',
+    },
+    center: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xxl,
+    },
+    errorText: {
+      fontSize: 13,
+      color: c.text2,
+      marginBottom: spacing.sm,
+    },
+    retryBtn: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    retryBtnText: {
+      fontSize: 13,
+      color: c.text,
+      fontWeight: '600',
+    },
+    emptyText: {
+      fontSize: 13,
+      color: c.text3,
+      fontStyle: 'italic',
+    },
+    list: {
+      flex: 1,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    rowActive: {
+      backgroundColor: c.primaryLight,
+      marginHorizontal: -spacing.screenPad,
+      paddingHorizontal: spacing.screenPad,
+      borderRadius: radius.md,
+    },
+    rowPressed: {
+      opacity: 0.7,
+    },
+    rowLeft: {
+      flex: 1,
+    },
+    rowLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: c.text,
+      marginBottom: 2,
+    },
+    rowLabelActive: {
+      color: c.primary,
+      fontWeight: '700',
+    },
+    rowMeta: {
+      fontSize: 12,
+      color: c.text3,
+    },
+    activeCheck: {
+      fontSize: 14,
+      color: c.primary,
+      fontWeight: '700',
+      marginLeft: spacing.sm,
+    },
+  });
+}

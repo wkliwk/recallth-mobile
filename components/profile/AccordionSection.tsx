@@ -5,7 +5,7 @@
  * and animates open/close.
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   LayoutAnimation,
@@ -18,7 +18,8 @@ import {
 } from 'react-native';
 
 import type { Provenance } from '../../services/profile';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import ProvenanceBadge from './ProvenanceBadge';
 
 // Enable LayoutAnimation on Android
@@ -48,6 +49,9 @@ export default function AccordionSection({
   saveState = 'idle',
   onSave,
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [open, setOpen] = useState(defaultOpen);
   const rotateAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
 
@@ -75,10 +79,10 @@ export default function AccordionSection({
   };
 
   const saveBgMap: Record<string, string> = {
-    idle: colors.primary,
-    saving: colors.text3,
-    success: colors.primary,
-    error: colors.danger,
+    idle: c.primary,
+    saving: c.text3,
+    success: c.primary,
+    error: c.danger,
   };
 
   return (
@@ -134,68 +138,70 @@ export default function AccordionSection({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerPressed: {
-    backgroundColor: colors.cardSolid,
-  },
-  headerLeft: {
-    gap: spacing.xs,
-    flex: 1,
-  },
-  title: {
-    ...typography.sectionTitle,
-    color: colors.text,
-  },
-  arrow: {
-    fontSize: 18,
-    color: colors.text3,
-    marginLeft: spacing.sm,
-  },
-  body: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing.md,
-  },
-  saveRow: {
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-    alignItems: 'flex-end',
-  },
-  saveBtn: {
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    alignSelf: 'flex-end',
-  },
-  saveBtnPressed: { opacity: 0.8 },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: {
-    ...typography.bodyStrong,
-    color: colors.surface,
-  },
-  successMsg: {
-    ...typography.bodySmall,
-    color: colors.primary,
-  },
-  errorMsg: {
-    ...typography.bodySmall,
-    color: colors.danger,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+      marginBottom: spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    headerPressed: {
+      backgroundColor: c.cardSolid,
+    },
+    headerLeft: {
+      gap: spacing.xs,
+      flex: 1,
+    },
+    title: {
+      ...typography.sectionTitle,
+      color: c.text,
+    },
+    arrow: {
+      fontSize: 18,
+      color: c.text3,
+      marginLeft: spacing.sm,
+    },
+    body: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      gap: spacing.md,
+    },
+    saveRow: {
+      marginTop: spacing.sm,
+      gap: spacing.xs,
+      alignItems: 'flex-end',
+    },
+    saveBtn: {
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.sm,
+      alignSelf: 'flex-end',
+    },
+    saveBtnPressed: { opacity: 0.8 },
+    saveBtnDisabled: { opacity: 0.6 },
+    saveBtnText: {
+      ...typography.bodyStrong,
+      color: c.surface,
+    },
+    successMsg: {
+      ...typography.bodySmall,
+      color: c.primary,
+    },
+    errorMsg: {
+      ...typography.bodySmall,
+      color: c.danger,
+    },
+  });
+}

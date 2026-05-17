@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -9,7 +9,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { type EffectRating } from '../../utils/effectsStorage';
 
 const EMOJIS: Array<{ value: EffectRating['value']; label: string; emoji: string }> = [
@@ -28,6 +29,9 @@ interface Props {
 }
 
 export function EffectivenessCheckInSheet({ visible, supplementName, onSave, onDefer }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [selected, setSelected] = useState<EffectRating['value'] | null>(null);
   const [note, setNote] = useState('');
 
@@ -80,7 +84,7 @@ export function EffectivenessCheckInSheet({ visible, supplementName, onSave, onD
             <TextInput
               style={styles.noteInput}
               placeholder="Optional note (max 140 chars)"
-              placeholderTextColor={colors.text3}
+              placeholderTextColor={c.text3}
               value={note}
               onChangeText={(t) => setNote(t.slice(0, 140))}
               multiline
@@ -119,79 +123,81 @@ export function EffectivenessCheckInSheet({ visible, supplementName, onSave, onD
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
-    paddingHorizontal: spacing.xxl,
-    paddingBottom: spacing.xxxl,
-    paddingTop: spacing.md,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: spacing.xl,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.text3,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
-  emojiRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xl,
-  },
-  emojiBtn: {
-    alignItems: 'center',
-    padding: spacing.sm,
-    borderRadius: radius.lg,
-    flex: 1,
-  },
-  emojiBtnSelected: {
-    backgroundColor: colors.primaryLight,
-  },
-  emoji: { fontSize: 28, marginBottom: 4 },
-  emojiLabel: { fontSize: 9, color: colors.text3, textAlign: 'center', fontWeight: '500' },
-  emojiLabelSelected: { color: colors.primary, fontWeight: '700' },
-  noteInput: {
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    ...typography.body,
-    color: colors.text,
-    minHeight: 72,
-    marginBottom: spacing.xl,
-  },
-  actions: { gap: spacing.md, alignItems: 'center' },
-  saveBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xxl,
-    width: '100%',
-    alignItems: 'center',
-  },
-  saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  deferText: { fontSize: 14, color: colors.text3, fontWeight: '500' },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xxl,
+      borderTopRightRadius: radius.xxl,
+      paddingHorizontal: spacing.xxl,
+      paddingBottom: spacing.xxxl,
+      paddingTop: spacing.md,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.border,
+      alignSelf: 'center',
+      marginBottom: spacing.xl,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    subtitle: {
+      ...typography.bodySmall,
+      color: c.text3,
+      textAlign: 'center',
+      marginBottom: spacing.xl,
+    },
+    emojiRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xl,
+    },
+    emojiBtn: {
+      alignItems: 'center',
+      padding: spacing.sm,
+      borderRadius: radius.lg,
+      flex: 1,
+    },
+    emojiBtnSelected: {
+      backgroundColor: c.primaryLight,
+    },
+    emoji: { fontSize: 28, marginBottom: 4 },
+    emojiLabel: { fontSize: 9, color: c.text3, textAlign: 'center', fontWeight: '500' },
+    emojiLabelSelected: { color: c.primary, fontWeight: '700' },
+    noteInput: {
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.md,
+      ...typography.body,
+      color: c.text,
+      minHeight: 72,
+      marginBottom: spacing.xl,
+    },
+    actions: { gap: spacing.md, alignItems: 'center' },
+    saveBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xxl,
+      width: '100%',
+      alignItems: 'center',
+    },
+    saveBtnDisabled: { opacity: 0.4 },
+    saveBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+    deferText: { fontSize: 14, color: c.text3, fontWeight: '500' },
+  });
+}

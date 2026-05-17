@@ -4,16 +4,20 @@
  * Design: thin pill track, brand-green fill, label at right.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   percent: number; // 0–100
 }
 
 export default function CompletenessBar({ percent }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const animatedWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -47,37 +51,39 @@ export default function CompletenessBar({ percent }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: spacing.screenPad,
-    paddingVertical: spacing.lg,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  label: {
-    ...typography.bodySmall,
-    color: colors.text2,
-  },
-  pct: {
-    ...typography.bodyStrong,
-    color: colors.primary,
-  },
-  track: {
-    height: 6,
-    backgroundColor: colors.primaryMid,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: spacing.screenPad,
+      paddingVertical: spacing.lg,
+      backgroundColor: c.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      gap: spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    label: {
+      ...typography.bodySmall,
+      color: c.text2,
+    },
+    pct: {
+      ...typography.bodyStrong,
+      color: c.primary,
+    },
+    track: {
+      height: 6,
+      backgroundColor: c.primaryMid,
+      borderRadius: radius.full,
+      overflow: 'hidden',
+    },
+    fill: {
+      height: '100%',
+      backgroundColor: c.primary,
+      borderRadius: radius.full,
+    },
+  });
+}

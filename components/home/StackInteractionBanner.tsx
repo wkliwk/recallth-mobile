@@ -1,5 +1,7 @@
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 export interface StackWarning {
   nameA: string;
@@ -16,6 +18,9 @@ interface Props {
 }
 
 export function StackInteractionBanner({ warning, onPress, onDismiss }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const body = warning.description.length > 120
     ? warning.description.slice(0, 117) + '…'
     : warning.description;
@@ -49,38 +54,40 @@ export function StackInteractionBanner({ warning, onPress, onDismiss }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.warningLight,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.warning + '50',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: 14,
-    gap: spacing.sm,
-  },
-  content: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  icon: { fontSize: 16, color: colors.warning, marginTop: 2 },
-  text: { flex: 1 },
-  title: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.warning,
-    marginBottom: 2,
-  },
-  body: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    lineHeight: 18,
-  },
-  dismiss: { paddingLeft: spacing.sm },
-  dismissText: { fontSize: 14, color: colors.text3, fontWeight: '600' },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      backgroundColor: c.warningLight,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.warning + '50',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      marginBottom: 14,
+      gap: spacing.sm,
+    },
+    content: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+    },
+    icon: { fontSize: 16, color: c.warning, marginTop: 2 },
+    text: { flex: 1 },
+    title: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.warning,
+      marginBottom: 2,
+    },
+    body: {
+      ...typography.bodySmall,
+      color: c.text2,
+      lineHeight: 18,
+    },
+    dismiss: { paddingLeft: spacing.sm },
+    dismissText: { fontSize: 14, color: c.text3, fontWeight: '600' },
+  });
+}

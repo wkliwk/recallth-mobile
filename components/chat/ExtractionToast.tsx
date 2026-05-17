@@ -8,11 +8,12 @@
  * Design spec: `Saved: <facts>` — green pill, 1px border, 8/14 padding.
  */
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import type { ExtractionToastData } from '../../stores/chat';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -31,6 +32,8 @@ export const ExtractionToast = React.memo(function ExtractionToast({
   onDismiss,
   autoDismissMs = 8000,
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
 
   // Auto-dismiss
@@ -64,39 +67,41 @@ export const ExtractionToast = React.memo(function ExtractionToast({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: colors.primaryLight,
-    borderWidth: 1,
-    borderColor: colors.primaryMid,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-    marginVertical: spacing.sm,
-    marginHorizontal: spacing.screenPad,
-  },
-  pillPressed: {
-    opacity: 0.8,
-  },
-  checkmark: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  text: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'center',
-  },
-  arrow: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'center',
+      backgroundColor: c.primaryLight,
+      borderWidth: 1,
+      borderColor: c.primaryMid,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      gap: spacing.xs,
+      marginVertical: spacing.sm,
+      marginHorizontal: spacing.screenPad,
+    },
+    pillPressed: {
+      opacity: 0.8,
+    },
+    checkmark: {
+      fontSize: 12,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    text: {
+      ...typography.bodySmall,
+      color: c.primary,
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'center',
+    },
+    arrow: {
+      fontSize: 16,
+      color: c.primary,
+      fontWeight: '600',
+    },
+  });
+}

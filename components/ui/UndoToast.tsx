@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   message: string;
@@ -10,6 +11,9 @@ interface Props {
 }
 
 export function UndoToast({ message, onUndo, onExpire, durationMs = 3000 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const opacity = useRef(new Animated.Value(0)).current;
   const expiredRef = useRef(false);
 
@@ -53,36 +57,38 @@ export function UndoToast({ message, onUndo, onExpire, durationMs = 3000 }: Prop
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 24,
-    left: spacing.screenPad,
-    right: spacing.screenPad,
-    zIndex: 100,
-  },
-  toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.text,
-    borderRadius: radius.xl,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  message: {
-    ...typography.bodySmall,
-    color: '#fff',
-    flex: 1,
-  },
-  undoBtn: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      position: 'absolute',
+      bottom: 24,
+      left: spacing.screenPad,
+      right: spacing.screenPad,
+      zIndex: 100,
+    },
+    toast: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.text,
+      borderRadius: radius.xl,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      gap: spacing.md,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    message: {
+      ...typography.bodySmall,
+      color: '#fff',
+      flex: 1,
+    },
+    undoBtn: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.primary,
+    },
+  });
+}

@@ -1,6 +1,7 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   blockLabel: string;
@@ -9,6 +10,9 @@ interface Props {
 }
 
 function BlockEffectNudgeBannerInner({ blockLabel, onRateNow, onLater }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -39,53 +43,55 @@ function BlockEffectNudgeBannerInner({ blockLabel, onRateNow, onLater }: Props) 
 
 export const BlockEffectNudgeBanner = memo(BlockEffectNudgeBannerInner);
 
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: spacing.screenPad,
-    marginBottom: spacing.md,
-    backgroundColor: colors.infoLight,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.info,
-    padding: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  content: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.bodyStrong,
-    color: colors.info,
-  },
-  subtitle: {
-    ...typography.caption,
-    color: colors.text2,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexShrink: 0,
-  },
-  rateBtn: {
-    backgroundColor: colors.info,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  rateText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  laterBtn: {
-    padding: spacing.xs,
-  },
-  laterText: {
-    fontSize: 14,
-    color: colors.text3,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      marginHorizontal: spacing.screenPad,
+      marginBottom: spacing.md,
+      backgroundColor: c.infoLight,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.info,
+      padding: spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    content: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    title: {
+      ...typography.bodyStrong,
+      color: c.info,
+    },
+    subtitle: {
+      ...typography.caption,
+      color: c.text2,
+    },
+    actions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      flexShrink: 0,
+    },
+    rateBtn: {
+      backgroundColor: c.info,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    rateText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    laterBtn: {
+      padding: spacing.xs,
+    },
+    laterText: {
+      fontSize: 14,
+      color: c.text3,
+    },
+  });
+}

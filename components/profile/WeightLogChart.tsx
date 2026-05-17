@@ -9,11 +9,12 @@
  * for the most recent entry.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 
 import type { WeightEntry } from '../../services/profile';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 interface Props {
   entries: WeightEntry[];
@@ -39,6 +40,9 @@ export default function WeightLogChart({
   entries,
   chartHeight = 80,
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [dims, setDims] = useState<Dimensions | null>(null);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
@@ -63,7 +67,6 @@ export default function WeightLogChart({
   const last = entries[entries.length - 1];
 
   // Convert entries to (x%, y%) coordinates.
-  type Point = { x: number; y: number };
   const toPoints = (w: number, height: number): number =>
     height - ((w - minW) / range) * height;
 
@@ -117,7 +120,7 @@ export default function WeightLogChart({
         <Text style={styles.metaText}>
           {dateLabel(first.date)} → {dateLabel(last.date)}
         </Text>
-        <Text style={[styles.metaText, { color: colors.primary }]}>
+        <Text style={[styles.metaText, { color: c.primary }]}>
           {last.weight_kg} kg
         </Text>
       </View>
@@ -141,68 +144,70 @@ export default function WeightLogChart({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  metaText: {
-    ...typography.bodySmall,
-    color: colors.text3,
-  },
-  chartArea: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'stretch',
-  },
-  yAxis: {
-    justifyContent: 'space-between',
-    width: 36,
-  },
-  axisLabel: {
-    ...typography.caption,
-    color: colors.text3,
-    textAlign: 'right',
-  },
-  surface: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  segment: {
-    position: 'absolute',
-    height: 2,
-    backgroundColor: colors.primary,
-    borderRadius: 1,
-    transformOrigin: '0 50%',
-  },
-  dot: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
-  empty: {
-    height: 60,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    color: colors.text3,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      gap: spacing.sm,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    metaText: {
+      ...typography.bodySmall,
+      color: c.text3,
+    },
+    chartArea: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'stretch',
+    },
+    yAxis: {
+      justifyContent: 'space-between',
+      width: 36,
+    },
+    axisLabel: {
+      ...typography.caption,
+      color: c.text3,
+      textAlign: 'right',
+    },
+    surface: {
+      flex: 1,
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      position: 'relative',
+    },
+    segment: {
+      position: 'absolute',
+      height: 2,
+      backgroundColor: c.primary,
+      borderRadius: 1,
+      transformOrigin: '0 50%',
+    },
+    dot: {
+      position: 'absolute',
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: c.primary,
+      borderWidth: 2,
+      borderColor: c.surface,
+    },
+    empty: {
+      height: 60,
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyText: {
+      ...typography.bodySmall,
+      color: c.text3,
+    },
+  });
+}

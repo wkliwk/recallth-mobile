@@ -6,7 +6,7 @@
  * otherwise it renders as plain text (or a "Not set" placeholder).
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -17,7 +17,8 @@ import {
 } from 'react-native';
 
 import type { Provenance } from '../../services/profile';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { PickerSheet } from './PickerSheet';
 import ProvenanceBadge from './ProvenanceBadge';
 
@@ -53,6 +54,9 @@ export default function ProfileField({
   options,
   onPressEdit,
 }: Props) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const displayValue =
     value === null || value === '' || value === undefined
       ? null
@@ -110,7 +114,7 @@ export default function ProfileField({
             onChangeText={handleChange}
             keyboardType={keyboardType}
             multiline={multiline}
-            placeholderTextColor={colors.text4}
+            placeholderTextColor={c.text4}
             placeholder={`Enter ${label.toLowerCase()}`}
             accessibilityLabel={`${label} input`}
           />
@@ -142,91 +146,93 @@ export default function ProfileField({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  label: {
-    ...typography.bodySmall,
-    color: colors.text2,
-    fontWeight: '600',
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 28,
-  },
-  value: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-  },
-  placeholder: {
-    ...typography.bodySmall,
-    color: colors.text3,
-    fontStyle: 'italic',
-    flex: 1,
-  },
-  unit: {
-    ...typography.bodySmall,
-    color: colors.text3,
-  },
-  editHint: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-    marginLeft: spacing.sm,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  input: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 40,
-  },
-  inputMultiline: {
-    minHeight: 72,
-    textAlignVertical: 'top',
-  },
-  pickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 40,
-  },
-  pickerValue: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-  },
-  chevron: {
-    fontSize: 20,
-    color: colors.text3,
-    marginLeft: spacing.xs,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: {
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    labelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    label: {
+      ...typography.bodySmall,
+      color: c.text2,
+      fontWeight: '600',
+    },
+    valueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 28,
+    },
+    value: {
+      ...typography.body,
+      color: c.text,
+      flex: 1,
+    },
+    placeholder: {
+      ...typography.bodySmall,
+      color: c.text3,
+      fontStyle: 'italic',
+      flex: 1,
+    },
+    unit: {
+      ...typography.bodySmall,
+      color: c.text3,
+    },
+    editHint: {
+      ...typography.bodySmall,
+      color: c.primary,
+      fontWeight: '600',
+      marginLeft: spacing.sm,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    input: {
+      flex: 1,
+      ...typography.body,
+      color: c.text,
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: 40,
+    },
+    inputMultiline: {
+      minHeight: 72,
+      textAlignVertical: 'top',
+    },
+    pickerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: 40,
+    },
+    pickerValue: {
+      ...typography.body,
+      color: c.text,
+      flex: 1,
+    },
+    chevron: {
+      fontSize: 20,
+      color: c.text3,
+      marginLeft: spacing.xs,
+    },
+  });
+}

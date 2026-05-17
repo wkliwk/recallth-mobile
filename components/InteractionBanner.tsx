@@ -1,6 +1,8 @@
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../utils/theme';
+import { ColorPalette, radius, spacing } from '../utils/theme';
+import { useThemeColors } from '../utils/useTheme';
 
 type Severity = 'moderate' | 'major';
 
@@ -22,12 +24,15 @@ export function InteractionBanner({
   severity = 'moderate',
   onReview,
 }: InteractionBannerProps) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   if (count === 0) return null;
 
   const isMajor = severity === 'major';
-  const bgColor = isMajor ? colors.dangerLight : colors.warningLight;
-  const borderColor = isMajor ? colors.dangerMid : '#FEF3C7'; // warning-mid not in theme yet
-  const textColor = isMajor ? colors.danger : colors.warning;
+  const bgColor = isMajor ? c.dangerLight : c.warningLight;
+  const borderColor = isMajor ? c.dangerMid : c.warningMid;
+  const textColor = isMajor ? c.danger : c.warning;
   const icon = isMajor ? '⚠' : '⚠';
   const label =
     count === 1
@@ -58,40 +63,42 @@ export function InteractionBanner({
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  icon: {
-    fontSize: 18,
-    lineHeight: 22,
-  },
-  body: {
-    flex: 1,
-  },
-  label: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
-  sublabel: {
-    fontSize: 12,
-    lineHeight: 16,
-    opacity: 0.85,
-    marginTop: 1,
-  },
-  reviewBtn: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
-});
+function makeStyles(_c: ColorPalette) {
+  return StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      borderWidth: 1,
+      borderRadius: radius.xl,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    pressed: {
+      opacity: 0.85,
+    },
+    icon: {
+      fontSize: 18,
+      lineHeight: 22,
+    },
+    body: {
+      flex: 1,
+    },
+    label: {
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '600',
+    },
+    sublabel: {
+      fontSize: 12,
+      lineHeight: 16,
+      opacity: 0.85,
+      marginTop: 1,
+    },
+    reviewBtn: {
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '600',
+    },
+  });
+}
