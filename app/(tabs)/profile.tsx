@@ -47,7 +47,8 @@ import {
 import { useAuthStore } from '../../stores/auth';
 import { listBloodwork, type BloodworkEntry } from '../../services/bloodwork';
 import { listExtractions } from '../../services/extractionReview';
-import { generateAndShareReport } from '../../services/exportReport';
+import { generateAndShareReport, shareProgressCard } from '../../services/exportReport';
+import { getStreak } from '../../services/intake';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 import { type EarnedBadge } from '../../utils/badges';
@@ -190,7 +191,9 @@ export default function ProfileScreen() {
   const [bloodworkEntries, setBloodworkEntries] = useState<BloodworkEntry[]>([]);
   const [pendingExtractionCount, setPendingExtractionCount] = useState(0);
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   // Auto-reset success feedback after 2s
   const successTimers = useRef<Record<SectionKey, ReturnType<typeof setTimeout> | null>>({
@@ -205,14 +208,16 @@ export default function ProfileScreen() {
       if (!token) return;
       dispatch({ type: isRefresh ? 'REFRESH_START' : 'LOAD_START' });
       try {
-        const [profile, weightLog, bloodwork, extractions] = await Promise.all([
+        const [profile, weightLog, bloodwork, extractions, streakRes] = await Promise.all([
           fetchProfile(token),
           fetchWeightLog(token, 30),
           listBloodwork(token).catch(() => [] as BloodworkEntry[]),
           listExtractions(token).catch(() => []),
+          getStreak(token).catch(() => ({ currentStreak: 0 })),
         ]);
         setBloodworkEntries(bloodwork);
         setPendingExtractionCount(extractions.filter((e) => e.status === 'pending').length);
+        setCurrentStreak(streakRes.currentStreak ?? 0);
         dispatch({ type: 'LOAD_SUCCESS', profile, weightLog });
         // Load earned badges from storage
         const badgeRaw = await storage.getItem('recallth:earned_badges');
@@ -284,6 +289,18 @@ export default function ProfileScreen() {
     },
     [],
   );
+
+  const handleShareProgress = useCallback(async () => {
+    setSharing(true);
+    try {
+      await shareProgressCard(currentStreak, earnedBadges);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not share progress';
+      Alert.alert('Share failed', message);
+    } finally {
+      setSharing(false);
+    }
+  }, [currentStreak, earnedBadges]);
 
   const handleExport = useCallback(async () => {
     if (!token) return;
@@ -591,7 +608,11 @@ export default function ProfileScreen() {
         </Pressable>
 
         {/* Achievements */}
-        <AchievementsSection earned={earnedBadges} />
+        <AchievementsSection
+          earned={earnedBadges}
+          streak={currentStreak}
+          onShare={sharing ? undefined : () => { void handleShareProgress(); }}
+        />
 
         {/* Export Report */}
         <Pressable
