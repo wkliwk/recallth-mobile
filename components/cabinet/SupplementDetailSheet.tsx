@@ -19,6 +19,8 @@ import { fetchEffects, type SupplementEffectAvg } from '../../services/trends';
 import { findInteractions, type FoundInteraction } from '../../utils/interactions';
 import { computeOptimalBlock } from '../../utils/timingOptimiser';
 import { SideEffectSheet } from './SideEffectSheet';
+import { EffectsSection } from './EffectsSection';
+import { getEffectRatings, type EffectRating } from '../../utils/effectsStorage';
 
 const RATING_LABELS: Record<number, string> = {
   1: 'Mild', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Severe',
@@ -65,6 +67,7 @@ export function SupplementDetailSheet({
   const [doseLogsLoading, setDoseLogsLoading] = useState(false);
   const [effectAvg, setEffectAvg] = useState<SupplementEffectAvg | null>(null);
   const [applyingTiming, setApplyingTiming] = useState(false);
+  const [effectRatings, setEffectRatings] = useState<EffectRating[]>([]);
   const seLoadedRef = useRef(false);
   const doseLogsLoadedRef = useRef<string | null>(null);
 
@@ -84,6 +87,7 @@ export function SupplementDetailSheet({
     setActiveTab('details');
     setDoseLogs([]);
     setEffectAvg(null);
+    setEffectRatings([]);
   }, [item?._id]);
 
   // Load side effects + dose logs + effect ratings when sheet opens
@@ -112,6 +116,9 @@ export function SupplementDetailSheet({
           setEffectAvg(match ?? null);
         })
         .catch(() => {/* non-critical */});
+
+      // Load local effectiveness ratings
+      void getEffectRatings(item._id).then(setEffectRatings).catch(() => {/* non-critical */});
     }
   }, [visible, item, token]);
 
@@ -266,6 +273,7 @@ export function SupplementDetailSheet({
             showsVerticalScrollIndicator={false}
           >
             {activeTab === 'history' ? (
+              <>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Dose History (last 30 days)</Text>
                 {doseLogsLoading ? (
@@ -290,6 +298,15 @@ export function SupplementDetailSheet({
                   })
                 )}
               </View>
+
+              {/* ── Effects timeline ───────────────────────── */}
+              {item && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Effects Timeline</Text>
+                  <EffectsSection supplementId={item._id} ratings={effectRatings} />
+                </View>
+              )}
+              </>
             ) : (
             <>
             {/* ── Fields ──────────────────────────────────── */}

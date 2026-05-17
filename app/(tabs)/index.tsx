@@ -18,6 +18,7 @@ import { BlockEffectNudgeBanner } from '../../components/home/BlockEffectNudgeBa
 import { RecoveryBanner } from '../../components/home/RecoveryBanner';
 import { RecoverySheet } from '../../components/home/RecoverySheet';
 import { StackInteractionBanner, type StackWarning } from '../../components/home/StackInteractionBanner';
+import { EffectivenessCheckInSheet } from '../../components/home/EffectivenessCheckInSheet';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { UndoToast } from '../../components/ui/UndoToast';
 import {
@@ -46,6 +47,7 @@ import { logIntakeToday, getStreak, applyStreakFreeze } from '../../services/int
 import { getTodayDoseLogs, getDoseLogsRange, logDose, unlogDose } from '../../services/schedule';
 import { fetchDailyBrief, getMonthlySummary, type MonthlySummary } from '../../services/insights';
 import { saveEffect } from '../../services/trends';
+import { isEffectPromptDue, saveEffectRating, deferEffectPrompt, type EffectRating } from '../../utils/effectsStorage';
 import { useAuthStore } from '../../stores/auth';
 import * as Haptics from 'expo-haptics';
 import * as storage from '../../services/storage';
@@ -123,6 +125,7 @@ export default function HomeScreen() {
   const [showRecoverySheet, setShowRecoverySheet] = useState(false);
   const [batchUndo, setBatchUndo] = useState<{ ids: string[]; logIds: string[]; count: number } | null>(null);
   const [stackWarning, setStackWarning] = useState<StackWarning | null>(null);
+  const [effectCheckin, setEffectCheckin] = useState<{ supplementId: string; supplementName: string } | null>(null);
   const [effectNudgeInfo, setEffectNudgeInfo] = useState<{
     supplementId: string;
     supplementName: string;
@@ -362,6 +365,19 @@ export default function HomeScreen() {
           }
         } else {
           setMonthlySummaryDismissed(true);
+        }
+      }
+
+      // Effectiveness check-in: find first supplement due for a weekly rating
+      if (supplementsRes.status === 'fulfilled' && !isRefresh) {
+        for (const item of supplementsRes.value) {
+          if (item.isPaused) continue;
+          const addedAt = item.startDate ?? item.createdAt;
+          const due = await isEffectPromptDue(item._id, addedAt).catch(() => false);
+          if (due) {
+            setEffectCheckin({ supplementId: item._id, supplementName: item.name });
+            break;
+          }
         }
       }
 
@@ -743,6 +759,19 @@ export default function HomeScreen() {
     setEffectNudgeInfo(null);
   }, [effectNudgeInfo]);
 
+  const handleCheckinSave = useCallback((value: EffectRating['value'], note?: string) => {
+    if (!effectCheckin) return;
+    setEffectCheckin(null);
+    void saveEffectRating(effectCheckin.supplementId, value, note);
+  }, [effectCheckin]);
+
+  const handleCheckinDefer = useCallback(() => {
+    if (!effectCheckin) return;
+    const id = effectCheckin.supplementId;
+    setEffectCheckin(null);
+    void deferEffectPrompt(id);
+  }, [effectCheckin]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -1003,6 +1032,13 @@ export default function HomeScreen() {
           onExpire={() => setBatchUndo(null)}
         />
       )}
+
+      <EffectivenessCheckInSheet
+        visible={effectCheckin !== null}
+        supplementName={effectCheckin?.supplementName ?? ''}
+        onSave={handleCheckinSave}
+        onDefer={handleCheckinDefer}
+      />
     </SafeAreaView>
   );
 }
