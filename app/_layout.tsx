@@ -8,10 +8,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '../stores/auth';
 import { useOnboardingStore } from '../stores/onboarding';
-import { configureNotificationHandler } from '../services/notifications';
+import {
+  configureNotificationHandler,
+  handleSnoozeResponse,
+  registerNotificationCategories,
+} from '../services/notifications';
 import { colors } from '../utils/theme';
 
 configureNotificationHandler();
+void registerNotificationCategories();
 
 function AuthGate() {
   const router = useRouter();
@@ -81,9 +86,14 @@ export default function RootLayout() {
   const bothHydrated = isHydrated && onboardingHydrated;
 
   // Deep-link to Home when user taps a dose reminder notification.
+  // Also handles snooze action — reschedules the notification 30 min later.
   useEffect(() => {
     notifResponseRef.current = ExpoNotifications.addNotificationResponseReceivedListener(
       (response) => {
+        void handleSnoozeResponse(response);
+
+        if (response.actionIdentifier === 'SNOOZE') return;
+
         const screen = response.notification.request.content.data?.screen;
         if (screen === 'home') {
           router.push('/(tabs)' as Parameters<typeof router.push>[0]);
