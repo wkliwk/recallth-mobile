@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -146,7 +146,8 @@ export default function CabinetScreen() {
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [showAddSheet, setShowAddSheet] = useState(false);
+  const { openAdd } = useLocalSearchParams<{ openAdd?: string }>();
+  const [showAddSheet, setShowAddSheet] = useState(openAdd === '1');
   const [editingItem, setEditingItem] = useState<CabinetItem | null>(null);
   const [detailItem, setDetailItem] = useState<CabinetItem | null>(null);
   const [restockDismissed, setRestockDismissed] = useState(false);
