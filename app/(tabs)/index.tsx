@@ -13,7 +13,7 @@ import { MonthlySummaryCard } from '../../components/summary/MonthlySummaryCard'
 import { EffectRatingSheet, type EffectRatings } from '../../components/summary/EffectRatingSheet';
 import { BadgeCelebrationModal } from '../../components/summary/BadgeCelebrationModal';
 import { AddSheet } from '../../components/cabinet/AddSheet';
-import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
+import { EmptyState } from '../../components/EmptyState';
 import { BlockEffectNudgeBanner } from '../../components/home/BlockEffectNudgeBanner';
 import { RecoveryBanner } from '../../components/home/RecoveryBanner';
 import { RecoverySheet } from '../../components/home/RecoverySheet';
@@ -800,8 +800,12 @@ export default function HomeScreen() {
 
         {/* Empty state when cabinet is empty (after load) */}
         {cabinetItems.length === 0 && (
-          <FirstRunNudge
-            onAdd={() => router.push('/(tabs)/cabinet?openAdd=1' as Parameters<typeof router.push>[0])}
+          <EmptyState
+            icon="leaf-outline"
+            title="Your cabinet is empty"
+            subtitle="Add your first supplement to start tracking doses, spot conflicts, and get AI insights."
+            ctaLabel="Add your first supplement"
+            onCta={() => router.push('/(tabs)/cabinet?openAdd=1' as Parameters<typeof router.push>[0])}
           />
         )}
 

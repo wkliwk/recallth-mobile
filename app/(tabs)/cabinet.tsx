@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,9 +16,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { CabinetCard } from '../../components/cabinet/CabinetCard';
-import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
 import { RecommendationsBanner } from '../../components/cabinet/RecommendationsBanner';
 import { SupplementDetailSheet } from '../../components/cabinet/SupplementDetailSheet';
+import { EmptyState } from '../../components/EmptyState';
+import { ConfettiOverlay } from '../../components/ConfettiOverlay';
 import type { CabinetMockItem } from '../../components/cabinet/CabinetCard';
 import {
   createCabinetItem,
@@ -41,6 +43,15 @@ import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
 
 const CABINET_ORDER_KEY = 'recallth:cabinet-order';
+const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
+
+const VITAMIN_D_PREFILL: Recommendation = {
+  name: 'Vitamin D',
+  type: 'vitamin',
+  dosage: '1000 IU',
+  frequency: 'Daily',
+  benefit: 'Bone health and immune function',
+};
 
 // ─── Mock fallback (unauthenticated / demo) ───────────────────────────────────
 
@@ -137,6 +148,7 @@ interface ScreenState {
 
 export default function CabinetScreen() {
   const token = useAuthStore((s) => s.token);
+  const router = useRouter();
 
   const [state, setState] = useState<ScreenState>({
     items: [],
@@ -158,6 +170,11 @@ export default function CabinetScreen() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [dismissedRecs, setDismissedRecs] = useState<string[]>([]);
   const [prefillRec, setPrefillRec] = useState<Recommendation | null>(null);
+
+  // Onboarding state
+  const [onboardingComplete, setOnboardingComplete] = useState(true); // default true avoids flash
+  const [showReminderNudge, setShowReminderNudge] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const load = useCallback(
     async (isRefresh = false, isSilent = false) => {
@@ -228,6 +245,9 @@ export default function CabinetScreen() {
   const cabinetInitDone = useRef(false);
 
   useEffect(() => {
+    void storage.getItem(ONBOARDING_COMPLETE_KEY).then((val) => {
+      setOnboardingComplete(val === 'true');
+    }).catch(() => { setOnboardingComplete(false); });
     void load(false);
     cabinetInitDone.current = true;
   }, [load]);
@@ -257,6 +277,7 @@ export default function CabinetScreen() {
   const handleAdd = useCallback(
     async (input: CreateCabinetItemInput) => {
       if (!token) return;
+      const isFirstItem = state.items.length === 0 && !onboardingComplete;
       const newItem = await createCabinetItem(input, token);
       const [interactions, evidenceScores] = await Promise.all([
         getInteractions(token).catch(() => [] as Interaction[]),
@@ -268,6 +289,12 @@ export default function CabinetScreen() {
       const orderRaw = await storage.getItem(CABINET_ORDER_KEY).catch(() => null);
       const order: string[] = orderRaw ? JSON.parse(orderRaw) : [];
       void storage.setItem(CABINET_ORDER_KEY, JSON.stringify([...order, newItem._id]));
+
+      // Show onboarding reminder nudge after first supplement is saved
+      if (isFirstItem) {
+        setShowReminderNudge(true);
+        return;
+      }
 
       // Alert if the newly added item has any interactions
       const newItemConflicts = interactions.filter(
@@ -284,7 +311,7 @@ export default function CabinetScreen() {
         );
       }
     },
-    [token],
+    [token, state.items.length, onboardingComplete],
   );
 
   const handleUpdate = useCallback(
@@ -373,6 +400,22 @@ export default function CabinetScreen() {
     setPrefillRec(rec);
     setShowAddSheet(true);
   }, []);
+
+  const completeOnboarding = useCallback(() => {
+    setShowReminderNudge(false);
+    setShowConfetti(true);
+    setOnboardingComplete(true);
+    void storage.setItem(ONBOARDING_COMPLETE_KEY, 'true');
+  }, []);
+
+  const handleSetReminder = useCallback(() => {
+    completeOnboarding();
+    router.push('/(tabs)/settings' as Parameters<typeof router.push>[0]);
+  }, [completeOnboarding, router]);
+
+  const handleSkipReminder = useCallback(() => {
+    completeOnboarding();
+  }, [completeOnboarding]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -509,9 +552,33 @@ export default function CabinetScreen() {
           />
         </View>
 
-        {/* First-run nudge for authenticated users with empty cabinet */}
+        {/* Empty state for authenticated users with no supplements */}
         {!state.usedMock && state.items.length === 0 && !search && !state.loading && (
-          <FirstRunNudge onAdd={() => setShowAddSheet(true)} />
+          onboardingComplete ? (
+            <EmptyState
+              icon="flask-outline"
+              title="Your cabinet is empty"
+              subtitle="Add your first supplement to start tracking doses, spot conflicts, and get AI insights."
+              ctaLabel="+ Add Supplement"
+              onCta={() => setShowAddSheet(true)}
+            />
+          ) : (
+            <EmptyState
+              icon="leaf-outline"
+              title="Welcome to Recallth"
+              subtitle="Track your supplements in seconds. Start with Vitamin D — the most common daily essential."
+              ctaLabel="Add your first supplement"
+              onCta={() => {
+                setPrefillRec(VITAMIN_D_PREFILL);
+                setShowAddSheet(true);
+              }}
+              skipLabel="I'll do this later"
+              onSkip={() => {
+                setOnboardingComplete(true);
+                void storage.setItem(ONBOARDING_COMPLETE_KEY, 'true');
+              }}
+            />
+          )
         )}
 
         {/* Reorder mode — single column DraggableFlatList */}
@@ -609,6 +676,50 @@ export default function CabinetScreen() {
               : []
           }
         />
+      )}
+
+      {/* Onboarding: reminder nudge */}
+      <Modal
+        visible={showReminderNudge}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={handleSkipReminder}
+      >
+        <View style={styles.nudgeOverlay}>
+          <View style={styles.nudgeCard}>
+            <Text style={styles.nudgeTitle}>Set a reminder</Text>
+            <Text style={styles.nudgeBody}>
+              Never miss a dose. Add a daily reminder so you stay consistent.
+            </Text>
+            <Pressable
+              onPress={handleSetReminder}
+              style={({ pressed }) => [styles.nudgeCta, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Set reminder"
+            >
+              <Text style={styles.nudgeCtaText}>Set reminder</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSkipReminder}
+              hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Skip"
+            >
+              <Text style={styles.nudgeSkip}>Skip for now</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Onboarding: you're all set confetti */}
+      {showConfetti && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <View style={styles.allSetBanner}>
+            <Text style={styles.allSetText}>You're all set! 🎉</Text>
+          </View>
+          <ConfettiOverlay onDone={() => setShowConfetti(false)} />
+        </View>
       )}
     </SafeAreaView>
   );
@@ -742,4 +853,72 @@ const styles = StyleSheet.create({
   grid: { gap: GRID_GAP },
   gridRow: { flexDirection: 'row', gap: GRID_GAP },
   gridCell: { flex: 1, minHeight: 0 },
+
+  nudgeOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+  },
+  nudgeCard: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: radius.xxl,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  nudgeTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  nudgeBody: {
+    ...typography.body,
+    color: colors.text2,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.xl,
+  },
+  nudgeCta: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xxl,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  nudgeCtaText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  nudgeSkip: { fontSize: 14, color: colors.text3, fontWeight: '500' },
+
+  allSetBanner: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  allSetText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+  },
 });
