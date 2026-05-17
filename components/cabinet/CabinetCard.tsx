@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../../utils/theme';
+import { formatReminderTime } from '../../utils/reminderTimes';
 import { EvidenceBar } from './EvidenceBar';
 import { SideEffectSheet } from './SideEffectSheet';
 import { type DeepResearch, getSupplementResearch } from '../../services/cabinet';
@@ -37,6 +38,7 @@ export interface CabinetMockItem {
   researchNotes?: ResearchNotes;
   isPaused?: boolean;
   pausedUntil?: string;
+  reminderTime?: string;
 }
 
 interface CabinetCardProps {
@@ -160,6 +162,10 @@ export function CabinetCard({ item, isExpanded, onToggle, onDelete, onEdit, onUp
             </View>
           ) : (
             <Text style={styles.dose}>{item.dose} · {item.schedule}</Text>
+          )}
+
+          {item.reminderTime && (
+            <Text style={styles.reminderBadge}>🔔 {formatReminderTime(item.reminderTime)}</Text>
           )}
 
           {/* Evidence bar */}
@@ -418,6 +424,12 @@ const styles = StyleSheet.create({
     color: colors.text2,
     marginTop: 3,
     fontWeight: '400',
+  },
+  reminderBadge: {
+    fontSize: 11,
+    color: colors.text3,
+    marginTop: 3,
+    fontWeight: '500',
   },
   conflictPill: {
     flexDirection: 'row',
