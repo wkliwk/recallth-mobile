@@ -13,6 +13,7 @@ import { MonthlySummaryCard } from '../../components/summary/MonthlySummaryCard'
 import { EffectRatingSheet, type EffectRatings } from '../../components/summary/EffectRatingSheet';
 import { BadgeCelebrationModal } from '../../components/summary/BadgeCelebrationModal';
 import { AddSheet } from '../../components/cabinet/AddSheet';
+import { FirstRunNudge } from '../../components/cabinet/FirstRunNudge';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
 import { getTodayJournal, type JournalEntry } from '../../services/journal';
@@ -516,6 +517,13 @@ export default function HomeScreen() {
             onDismiss={handleTimingDismiss}
           />
         ))}
+
+        {/* Empty state when cabinet is empty (after load) */}
+        {cabinetItems.length === 0 && (
+          <FirstRunNudge
+            onAdd={() => router.push('/(tabs)/cabinet?openAdd=1' as Parameters<typeof router.push>[0])}
+          />
+        )}
 
         {/* Time-block schedule card */}
         <View style={styles.scheduleCard}>
