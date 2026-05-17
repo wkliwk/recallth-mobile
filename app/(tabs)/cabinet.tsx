@@ -43,7 +43,8 @@ import * as storage from '../../services/storage';
 import { cancelSupplementReminder, getReminderTime, scheduleSupplementReminder } from '../../utils/reminderTimes';
 import { readCache, writeCache, CACHE_KEYS } from '../../utils/screenCache';
 import { checkIsOnline } from '../../utils/networkStatus';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, colors, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 const CABINET_ORDER_KEY = 'recallth:cabinet-order';
 const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
@@ -120,9 +121,10 @@ function apiItemToCard(item: CabinetItem, interactions: Interaction[], evidenceS
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function SearchEmptyState({ query, isEmpty }: { query: string; isEmpty: boolean }) {
+  const c = useThemeColors();
   return (
-    <View style={emptyStyles.container}>
-      <Text style={emptyStyles.text}>
+    <View style={{ paddingTop: 40, alignItems: 'center' }}>
+      <Text style={{ ...typography.body, color: c.text2, textAlign: 'center', lineHeight: 22 }}>
         {isEmpty
           ? 'No supplements in your cabinet yet.\nTap "+ Add" to get started.'
           : `No supplements match "${query}"`}
@@ -130,11 +132,6 @@ function SearchEmptyState({ query, isEmpty }: { query: string; isEmpty: boolean 
     </View>
   );
 }
-
-const emptyStyles = StyleSheet.create({
-  container: { paddingTop: 40, alignItems: 'center' },
-  text: { ...typography.body, color: colors.text2, textAlign: 'center', lineHeight: 22 },
-});
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
@@ -150,6 +147,8 @@ interface ScreenState {
 }
 
 export default function CabinetScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
 
@@ -484,7 +483,7 @@ export default function CabinetScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <ActivityIndicator color={c.primary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -502,7 +501,7 @@ export default function CabinetScreen() {
           <RefreshControl
             refreshing={state.refreshing}
             onRefresh={() => void load(true)}
-            tintColor={colors.primary}
+            tintColor={c.primary}
           />
         }
       >
@@ -584,7 +583,7 @@ export default function CabinetScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search supplements"
-            placeholderTextColor={colors.text3}
+            placeholderTextColor={c.text3}
             value={search}
             onChangeText={setSearch}
             onFocus={() => setSearchFocused(true)}
@@ -774,8 +773,9 @@ export default function CabinetScreen() {
 
 const GRID_GAP = 12;
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg },
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing.screenPad,
@@ -793,19 +793,19 @@ const styles = StyleSheet.create({
   headerSub: {
     fontSize: 13,
     fontWeight: '500',
-    color: colors.text2,
+    color: c.text2,
     marginBottom: 4,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: colors.text,
+    color: c.text,
     letterSpacing: -0.5,
   },
   addButton: {
     height: 36,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -820,52 +820,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   reorderBtnActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary + '40',
+    backgroundColor: c.primaryLight,
+    borderColor: c.primary + '40',
   },
-  reorderBtnText: { fontSize: 13, fontWeight: '600', color: colors.text2 },
-  reorderBtnTextActive: { color: colors.primary },
+  reorderBtnText: { fontSize: 13, fontWeight: '600', color: c.text2 },
+  reorderBtnTextActive: { color: c.primary },
   reorderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     marginBottom: spacing.sm,
     gap: spacing.md,
   },
   reorderRowActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary + '40',
+    backgroundColor: c.primaryLight,
+    borderColor: c.primary + '40',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
   },
-  reorderHandle: { fontSize: 18, color: colors.text3 },
-  reorderName: { ...typography.bodyStrong, color: colors.text, flex: 1 },
-  reorderDose: { ...typography.caption, color: colors.text3 },
+  reorderHandle: { fontSize: 18, color: c.text3 },
+  reorderName: { ...typography.bodyStrong, color: c.text, flex: 1 },
+  reorderDose: { ...typography.caption, color: c.text3 },
 
   errorBanner: {
-    backgroundColor: colors.dangerLight,
+    backgroundColor: c.dangerLight,
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  errorText: { ...typography.bodySmall, color: colors.danger },
+  errorText: { ...typography.bodySmall, color: c.danger },
 
   restockBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.warningLight,
+    backgroundColor: c.warningLight,
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -875,27 +875,27 @@ const styles = StyleSheet.create({
   restockTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.warning,
+    color: c.warning,
     marginBottom: 2,
   },
-  restockText: { ...typography.bodySmall, color: colors.text2, lineHeight: 18 },
-  restockDismiss: { fontSize: 14, color: colors.text3, fontWeight: '600' },
+  restockText: { ...typography.bodySmall, color: c.text2, lineHeight: 18 },
+  restockDismiss: { fontSize: 14, color: c.text3, fontWeight: '600' },
 
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.md,
     height: 44,
     marginBottom: spacing.lg,
     gap: spacing.sm,
   },
-  searchBarFocused: { borderColor: colors.primary },
-  searchIcon: { fontSize: 18, color: colors.text3 },
-  searchInput: { flex: 1, ...typography.body, color: colors.text, paddingVertical: 0 },
+  searchBarFocused: { borderColor: c.primary },
+  searchIcon: { fontSize: 18, color: c.text3 },
+  searchInput: { flex: 1, ...typography.body, color: c.text, paddingVertical: 0 },
 
   grid: { gap: GRID_GAP },
   gridRow: { flexDirection: 'row', gap: GRID_GAP },
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
   },
   nudgeCard: {
     width: '100%',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.xxl,
     padding: spacing.xxl,
     alignItems: 'center',
@@ -923,19 +923,19 @@ const styles = StyleSheet.create({
   nudgeTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.text,
+    color: c.text,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
   nudgeBody: {
     ...typography.body,
-    color: colors.text2,
+    color: c.text2,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: spacing.xl,
   },
   nudgeCta: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radius.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xxl,
@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   nudgeCtaText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  nudgeSkip: { fontSize: 14, color: colors.text3, fontWeight: '500' },
+  nudgeSkip: { fontSize: 14, color: c.text3, fontWeight: '500' },
 
   allSetBanner: {
     position: 'absolute',
@@ -956,8 +956,8 @@ const styles = StyleSheet.create({
   allSetText: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.text,
-    backgroundColor: colors.surface,
+    color: c.text,
+    backgroundColor: c.surface,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: radius.xl,
@@ -969,3 +969,4 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 });
+}

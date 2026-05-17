@@ -56,7 +56,8 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { useIsOnline } from '../../utils/networkStatus';
 import { enqueueOfflineDoseLog, drainOfflineQueue } from '../../utils/offlineQueue';
 import { readCache, writeCache, CACHE_KEYS } from '../../utils/screenCache';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, colors, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import { analyseTimingPatterns, type TimingSuggestion } from '../../utils/timingOptimiser';
 import { STREAK_MILESTONES, badgeById, streakBadgeId, type EarnedBadge } from '../../utils/badges';
 
@@ -99,6 +100,8 @@ function cabinetToEntry(item: CabinetItem): SupplementEntry {
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const token = useAuthStore((s) => s.token);
   const [supplements, setSupplements] = useState<SupplementEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -847,7 +850,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <ActivityIndicator color={c.primary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -875,7 +878,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => void loadSupplements(true)}
-            tintColor={colors.primary}
+            tintColor={c.primary}
           />
         }
       >
@@ -1132,10 +1135,11 @@ export default function HomeScreen() {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
   },
   scroll: {
     flex: 1,
@@ -1162,31 +1166,31 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
-  profileBtnText: { fontSize: 18, color: colors.text2 },
+  profileBtnText: { fontSize: 18, color: c.text2 },
   dateLabel: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '500',
-    color: colors.text2,
+    color: c.text2,
     marginBottom: spacing.xs,
   },
   greeting: {
     ...typography.pageTitle,
-    color: colors.text,
+    color: c.text,
   },
 
   scheduleCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     marginBottom: 14,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -1199,23 +1203,23 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   scheduleCardTitle: {
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '600',
-    color: colors.text,
+    color: c.text,
   },
 
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingVertical: 6,
     paddingHorizontal: spacing.md,
     marginBottom: 12,
@@ -1227,7 +1231,7 @@ const styles = StyleSheet.create({
   streakText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.text2,
+    color: c.text2,
   },
   freezeBadge: {
     flexDirection: 'row',
@@ -1236,7 +1240,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
     borderRadius: radius.full,
   },
   freezeIcon: {
@@ -1245,14 +1249,14 @@ const styles = StyleSheet.create({
   freezeCount: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.primary,
+    color: c.primary,
   },
   shareBtn: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingVertical: 8,
     paddingHorizontal: spacing.md,
     marginBottom: 12,
@@ -1263,15 +1267,16 @@ const styles = StyleSheet.create({
   shareBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.text2,
+    color: c.text2,
   },
 
   disclaimer: {
     fontSize: 11,
     lineHeight: 14,
-    color: colors.text4,
+    color: c.text4,
     textAlign: 'center',
     marginTop: spacing.sm,
     paddingBottom: spacing.md,
   },
 });
+}

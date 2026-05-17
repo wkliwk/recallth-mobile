@@ -11,7 +11,7 @@
  * - New conversation button in header.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Platform,
@@ -29,7 +29,8 @@ import { ExtractionToast } from '../../components/chat/ExtractionToast';
 import { QuickPromptChip } from '../../components/chat/QuickPromptChip';
 import { useAuthStore } from '../../stores/auth';
 import { useChatStore, type LocalMessage, type ExtractionToastData } from '../../stores/chat';
-import { colors, radius, spacing, typography } from '../../utils/theme';
+import { ColorPalette, colors, radius, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 import * as storage from '../../services/storage';
 import { useIsOnline } from '../../utils/networkStatus';
 
@@ -59,15 +60,17 @@ interface EmptyStateProps {
 }
 
 function EmptyState({ onPrompt }: EmptyStateProps) {
+  const c = useThemeColors();
+  const s = makeStyles(c);
   return (
-    <View style={styles.emptyContainer}>
-      <View style={styles.emptyAIBadge}>
-        <Text style={styles.emptyAIBadgeText}>AI</Text>
+    <View style={s.emptyContainer}>
+      <View style={s.emptyAIBadge}>
+        <Text style={s.emptyAIBadgeText}>AI</Text>
       </View>
-      <Text style={styles.emptyGreeting}>
+      <Text style={s.emptyGreeting}>
         Hi! Ask me anything about your supplements, medications, or health goals.
       </Text>
-      <View style={styles.chipsWrap}>
+      <View style={s.chipsWrap}>
         {QUICK_PROMPTS.map((prompt) => (
           <QuickPromptChip key={prompt} label={prompt} onPress={onPrompt} />
         ))}
@@ -79,9 +82,11 @@ function EmptyState({ onPrompt }: EmptyStateProps) {
 // ─── Disclaimer header strip ──────────────────────────────────────────────────
 
 function DisclaimerStrip() {
+  const c = useThemeColors();
+  const s = makeStyles(c);
   return (
-    <View style={styles.disclaimer}>
-      <Text style={styles.disclaimerText}>
+    <View style={s.disclaimer}>
+      <Text style={s.disclaimerText}>
         Not medical advice — always consult your doctor
       </Text>
     </View>
@@ -91,6 +96,8 @@ function DisclaimerStrip() {
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const token = useAuthStore((s) => s.token);
   const isOnline = useIsOnline();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -278,10 +285,11 @@ export default function ChatScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
   },
   offlineContainer: {
     flex: 1,
@@ -291,8 +299,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   offlineIcon: { fontSize: 48 },
-  offlineTitle: { ...typography.sectionTitle, color: colors.text, textAlign: 'center' },
-  offlineBody: { ...typography.body, color: colors.text2, textAlign: 'center', lineHeight: 22 },
+  offlineTitle: { ...typography.sectionTitle, color: c.text, textAlign: 'center' },
+  offlineBody: { ...typography.body, color: c.text2, textAlign: 'center', lineHeight: 22 },
 
   // Header
   header: {
@@ -301,13 +309,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.screenPad,
     paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   headerTitle: {
     ...typography.sectionTitle,
-    color: colors.text,
+    color: c.text,
   },
   headerBtns: {
     flexDirection: 'row',
@@ -318,58 +326,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   historyBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.text2,
+    color: c.text2,
   },
   newBtn: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
-    backgroundColor: colors.aiLight,
+    backgroundColor: c.aiLight,
     borderWidth: 1,
-    borderColor: colors.ai,
+    borderColor: c.ai,
   },
   newBtnPressed: {
     opacity: 0.7,
   },
   newBtnText: {
     ...typography.bodySmall,
-    color: colors.ai,
+    color: c.ai,
     fontWeight: '600',
   },
 
   // Disclaimer
   disclaimer: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
     borderBottomWidth: 1,
-    borderBottomColor: colors.primaryMid,
+    borderBottomColor: c.primaryMid,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.screenPad,
     alignItems: 'center',
   },
   disclaimerText: {
     ...typography.caption,
-    color: colors.primary,
+    color: c.primary,
     textAlign: 'center',
   },
 
   // Error
   errorBanner: {
-    backgroundColor: colors.dangerLight,
+    backgroundColor: c.dangerLight,
     borderBottomWidth: 1,
-    borderBottomColor: colors.dangerMid,
+    borderBottomColor: c.dangerMid,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.screenPad,
   },
   errorText: {
     ...typography.bodySmall,
-    color: colors.danger,
+    color: c.danger,
     textAlign: 'center',
   },
 
@@ -393,18 +401,18 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: radius.full,
-    backgroundColor: colors.ai,
+    backgroundColor: c.ai,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyAIBadgeText: {
     fontSize: 22,
     fontWeight: '800',
-    color: colors.surface,
+    color: c.surface,
   },
   emptyGreeting: {
     ...typography.body,
-    color: colors.text2,
+    color: c.text2,
     textAlign: 'center',
     maxWidth: 300,
   },
@@ -416,3 +424,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 });
+}

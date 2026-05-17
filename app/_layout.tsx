@@ -8,12 +8,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '../stores/auth';
 import { useOnboardingStore } from '../stores/onboarding';
+import { useAppearanceStore } from '../stores/appearance';
 import {
   configureNotificationHandler,
   handleSnoozeResponse,
   registerNotificationCategories,
 } from '../services/notifications';
 import { colors } from '../utils/theme';
+import { useIsDark } from '../utils/useTheme';
 
 configureNotificationHandler();
 void registerNotificationCategories();
@@ -30,11 +32,14 @@ function AuthGate() {
   const hasSeen = useOnboardingStore((s) => s.hasSeen);
   const hydrateOnboarding = useOnboardingStore((s) => s.hydrate);
 
-  // Hydrate both stores once on mount.
+  const hydrateAppearance = useAppearanceStore((s) => s.hydrate);
+
+  // Hydrate stores once on mount.
   useEffect(() => {
     void hydrate();
     void hydrateOnboarding();
-  }, [hydrate, hydrateOnboarding]);
+    void hydrateAppearance();
+  }, [hydrate, hydrateOnboarding, hydrateAppearance]);
 
   // Redirect when auth + onboarding state resolves.
   useEffect(() => {
@@ -80,6 +85,7 @@ function AuthGate() {
 export default function RootLayout() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const onboardingHydrated = useOnboardingStore((s) => s.isHydrated);
+  const isDark = useIsDark();
   const router = useRouter();
   const notifResponseRef = useRef<ExpoNotifications.EventSubscription | null>(null);
 
@@ -110,7 +116,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
-      <StatusBar style="auto" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <AuthGate />
       {bothHydrated ? (
         <Stack screenOptions={{ headerShown: false }}>

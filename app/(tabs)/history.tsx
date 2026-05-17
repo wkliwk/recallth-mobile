@@ -32,7 +32,8 @@ import { getDoseLogsRange, unlogDose } from '../../services/schedule';
 import { getItem } from '../../services/storage';
 import { useAuthStore } from '../../stores/auth';
 import { groupByDate } from '../../utils/dateGrouping';
-import { colors, spacing, typography } from '../../utils/theme';
+import { ColorPalette, colors, spacing, typography } from '../../utils/theme';
+import { useThemeColors } from '../../utils/useTheme';
 
 // ─── List item discriminated union ────────────────────────────────────────
 
@@ -88,6 +89,8 @@ const PAGE_SIZE = 20;
 // ─── Screen ───────────────────────────────────────────────────────────────
 
 export default function HistoryScreen(): React.JSX.Element {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
 
@@ -282,7 +285,7 @@ export default function HistoryScreen(): React.JSX.Element {
     if (isLoadingMore) {
       return (
         <View style={styles.footer}>
-          <ActivityIndicator color={colors.primary} size="small" />
+          <ActivityIndicator color={c.primary} size="small" />
         </View>
       );
     }
@@ -369,17 +372,18 @@ export default function HistoryScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
   },
   filterBar: {
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   filterScroll: {
     paddingHorizontal: spacing.screenPad,
@@ -401,13 +405,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.body,
-    color: colors.danger,
+    color: c.danger,
     textAlign: 'center',
   },
   retryBtn: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: c.borderStrong,
     borderRadius: 14,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
@@ -417,7 +421,7 @@ const styles = StyleSheet.create({
   },
   retryText: {
     ...typography.cta,
-    color: colors.text,
+    color: c.text,
   },
   footer: {
     paddingVertical: spacing.xl,
@@ -425,6 +429,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     ...typography.bodySmall,
-    color: colors.text3,
+    color: c.text3,
   },
 });
+}
