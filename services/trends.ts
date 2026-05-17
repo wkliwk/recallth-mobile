@@ -149,3 +149,39 @@ export function computeWeightDelta(
     delta: Number((latest.value - baseline.value).toFixed(1)),
   };
 }
+
+// ─── Dose effects ─────────────────────────────────────────────────────────────
+
+export interface DoseEffectInput {
+  doseLogId: string;
+  supplementId: string;
+  supplementName: string;
+  energy?: number;
+  focus?: number;
+  sleep?: number;
+  mood?: number;
+}
+
+export interface SupplementEffectAvg {
+  name: string;
+  avgEnergy: number | null;
+  avgFocus: number | null;
+  avgSleep: number | null;
+  avgMood: number | null;
+  count: number;
+}
+
+interface EffectsEnvelope {
+  success: boolean;
+  data: { supplements: SupplementEffectAvg[] };
+  error: string | null;
+}
+
+export async function saveEffect(token: string, input: DoseEffectInput): Promise<void> {
+  await api.post('/intake/effect', input, { token });
+}
+
+export async function fetchEffects(token: string, days = 30): Promise<SupplementEffectAvg[]> {
+  const res = await api.get<EffectsEnvelope>(`/effects?days=${days}`, { token });
+  return res.data?.supplements ?? [];
+}

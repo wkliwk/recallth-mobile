@@ -11,6 +11,7 @@ import { RestockAlertBanner } from '../../components/summary/RestockAlertBanner'
 import { StreakMilestoneModal } from '../../components/summary/StreakMilestoneModal';
 import { TimingSuggestionCard } from '../../components/summary/TimingSuggestionCard';
 import { MonthlySummaryCard } from '../../components/summary/MonthlySummaryCard';
+import { EffectRatingSheet, type EffectRatings } from '../../components/summary/EffectRatingSheet';
 import { AddSheet } from '../../components/cabinet/AddSheet';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { requestPermissions, scheduleDailyReminders } from '../../services/notifications';
@@ -29,6 +30,7 @@ import { getInteractions, getRestockAlerts, listCabinetItems, updateCabinetItem,
 import { logIntakeToday, getStreak } from '../../services/intake';
 import { getTodayDoseLogs, getDoseLogsRange, logDose, unlogDose } from '../../services/schedule';
 import { fetchDailyBrief, getMonthlySummary, type MonthlySummary } from '../../services/insights';
+import { saveEffect } from '../../services/trends';
 import { useAuthStore } from '../../stores/auth';
 import * as storage from '../../services/storage';
 import { colors, radius, spacing, typography } from '../../utils/theme';
@@ -96,6 +98,8 @@ export default function HomeScreen() {
   const [pendingTimingEdit, setPendingTimingEdit] = useState<{ item: CabinetItem; suggestedTiming: string } | null>(null);
   const [monthlySummary, setMonthlySummary] = useState<MonthlySummary | null>(null);
   const [monthlySummaryDismissed, setMonthlySummaryDismissed] = useState(false);
+  const [effectPrompt, setEffectPrompt] = useState<{ doseLogId: string; supplementId: string; supplementName: string } | null>(null);
+  const effectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const MILESTONES = [7, 30, 100];
 
@@ -259,6 +263,11 @@ export default function HomeScreen() {
           setSupplements((prev) =>
             prev.map((s) => (s.id === id ? { ...s, doseLogId: log._id } : s)),
           );
+          // Prompt for effect rating 500ms after logging
+          if (effectTimerRef.current) clearTimeout(effectTimerRef.current);
+          effectTimerRef.current = setTimeout(() => {
+            setEffectPrompt({ doseLogId: log._id, supplementId: id, supplementName: target.name });
+          }, 500);
           // Show notification nudge after first-ever dose log if permission not yet granted.
           const nudgeKey = `recallth:notif-nudge-shown:${userId ?? 'anon'}`;
           const alreadyShown = await storage.getItem(nudgeKey);
@@ -365,6 +374,22 @@ export default function HomeScreen() {
     const dismissKey = `recallth:monthly-summary-dismissed:${monthlySummary.month}`;
     await storage.setItem(dismissKey, 'true');
   }, [monthlySummary]);
+
+  const handleEffectSubmit = useCallback((ratings: EffectRatings) => {
+    if (!effectPrompt || !token) { setEffectPrompt(null); return; }
+    const { doseLogId, supplementId, supplementName } = effectPrompt;
+    setEffectPrompt(null);
+    void saveEffect(token, {
+      doseLogId,
+      supplementId,
+      supplementName,
+      ...ratings,
+    }).catch(() => {/* non-critical, ignore */});
+  }, [effectPrompt, token]);
+
+  const handleEffectSkip = useCallback(() => {
+    setEffectPrompt(null);
+  }, []);
 
   if (loading) {
     return (
@@ -540,6 +565,13 @@ export default function HomeScreen() {
           existingItems={cabinetItems}
         />
       )}
+
+      <EffectRatingSheet
+        visible={effectPrompt !== null}
+        supplementName={effectPrompt?.supplementName ?? ''}
+        onSubmit={handleEffectSubmit}
+        onSkip={handleEffectSkip}
+      />
     </SafeAreaView>
   );
 }
