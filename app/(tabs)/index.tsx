@@ -60,6 +60,7 @@ import { ColorPalette, colors, radius, spacing, typography } from '../../utils/t
 import { useThemeColors } from '../../utils/useTheme';
 import { analyseTimingPatterns, type TimingSuggestion } from '../../utils/timingOptimiser';
 import { STREAK_MILESTONES, badgeById, streakBadgeId, type EarnedBadge } from '../../utils/badges';
+import { useWidgetSync } from '../../modules/widget/useWidgetSync';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -453,6 +454,41 @@ export default function HomeScreen() {
 
   const taken = supplements.filter((s) => s.taken).length;
   const total = supplements.length;
+
+  const nextUnlogged = useMemo(() => {
+    const blockTimes: Record<string, string> = {
+      morning: '08:00', midday: '12:00', evening: '18:00', night: '21:00',
+    };
+    const hour = new Date().getHours();
+    const order: TimeBlock[] = hour < 12
+      ? ['morning', 'midday', 'evening', 'night']
+      : hour < 17
+        ? ['midday', 'evening', 'night', 'morning']
+        : hour < 20
+          ? ['evening', 'night', 'morning', 'midday']
+          : ['night', 'morning', 'midday', 'evening'];
+    for (const block of order) {
+      const candidate = supplements.find((s) => s.timeBlock === block && !s.taken);
+      if (candidate) {
+        const rawTime = blockTimes[block] ?? '09:00';
+        const [hh, mm] = rawTime.split(':');
+        const h = parseInt(hh ?? '9', 10);
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
+        return { name: candidate.name, time: `${displayH}:${mm ?? '00'} ${suffix}` };
+      }
+    }
+    return null;
+  }, [supplements]);
+
+  useWidgetSync({
+    dosesTaken: taken,
+    dosesTotal: total,
+    streak: currentStreak,
+    nextDoseName: nextUnlogged?.name ?? '',
+    nextDoseTime: nextUnlogged?.time ?? '',
+    isLoggedIn: token !== null,
+  });
 
   const handleShare = useCallback(async () => {
     if (sharing) return;

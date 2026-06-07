@@ -64,10 +64,12 @@
           "photosPermission": "Recallth accesses your photo library so you can scan supplement bottle labels.",
           "cameraPermission": "Recallth uses your camera to photograph supplement bottle labels."
         }
-      ]
+      ],
+      "./plugins/withRecallthWidget"
     ],
     "experiments": {
       "typedRoutes": true
     }
   }
 }
+
